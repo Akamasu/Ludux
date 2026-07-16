@@ -1,0 +1,112 @@
+import { BookOpen, Clock3, Gamepad2, Library, Trophy } from 'lucide-react'
+import { GAME_STATUS_LABELS, type CreateGameInput, type GameListItem, type LibraryOverview } from '../../types/game'
+import { EmptyLibrary } from '../components/library/EmptyLibrary'
+import { StatTile } from '../components/library/StatTile'
+import { Button } from '../components/ui/Button'
+import { formatHours } from '../utils/formatters'
+
+interface HomePageProps {
+  overview: LibraryOverview
+  games: GameListItem[]
+  isLoading: boolean
+  isSaving: boolean
+  error: string | null
+  createGame: (input: CreateGameInput) => Promise<void>
+  onOpenLibrary: () => void
+}
+
+export function HomePage({
+  createGame,
+  error,
+  games,
+  isLoading,
+  isSaving,
+  onOpenLibrary,
+  overview,
+}: HomePageProps) {
+  return (
+    <div className="flex flex-1 flex-col gap-7">
+      <header className="flex items-start justify-between gap-6 border-b border-white/10 pb-7">
+        <div>
+          <p className="text-sm font-medium text-emerald-300">Ludux</p>
+          <h1 className="mt-2 text-4xl font-semibold text-white">Bienvenue dans Ludux</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+            La memoire de votre vie de joueur, en local et a votre rythme.
+          </p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-[#16161a] px-4 py-3 text-right">
+          <p className="text-xs text-zinc-500">Etat</p>
+          <p className="mt-1 text-sm font-medium text-zinc-100">
+            {isLoading ? 'Chargement' : `${overview.gamesOwned} jeux`}
+          </p>
+        </div>
+      </header>
+
+      {error ? (
+        <div className="rounded-lg border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+          {error}
+        </div>
+      ) : null}
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatTile label="Jeux" value={String(overview.gamesOwned)} icon={Gamepad2} tone="emerald" />
+        <StatTile label="Heures" value={formatHours(overview.totalMinutes)} icon={Clock3} tone="cyan" />
+        <StatTile label="Termines" value={String(overview.gamesCompleted)} icon={Trophy} tone="amber" />
+        <StatTile label="Plateforme" value={overview.topPlatform ?? '-'} icon={BookOpen} tone="rose" />
+      </section>
+
+      {games.length === 0 ? (
+        <EmptyLibrary onCreateGame={createGame} isSaving={isSaving} />
+      ) : (
+        <section className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
+          <div className="rounded-lg border border-white/10 bg-[#16161a] p-5">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Bibliotheque</h2>
+                <p className="mt-1 text-sm text-zinc-500">Derniers chapitres ajoutes</p>
+              </div>
+              <Button type="button" variant="secondary" onClick={onOpenLibrary}>
+                <Library size={17} aria-hidden="true" />
+                Ouvrir
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {games.slice(0, 6).map((game) => (
+                <article
+                  key={game.id}
+                  className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-[#111114] p-4"
+                >
+                  <div>
+                    <h3 className="font-medium text-white">{game.title}</h3>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      {game.platforms.join(', ') || 'Plateforme non renseignee'}
+                    </p>
+                  </div>
+                  <span className="rounded-lg bg-white/5 px-3 py-1 text-xs text-zinc-300">
+                    {GAME_STATUS_LABELS[game.status]}
+                  </span>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-white/10 bg-[#16161a] p-5">
+            <h2 className="text-lg font-semibold text-white">Derniere aventure</h2>
+            {overview.lastAdventure ? (
+              <div className="mt-5">
+                <p className="text-2xl font-semibold text-white">{overview.lastAdventure.title}</p>
+                <p className="mt-2 text-sm text-zinc-500">
+                  {GAME_STATUS_LABELS[overview.lastAdventure.status]}
+                </p>
+              </div>
+            ) : (
+              <p className="mt-5 text-sm leading-6 text-zinc-500">
+                Aucun chapitre n'a encore ete ajoute.
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}

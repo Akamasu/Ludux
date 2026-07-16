@@ -1,0 +1,279 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum GameStatus {
+  BACKLOG
+  PLAYING
+  COMPLETED
+  COMPLETED_100
+  DROPPED
+  PAUSED
+}
+
+enum Emotion {
+  JOY
+  EXCITEMENT
+  NOSTALGIA
+  FRUSTRATION
+  SURPRISE
+  SADNESS
+  PRIDE
+}
+
+model Game {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  coverUrl    String?
+  releaseDate DateTime?
+  developer   String?
+  publisher   String?
+  website     String?
+  status      GameStatus @default(BACKLOG)
+  archived    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  platforms       GamePlatform[]
+  versions        GameVersion[]
+  dlcs            Dlc[]
+  achievements    Achievement[]
+  sessions        PlaySession[]
+  chronicles      Chronicle[]
+  screenshots     Screenshot[]
+  review          Review?
+  collectionGames CollectionGame[]
+
+  @@index([title])
+  @@index([status])
+  @@index([archived])
+}
+
+model Platform {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  manufacturer String?
+  generation   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  games    GamePlatform[]
+  sessions PlaySession[]
+
+  @@index([name])
+}
+
+model GamePlatform {
+  id         String  @id @default(uuid())
+  gameId     String
+  platformId String
+  version    String?
+  owned      Boolean @default(false)
+  played     Boolean @default(false)
+
+  game     Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, platformId, version])
+  @@index([platformId])
+}
+
+model GameVersion {
+  id          String    @id @default(uuid())
+  gameId      String
+  name        String
+  releaseDate DateTime?
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId])
+}
+
+model Dlc {
+  id          String    @id @default(uuid())
+  gameId      String
+  name        String
+  releaseDate DateTime?
+  owned       Boolean   @default(false)
+  completed   Boolean   @default(false)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId])
+}
+
+model Achievement {
+  id          String    @id @default(uuid())
+  gameId      String
+  name        String
+  description String?
+  iconUrl     String?
+  unlocked    Boolean   @default(false)
+  unlockDate  DateTime?
+  provider    String?
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId])
+  @@index([name])
+}
+
+model PlaySession {
+  id              String    @id @default(uuid())
+  gameId          String
+  platformId      String?
+  start           DateTime
+  end             DateTime?
+  durationMinutes Int
+  note            String?
+  createdAt       DateTime  @default(now())
+
+  game     Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  platform Platform? @relation(fields: [platformId], references: [id], onDelete: SetNull)
+
+  @@index([gameId])
+  @@index([platformId])
+  @@index([start])
+}
+
+model Chronicle {
+  id        String    @id @default(uuid())
+  gameId    String
+  title     String
+  content   String
+  date      DateTime  @default(now())
+  emotion   Emotion?
+  favorite  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  game        Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  screenshots Screenshot[]
+  tags        ChronicleTag[]
+
+  @@index([gameId])
+  @@index([date])
+}
+
+model Screenshot {
+  id          String   @id @default(uuid())
+  gameId      String
+  chronicleId String?
+  path        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  game      Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  chronicle Chronicle? @relation(fields: [chronicleId], references: [id], onDelete: SetNull)
+
+  @@index([gameId])
+  @@index([chronicleId])
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  gameId     String   @unique
+  rating     Int
+  content    String?
+  strengths  String?
+  weaknesses String?
+  mainMemory String?
+  favorite   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+}
+
+model Collection {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  games CollectionGame[]
+
+  @@index([name])
+}
+
+model CollectionGame {
+  id           String @id @default(uuid())
+  collectionId String
+  gameId       String
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  game       Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, gameId])
+  @@index([gameId])
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  chronicles ChronicleTag[]
+
+  @@index([name])
+}
+
+model ChronicleTag {
+  id          String @id @default(uuid())
+  chronicleId String
+  tagId       String
+
+  chronicle Chronicle @relation(fields: [chronicleId], references: [id], onDelete: Cascade)
+  tag       Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([chronicleId, tagId])
+  @@index([tagId])
+}
+
+model ExternalAccount {
+  id         String   @id @default(uuid())
+  provider   String
+  externalId String
+  username   String?
+  tokenHint  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([provider])
+}
+
+model SyncData {
+  id        String    @id @default(uuid())
+  provider  String
+  lastSync  DateTime?
+  status    String?
+  message   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([provider])
+}
+
+model Statistics {
+  id                   String   @id @default(uuid())
+  totalMinutes         Int      @default(0)
+  gamesCompleted       Int      @default(0)
+  gamesOwned           Int      @default(0)
+  achievementsUnlocked Int      @default(0)
+  updatedAt            DateTime @updatedAt
+}
+
+model Backup {
+  id        String   @id @default(uuid())
+  path      String
+  size      Int
+  createdAt DateTime @default(now())
+}

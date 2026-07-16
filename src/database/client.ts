@@ -1,0 +1,35 @@
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import { mkdirSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { PrismaClient } from '../../generated/prisma/client'
+
+const globalForPrisma = globalThis as unknown as {
+  luduxPrisma?: PrismaClient
+}
+
+function getDatabaseUrl() {
+  return process.env['DATABASE_URL'] ?? 'file:./userdata/database/ludux.db'
+}
+
+function ensureSqliteDirectory(databaseUrl: string) {
+  if (databaseUrl === ':memory:') {
+    return
+  }
+
+  const databasePath = databaseUrl.replace(/^file:/, '')
+  mkdirSync(dirname(resolve(databasePath)), { recursive: true })
+}
+
+const databaseUrl = getDatabaseUrl()
+ensureSqliteDirectory(databaseUrl)
+
+export const prisma =
+  globalForPrisma.luduxPrisma ??
+  new PrismaClient({
+    adapter: new PrismaBetterSqlite3({ url: databaseUrl }),
+    log: ['warn', 'error'],
+  })
+
+if (process.env['NODE_ENV'] !== 'production') {
+  globalForPrisma.luduxPrisma = prisma
+}

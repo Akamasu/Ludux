@@ -1,0 +1,46 @@
+{
+  "name": "ludux",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./out/main/main.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "tsc -b && electron-vite build",
+    "lint": "oxlint .",
+    "postinstall": "prisma generate",
+    "preview": "electron-vite preview",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "test": "vitest run",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@radix-ui/react-slot": "^1.3.0",
+    "better-sqlite3": "^12.11.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.24.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "dotenv": "^17.4.2",
+    "electron": "^43.1.1",
+    "electron-vite": "^5.0.0",
+    "oxlint": "^1.71.0",
+    "prisma": "^7.8.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.10"
+  }
+}
