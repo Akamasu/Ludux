@@ -23,13 +23,20 @@ interface LibraryPageProps {
   isSaving: boolean
   error: string | null
   createGame: (input: CreateGameInput) => Promise<void>
+  onOpenGame: (gameId: string) => void
 }
 
 function normalizeSearch(value: string) {
   return value.trim().toLocaleLowerCase()
 }
 
-export function LibraryPage({ createGame, error, games, isSaving }: LibraryPageProps) {
+export function LibraryPage({
+  createGame,
+  error,
+  games,
+  isSaving,
+  onOpenGame,
+}: LibraryPageProps) {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('ALL')
@@ -206,13 +213,13 @@ export function LibraryPage({ createGame, error, games, isSaving }: LibraryPageP
           ) : viewMode === 'grid' ? (
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {filteredGames.map((game) => (
-                <GameCard key={game.id} game={game} />
+                <GameCard key={game.id} game={game} onOpen={onOpenGame} />
               ))}
             </section>
           ) : (
             <section className="space-y-3">
               {filteredGames.map((game) => (
-                <GameListRow key={game.id} game={game} />
+                <GameListRow key={game.id} game={game} onOpen={onOpenGame} />
               ))}
             </section>
           )}

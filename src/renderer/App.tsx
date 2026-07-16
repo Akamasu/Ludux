@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { AppShell } from './components/layout/AppShell'
+import { useGameDetail } from './hooks/useGameDetail'
 import { useLibraryOverview } from './hooks/useLibraryOverview'
+import { GameDetailPage } from './pages/GameDetailPage'
 import { HomePage } from './pages/HomePage'
 import { LibraryPage } from './pages/LibraryPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
@@ -8,43 +10,79 @@ import type { AppView } from './types/navigation'
 
 export default function App() {
   const [activeView, setActiveView] = useState<AppView>('home')
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
   const libraryState = useLibraryOverview()
+  const selectedListItem =
+    libraryState.games.find((game) => game.id === selectedGameId) ?? null
+  const gameDetailState = useGameDetail(
+    selectedGameId,
+    selectedListItem,
+    libraryState.refresh,
+  )
+
+  function navigate(view: AppView) {
+    setSelectedGameId(null)
+    setActiveView(view)
+  }
+
+  function openGame(gameId: string) {
+    setSelectedGameId(gameId)
+    setActiveView('library')
+  }
 
   return (
-    <AppShell activeView={activeView} onNavigate={setActiveView}>
-      {activeView === 'home' ? (
-        <HomePage {...libraryState} onOpenLibrary={() => setActiveView('library')} />
+    <AppShell activeView={activeView} onNavigate={navigate}>
+      {selectedGameId ? (
+        <GameDetailPage
+          detail={gameDetailState.detail}
+          error={gameDetailState.error}
+          isLoading={gameDetailState.isLoading}
+          isSaving={gameDetailState.isSaving}
+          onBack={() => setSelectedGameId(null)}
+          onCreateChronicle={gameDetailState.createChronicle}
+          onCreatePlaySession={gameDetailState.createPlaySession}
+          onUpdateGame={gameDetailState.updateGame}
+        />
       ) : null}
-      {activeView === 'library' ? <LibraryPage {...libraryState} /> : null}
-      {activeView === 'chronicles' ? (
+      {!selectedGameId && activeView === 'home' ? (
+        <HomePage
+          {...libraryState}
+          onOpenGame={openGame}
+          onOpenLibrary={() => navigate('library')}
+        />
+      ) : null}
+      {!selectedGameId && activeView === 'library' ? (
+        <LibraryPage {...libraryState} onOpenGame={openGame} />
+      ) : null}
+      {!selectedGameId && activeView === 'chronicles' ? (
         <PlaceholderPage
           eyebrow="Chroniques"
           title="Journal des souvenirs"
           description="La prochaine etape consistera a relier les chroniques aux jeux et aux sessions."
         />
       ) : null}
-      {activeView === 'museum' ? (
+      {!selectedGameId && activeView === 'museum' ? (
         <PlaceholderPage
           eyebrow="Musee"
           title="Galerie des aventures accomplies"
           description="Cet espace presentera les jeux termines comme une collection personnelle."
         />
       ) : null}
-      {activeView === 'lifeBook' ? (
+      {!selectedGameId && activeView === 'lifeBook' ? (
         <PlaceholderPage
           eyebrow="Livre de Vie"
           title="Chronologie du parcours"
           description="Le Livre de Vie organisera les chapitres par annees et periodes."
         />
       ) : null}
-      {activeView === 'statistics' ? (
+      {!selectedGameId && activeView === 'statistics' ? (
         <PlaceholderPage
           eyebrow="Statistiques"
           title="Les chiffres qui racontent une histoire"
           description="Les statistiques seront construites a partir des jeux, sessions et chroniques."
         />
       ) : null}
-      {activeView === 'settings' ? (
+      {!selectedGameId && activeView === 'settings' ? (
         <PlaceholderPage
           eyebrow="Parametres"
           title="Controle local des donnees"

@@ -4,13 +4,19 @@ import { formatHours } from '../../utils/formatters'
 
 interface GameCardProps {
   game: GameListItem
+  onOpen?: (gameId: string) => void
 }
 
-export function GameCard({ game }: GameCardProps) {
+export function GameCard({ game, onOpen }: GameCardProps) {
   const initial = game.title.trim().charAt(0).toUpperCase()
 
   return (
     <article className="overflow-hidden rounded-lg border border-white/10 bg-[#16161a]">
+      <button
+        type="button"
+        onClick={() => onOpen?.(game.id)}
+        className="block w-full text-left"
+      >
       <div className="relative aspect-[4/3] bg-[#101013]">
         {game.coverUrl ? (
           <img className="h-full w-full object-cover" src={game.coverUrl} alt="" />
@@ -49,6 +55,7 @@ export function GameCard({ game }: GameCardProps) {
           </p>
         ) : null}
       </div>
+      </button>
     </article>
   )
 }

@@ -16,3 +16,11 @@ export function formatHours(totalMinutes: number) {
 
   return `${hours} h ${minutes} min`
 }
+
+export function formatDate(value: string) {
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(value))
+}

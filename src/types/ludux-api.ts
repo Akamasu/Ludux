@@ -1,4 +1,12 @@
-import type { CreateGameInput, GameListItem, LibraryOverview } from './game'
+import type {
+  CreateChronicleInput,
+  CreateGameInput,
+  CreatePlaySessionInput,
+  GameDetail,
+  GameListItem,
+  LibraryOverview,
+  UpdateGameInput,
+} from './game'
 
 export interface LuduxApi {
   library: {
@@ -7,6 +15,10 @@ export interface LuduxApi {
   games: {
     list: () => Promise<GameListItem[]>
     create: (input: CreateGameInput) => Promise<GameListItem>
+    getById: (id: string) => Promise<GameDetail | null>
+    update: (input: UpdateGameInput) => Promise<GameDetail>
+    createChronicle: (input: CreateChronicleInput) => Promise<GameDetail>
+    createPlaySession: (input: CreatePlaySessionInput) => Promise<GameDetail>
   }
 }
 

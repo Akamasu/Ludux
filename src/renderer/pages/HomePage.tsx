@@ -13,6 +13,7 @@ interface HomePageProps {
   error: string | null
   createGame: (input: CreateGameInput) => Promise<void>
   onOpenLibrary: () => void
+  onOpenGame: (gameId: string) => void
 }
 
 export function HomePage({
@@ -22,6 +23,7 @@ export function HomePage({
   isLoading,
   isSaving,
   onOpenLibrary,
+  onOpenGame,
   overview,
 }: HomePageProps) {
   return (
@@ -74,8 +76,12 @@ export function HomePage({
               {games.slice(0, 6).map((game) => (
                 <article
                   key={game.id}
-                  className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-[#111114] p-4"
                 >
+                  <button
+                    type="button"
+                    onClick={() => onOpenGame(game.id)}
+                    className="flex w-full items-center justify-between gap-4 rounded-lg border border-white/10 bg-[#111114] p-4 text-left transition hover:border-white/20"
+                  >
                   <div>
                     <h3 className="font-medium text-white">{game.title}</h3>
                     <p className="mt-1 text-sm text-zinc-500">
@@ -85,6 +91,7 @@ export function HomePage({
                   <span className="rounded-lg bg-white/5 px-3 py-1 text-xs text-zinc-300">
                     {GAME_STATUS_LABELS[game.status]}
                   </span>
+                  </button>
                 </article>
               ))}
             </div>

@@ -16,3 +16,12 @@ Le projet suit des versions de developpement simples :
 - Creation de l'accueil Ludux.
 - Creation de la page Bibliotheque avec ajout de jeux, recherche, filtres et vues grille/liste.
 - Ajout du fonctionnement local-first avec donnees utilisateur ignorees par Git.
+
+## v0.3.0 - 2026-07-16
+
+- Ajout d'une fiche detail pour chaque jeu.
+- Ouverture d'un jeu depuis l'accueil ou la bibliotheque.
+- Edition du titre, du statut et de la note personnelle.
+- Ajout de chroniques personnelles avec emotion.
+- Ajout de sessions de jeu avec duree, plateforme et commentaire.
+- Affichage d'une timeline "Mon histoire" combinant souvenirs et sessions.
