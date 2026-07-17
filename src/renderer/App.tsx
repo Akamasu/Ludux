@@ -2,16 +2,19 @@ import { useState } from 'react'
 import { AppShell } from './components/layout/AppShell'
 import { useGameDetail } from './hooks/useGameDetail'
 import { useLibraryOverview } from './hooks/useLibraryOverview'
+import { useLibraryStatistics } from './hooks/useLibraryStatistics'
 import { GameDetailPage } from './pages/GameDetailPage'
 import { HomePage } from './pages/HomePage'
 import { LibraryPage } from './pages/LibraryPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
+import { StatisticsPage } from './pages/StatisticsPage'
 import type { AppView } from './types/navigation'
 
 export default function App() {
   const [activeView, setActiveView] = useState<AppView>('home')
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
   const libraryState = useLibraryOverview()
+  const statisticsState = useLibraryStatistics(libraryState.games)
   const selectedListItem =
     libraryState.games.find((game) => game.id === selectedGameId) ?? null
   const gameDetailState = useGameDetail(
@@ -76,10 +79,10 @@ export default function App() {
         />
       ) : null}
       {!selectedGameId && activeView === 'statistics' ? (
-        <PlaceholderPage
-          eyebrow="Statistiques"
-          title="Les chiffres qui racontent une histoire"
-          description="Les statistiques seront construites a partir des jeux, sessions et chroniques."
+        <StatisticsPage
+          statistics={statisticsState.statistics}
+          isLoading={statisticsState.isLoading}
+          error={statisticsState.error}
         />
       ) : null}
       {!selectedGameId && activeView === 'settings' ? (

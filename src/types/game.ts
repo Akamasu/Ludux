@@ -96,6 +96,43 @@ export interface LibraryOverview {
   recentChronicle: RecentChronicle | null
 }
 
+export interface StatusStat {
+  status: GameStatus
+  count: number
+  totalMinutes: number
+}
+
+export interface PlatformStat {
+  name: string
+  games: number
+  sessions: number
+  totalMinutes: number
+}
+
+export interface EmotionStat {
+  emotion: Emotion
+  count: number
+}
+
+export interface MonthlyPlayStat {
+  month: string
+  sessions: number
+  totalMinutes: number
+}
+
+export interface LibraryStatistics {
+  gamesOwned: number
+  gamesCompleted: number
+  completionRate: number
+  totalMinutes: number
+  totalSessions: number
+  totalChronicles: number
+  statusStats: StatusStat[]
+  platformStats: PlatformStat[]
+  emotionStats: EmotionStat[]
+  monthlyPlayStats: MonthlyPlayStat[]
+}
+
 export interface CreateGameInput {
   title: string
   status?: GameStatus

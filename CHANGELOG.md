@@ -7,6 +7,7 @@ Le projet suit des versions de developpement simples :
 - `v0.1.x` : fondation technique.
 - `v0.2.x` : bibliotheque personnelle.
 - `v0.3.x` : chroniques, sessions et souvenirs.
+- `v0.4.x` : statistiques et lecture du parcours.
 
 ## v0.2.0 - 2026-07-16
 
@@ -25,3 +26,10 @@ Le projet suit des versions de developpement simples :
 - Ajout de chroniques personnelles avec emotion.
 - Ajout de sessions de jeu avec duree, plateforme et commentaire.
 - Affichage d'une timeline "Mon histoire" combinant souvenirs et sessions.
+
+## v0.4.0 - 2026-07-17
+
+- Ajout d'une vraie page Statistiques.
+- Calcul local des jeux possedes, jeux termines, temps joue, sessions et chroniques.
+- Ajout des repartitions par statut, plateforme, emotion et activite mensuelle.
+- Exposition des statistiques via le service library, IPC Electron et preload securise.

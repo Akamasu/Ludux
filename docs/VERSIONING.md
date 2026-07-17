@@ -20,3 +20,9 @@ git checkout v0.2.0
 ## Premier jalon
 
 Le tag `v0.2.0` correspond au premier socle Ludux utilisable avec une bibliotheque locale.
+
+## Jalons actuels
+
+- `v0.2.0` : socle Electron/React, base locale et bibliotheque.
+- `v0.3.0` : fiches de jeux, sessions et chroniques.
+- `v0.4.0` : tableau de bord statistique.
