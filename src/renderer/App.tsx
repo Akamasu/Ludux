@@ -8,6 +8,7 @@ import { ChroniclesPage } from './pages/ChroniclesPage'
 import { GameDetailPage } from './pages/GameDetailPage'
 import { HomePage } from './pages/HomePage'
 import { LibraryPage } from './pages/LibraryPage'
+import { MuseumPage } from './pages/MuseumPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 import { StatisticsPage } from './pages/StatisticsPage'
 import type { AppView } from './types/navigation'
@@ -69,10 +70,10 @@ export default function App() {
         />
       ) : null}
       {!selectedGameId && activeView === 'museum' ? (
-        <PlaceholderPage
-          eyebrow="Musee"
-          title="Galerie des aventures accomplies"
-          description="Cet espace presentera les jeux termines comme une collection personnelle."
+        <MuseumPage
+          games={libraryState.games}
+          onOpenGame={openGame}
+          onOpenLibrary={() => navigate('library')}
         />
       ) : null}
       {!selectedGameId && activeView === 'lifeBook' ? (

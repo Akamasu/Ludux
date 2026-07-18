@@ -10,6 +10,7 @@ Le projet suit des versions de developpement simples :
 - `v0.4.x` : statistiques et lecture du parcours.
 - `v0.5.x` : journal transversal des chroniques.
 - `v0.6.x` : identite visuelle et logo.
+- `v0.7.x` : musee des jeux accomplis.
 
 ## v0.2.0 - 2026-07-16
 
@@ -51,3 +52,10 @@ Le projet suit des versions de developpement simples :
 - Remplacement des anciens accents verts par l'identite violet/bleu.
 - Harmonisation des boutons, etats actifs, formulaires, tuiles et panneaux de contenu.
 - Ajout du logo dans la sidebar et l'accueil.
+
+## v0.7.0 - 2026-07-18
+
+- Remplacement du placeholder Musee par une galerie des jeux termines.
+- Ajout des statistiques de musee : jeux termines, 100 %, temps expose et piece majeure.
+- Ajout de filtres par accomplissement, recherche et tri par recence, temps joue ou titre.
+- Ajout d'une vitrine de cartes ouvrant directement la fiche du jeu associe.
