@@ -9,6 +9,7 @@ Le projet suit des versions de developpement simples :
 - `v0.3.x` : chroniques, sessions et souvenirs.
 - `v0.4.x` : statistiques et lecture du parcours.
 - `v0.5.x` : journal transversal des chroniques.
+- `v0.6.x` : identite visuelle et logo.
 
 ## v0.2.0 - 2026-07-16
 
@@ -42,3 +43,11 @@ Le projet suit des versions de developpement simples :
 - Ajout de filtres par jeu, emotion et favoris, avec recherche textuelle.
 - Ajout d'un panneau de lecture et d'un raccourci vers la fiche du jeu associe.
 - Exposition des chroniques via le service library, IPC Electron et preload securise.
+
+## v0.6.0 - 2026-07-18
+
+- Integration du logo Ludux fourni dans les assets publics.
+- Application de la palette sombre #0F1117, cartes #181B23, violet #7C5CFF et bleu #4F7CFF.
+- Remplacement des anciens accents verts par l'identite violet/bleu.
+- Harmonisation des boutons, etats actifs, formulaires, tuiles et panneaux de contenu.
+- Ajout du logo dans la sidebar et l'accueil.

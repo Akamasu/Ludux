@@ -4,19 +4,19 @@ interface StatTileProps {
   label: string
   value: string
   icon: LucideIcon
-  tone: 'emerald' | 'cyan' | 'amber' | 'rose'
+  tone: 'violet' | 'blue' | 'gold' | 'magenta'
 }
 
 const toneClasses: Record<StatTileProps['tone'], string> = {
-  emerald: 'bg-emerald-400 text-zinc-950',
-  cyan: 'bg-cyan-400 text-zinc-950',
-  amber: 'bg-amber-300 text-zinc-950',
-  rose: 'bg-rose-400 text-zinc-950',
+  violet: 'bg-[#7C5CFF] text-white',
+  blue: 'bg-[#4F7CFF] text-white',
+  gold: 'bg-[#C9A646] text-[#0F1117]',
+  magenta: 'bg-[#A33D69] text-white',
 }
 
 export function StatTile({ label, value, icon: Icon, tone }: StatTileProps) {
   return (
-    <article className="rounded-lg border border-white/10 bg-[#16161a] p-4">
+    <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">
       <div className="mb-5 flex items-center justify-between gap-4">
         <p className="text-sm text-zinc-500">{label}</p>
         <div className={`grid h-9 w-9 place-items-center rounded-lg ${toneClasses[tone]}`}>

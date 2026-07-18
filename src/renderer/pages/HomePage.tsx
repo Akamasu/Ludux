@@ -29,14 +29,21 @@ export function HomePage({
   return (
     <div className="flex flex-1 flex-col gap-7">
       <header className="flex items-start justify-between gap-6 border-b border-white/10 pb-7">
-        <div>
-          <p className="text-sm font-medium text-emerald-300">Ludux</p>
+        <div className="flex items-start gap-5">
+          <img
+            src="/ludux-logo.png"
+            alt=""
+            className="h-24 w-24 rounded-lg border border-white/10 object-cover"
+          />
+          <div>
+          <p className="text-sm font-medium text-[#A797FF]">Ludux</p>
           <h1 className="mt-2 text-4xl font-semibold text-white">Bienvenue dans Ludux</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
             La memoire de votre vie de joueur, en local et a votre rythme.
           </p>
+          </div>
         </div>
-        <div className="rounded-lg border border-white/10 bg-[#16161a] px-4 py-3 text-right">
+        <div className="rounded-lg border border-white/10 bg-[#181B23] px-4 py-3 text-right">
           <p className="text-xs text-zinc-500">Etat</p>
           <p className="mt-1 text-sm font-medium text-zinc-100">
             {isLoading ? 'Chargement' : `${overview.gamesOwned} jeux`}
@@ -51,17 +58,17 @@ export function HomePage({
       ) : null}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatTile label="Jeux" value={String(overview.gamesOwned)} icon={Gamepad2} tone="emerald" />
-        <StatTile label="Heures" value={formatHours(overview.totalMinutes)} icon={Clock3} tone="cyan" />
-        <StatTile label="Termines" value={String(overview.gamesCompleted)} icon={Trophy} tone="amber" />
-        <StatTile label="Plateforme" value={overview.topPlatform ?? '-'} icon={BookOpen} tone="rose" />
+        <StatTile label="Jeux" value={String(overview.gamesOwned)} icon={Gamepad2} tone="violet" />
+        <StatTile label="Heures" value={formatHours(overview.totalMinutes)} icon={Clock3} tone="blue" />
+        <StatTile label="Termines" value={String(overview.gamesCompleted)} icon={Trophy} tone="gold" />
+        <StatTile label="Plateforme" value={overview.topPlatform ?? '-'} icon={BookOpen} tone="magenta" />
       </section>
 
       {games.length === 0 ? (
         <EmptyLibrary onCreateGame={createGame} isSaving={isSaving} />
       ) : (
         <section className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
-          <div className="rounded-lg border border-white/10 bg-[#16161a] p-5">
+          <div className="rounded-lg border border-white/10 bg-[#181B23] p-5">
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-white">Bibliotheque</h2>
@@ -80,7 +87,7 @@ export function HomePage({
                   <button
                     type="button"
                     onClick={() => onOpenGame(game.id)}
-                    className="flex w-full items-center justify-between gap-4 rounded-lg border border-white/10 bg-[#111114] p-4 text-left transition hover:border-white/20"
+                    className="flex w-full items-center justify-between gap-4 rounded-lg border border-white/10 bg-[#121620] p-4 text-left transition hover:border-[#7C5CFF]/40"
                   >
                   <div>
                     <h3 className="font-medium text-white">{game.title}</h3>
@@ -97,7 +104,7 @@ export function HomePage({
             </div>
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-[#16161a] p-5">
+          <div className="rounded-lg border border-white/10 bg-[#181B23] p-5">
             <h2 className="text-lg font-semibold text-white">Derniere aventure</h2>
             {overview.lastAdventure ? (
               <div className="mt-5">

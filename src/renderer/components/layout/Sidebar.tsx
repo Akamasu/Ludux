@@ -34,12 +34,14 @@ interface SidebarProps {
 
 export function Sidebar({ activeView, onNavigate }: SidebarProps) {
   return (
-    <aside className="fixed inset-y-0 left-0 flex w-64 flex-col border-r border-white/10 bg-[#151518] px-4 py-5">
+    <aside className="fixed inset-y-0 left-0 flex w-64 flex-col border-r border-white/10 bg-[#11141B] px-4 py-5">
       <div className="mb-8 px-2">
         <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-400 text-zinc-950">
-            <Gamepad2 size={22} aria-hidden="true" />
-          </div>
+          <img
+            src="/ludux-logo.png"
+            alt=""
+            className="h-11 w-11 rounded-lg border border-white/10 object-cover"
+          />
           <div>
             <p className="text-lg font-semibold text-white">Ludux</p>
             <p className="text-xs text-zinc-500">Memoire locale</p>
@@ -55,7 +57,8 @@ export function Sidebar({ activeView, onNavigate }: SidebarProps) {
             onClick={() => onNavigate(item.id)}
             className={cn(
               'flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm text-zinc-400 transition hover:bg-white/5 hover:text-white',
-              activeView === item.id && 'bg-white/8 text-white shadow-sm',
+              activeView === item.id &&
+                'bg-[#7C5CFF]/15 text-white shadow-[inset_3px_0_0_#7C5CFF]',
             )}
           >
             <item.icon size={18} aria-hidden="true" />
@@ -64,7 +67,7 @@ export function Sidebar({ activeView, onNavigate }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="mt-auto rounded-lg border border-white/10 bg-[#101013] p-4">
+      <div className="mt-auto rounded-lg border border-white/10 bg-[#181B23] p-4">
         <p className="text-sm font-medium text-zinc-100">Local-first</p>
         <p className="mt-1 text-xs leading-5 text-zinc-500">
           Les souvenirs restent sur cette machine.

@@ -9,10 +9,10 @@ interface EmptyLibraryProps {
 
 export function EmptyLibrary({ onCreateGame, isSaving }: EmptyLibraryProps) {
   return (
-    <section className="rounded-lg border border-dashed border-white/15 bg-[#141417] p-6">
+    <section className="rounded-lg border border-dashed border-white/15 bg-[#181B23] p-6">
       <div className="flex items-start justify-between gap-6">
         <div>
-          <div className="mb-4 grid h-11 w-11 place-items-center rounded-lg bg-cyan-400 text-zinc-950">
+          <div className="mb-4 grid h-11 w-11 place-items-center rounded-lg bg-[#4F7CFF] text-white">
             <Sparkles size={21} aria-hidden="true" />
           </div>
           <h2 className="text-xl font-semibold text-white">Votre bibliotheque est vide.</h2>

@@ -51,7 +51,7 @@ export function GameDetailPage({
   if (!detail) {
     return (
       <div className="flex flex-1 items-center">
-        <section className="rounded-lg border border-dashed border-white/15 bg-[#141417] p-8">
+        <section className="rounded-lg border border-dashed border-white/15 bg-[#181B23] p-8">
           <h1 className="text-2xl font-semibold text-white">Jeu introuvable</h1>
           <p className="mt-2 text-sm text-zinc-500">Ce chapitre n'existe plus dans la bibliotheque.</p>
           <Button className="mt-5" type="button" onClick={onBack}>
@@ -72,7 +72,7 @@ export function GameDetailPage({
         </Button>
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_280px]">
           <div>
-            <p className="text-sm font-medium text-emerald-300">
+            <p className="text-sm font-medium text-[#A797FF]">
               {GAME_STATUS_LABELS[detail.status]}
             </p>
             <h1 className="mt-2 text-4xl font-semibold text-white">{detail.title}</h1>
@@ -80,7 +80,7 @@ export function GameDetailPage({
               {detail.description || 'Aucune note personnelle pour le moment.'}
             </p>
           </div>
-          <div className="grid gap-3 rounded-lg border border-white/10 bg-[#16161a] p-4">
+          <div className="grid gap-3 rounded-lg border border-white/10 bg-[#181B23] p-4">
             <div className="flex items-center justify-between text-sm">
               <span className="text-zinc-500">Temps joue</span>
               <span className="font-medium text-white">{formatHours(detail.totalMinutes)}</span>
@@ -150,7 +150,7 @@ function GameEditPanel({
   }
 
   return (
-    <form className="rounded-lg border border-white/10 bg-[#16161a] p-5" onSubmit={handleSubmit}>
+    <form className="rounded-lg border border-white/10 bg-[#181B23] p-5" onSubmit={handleSubmit}>
       <h2 className="text-lg font-semibold text-white">Informations personnelles</h2>
       <div className="mt-5 grid gap-3">
         <label>
@@ -158,7 +158,7 @@ function GameEditPanel({
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition focus:border-emerald-400"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
           />
         </label>
         <label>
@@ -166,7 +166,7 @@ function GameEditPanel({
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value as GameStatus)}
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition focus:border-emerald-400"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
           >
             {GAME_STATUS_VALUES.map((value) => (
               <option key={value} value={value}>
@@ -181,7 +181,7 @@ function GameEditPanel({
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             rows={4}
-            className="w-full resize-none rounded-lg border border-white/10 bg-[#0f0f12] px-3 py-3 text-sm leading-6 text-white outline-none transition focus:border-emerald-400"
+            className="w-full resize-none rounded-lg border border-white/10 bg-[#0F1117] px-3 py-3 text-sm leading-6 text-white outline-none transition focus:border-[#7C5CFF]"
           />
         </label>
       </div>
@@ -225,7 +225,7 @@ function SessionForm({
   }
 
   return (
-    <form className="rounded-lg border border-white/10 bg-[#16161a] p-5" onSubmit={handleSubmit}>
+    <form className="rounded-lg border border-white/10 bg-[#181B23] p-5" onSubmit={handleSubmit}>
       <h2 className="text-lg font-semibold text-white">Ajouter une session</h2>
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         <label>
@@ -234,7 +234,7 @@ function SessionForm({
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition focus:border-emerald-400"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
           />
         </label>
         <label>
@@ -242,7 +242,7 @@ function SessionForm({
           <input
             value={platformName}
             onChange={(event) => setPlatformName(event.target.value)}
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition focus:border-emerald-400"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
           />
         </label>
         <label>
@@ -252,7 +252,7 @@ function SessionForm({
             min="0"
             value={hours}
             onChange={(event) => setHours(event.target.value)}
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition focus:border-emerald-400"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
           />
         </label>
         <label>
@@ -263,7 +263,7 @@ function SessionForm({
             max="59"
             value={minutes}
             onChange={(event) => setMinutes(event.target.value)}
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition focus:border-emerald-400"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
           />
         </label>
       </div>
@@ -273,7 +273,7 @@ function SessionForm({
           value={note}
           onChange={(event) => setNote(event.target.value)}
           placeholder="Premier passage a Anor Londo..."
-          className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400"
+          className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
         />
       </label>
       <Button className="mt-4" type="submit" disabled={isSaving || Number(hours) * 60 + Number(minutes) <= 0}>
@@ -311,7 +311,7 @@ function ChronicleForm({
   }
 
   return (
-    <form className="rounded-lg border border-white/10 bg-[#16161a] p-5" onSubmit={handleSubmit}>
+    <form className="rounded-lg border border-white/10 bg-[#181B23] p-5" onSubmit={handleSubmit}>
       <h2 className="text-lg font-semibold text-white">Ecrire une chronique</h2>
       <div className="mt-5 grid gap-3">
         <label>
@@ -320,7 +320,7 @@ function ChronicleForm({
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="La victoire finale"
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
           />
         </label>
         <label>
@@ -328,7 +328,7 @@ function ChronicleForm({
           <select
             value={emotion}
             onChange={(event) => setEmotion(event.target.value as Emotion | '')}
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition focus:border-emerald-400"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
           >
             <option value="">Aucune emotion</option>
             {EMOTION_VALUES.map((value) => (
@@ -345,7 +345,7 @@ function ChronicleForm({
             onChange={(event) => setContent(event.target.value)}
             rows={6}
             placeholder="Ce que ce moment a represente..."
-            className="w-full resize-none rounded-lg border border-white/10 bg-[#0f0f12] px-3 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400"
+            className="w-full resize-none rounded-lg border border-white/10 bg-[#0F1117] px-3 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
           />
         </label>
       </div>
@@ -359,7 +359,7 @@ function ChronicleForm({
 
 function Timeline({ detail }: { detail: GameDetail }) {
   return (
-    <section className="rounded-lg border border-white/10 bg-[#16161a] p-5">
+    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
       <h2 className="text-lg font-semibold text-white">Mon histoire</h2>
       <div className="mt-5 space-y-4">
         {detail.chronicles.length === 0 && detail.sessions.length === 0 ? (
@@ -369,14 +369,14 @@ function Timeline({ detail }: { detail: GameDetail }) {
         ) : null}
 
         {detail.chronicles.map((chronicle) => (
-          <article key={chronicle.id} className="rounded-lg border border-white/10 bg-[#101013] p-4">
+          <article key={chronicle.id} className="rounded-lg border border-white/10 bg-[#121620] p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="font-medium text-white">{chronicle.title}</h3>
                 <p className="mt-1 text-xs text-zinc-500">{formatDate(chronicle.date)}</p>
               </div>
               {chronicle.emotion ? (
-                <span className="rounded-lg bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200">
+                <span className="rounded-lg bg-[#7C5CFF]/10 px-3 py-1 text-xs text-[#D8D0FF]">
                   {EMOTION_LABELS[chronicle.emotion]}
                 </span>
               ) : null}
@@ -386,7 +386,7 @@ function Timeline({ detail }: { detail: GameDetail }) {
         ))}
 
         {detail.sessions.map((session) => (
-          <article key={session.id} className="rounded-lg border border-white/10 bg-[#101013] p-4">
+          <article key={session.id} className="rounded-lg border border-white/10 bg-[#121620] p-4">
             <div className="flex items-center gap-3 text-sm text-white">
               <CalendarDays size={17} aria-hidden="true" />
               <span>{formatDate(session.start)}</span>

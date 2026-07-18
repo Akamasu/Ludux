@@ -83,7 +83,7 @@ export function LibraryPage({
     <div className="flex flex-1 flex-col gap-6">
       <header className="flex items-start justify-between gap-6 border-b border-white/10 pb-7">
         <div>
-          <p className="text-sm font-medium text-emerald-300">Bibliotheque</p>
+          <p className="text-sm font-medium text-[#A797FF]">Bibliotheque</p>
           <h1 className="mt-2 text-4xl font-semibold text-white">Vos jeux</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
             Cherchez, filtrez et ajoutez les jeux qui composent votre histoire.
@@ -104,7 +104,7 @@ export function LibraryPage({
       ) : null}
 
       {isAddOpen && games.length > 0 ? (
-        <section className="rounded-lg border border-white/10 bg-[#16161a] p-5">
+        <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
           <div className="mb-5">
             <h2 className="text-lg font-semibold text-white">Nouveau chapitre</h2>
             <p className="mt-1 text-sm text-zinc-500">
@@ -119,7 +119,7 @@ export function LibraryPage({
         <EmptyLibrary onCreateGame={createGame} isSaving={isSaving} />
       ) : (
         <>
-          <section className="grid gap-3 rounded-lg border border-white/10 bg-[#16161a] p-4 xl:grid-cols-[1.2fr_0.8fr_0.8fr_auto]">
+          <section className="grid gap-3 rounded-lg border border-white/10 bg-[#181B23] p-4 xl:grid-cols-[1.2fr_0.8fr_0.8fr_auto]">
             <label className="relative block">
               <span className="sr-only">Rechercher</span>
               <Search
@@ -131,7 +131,7 @@ export function LibraryPage({
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Rechercher un jeu, une plateforme..."
-                className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400"
+                className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
               />
             </label>
 
@@ -140,7 +140,7 @@ export function LibraryPage({
               <select
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-                className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition focus:border-emerald-400"
+                className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
               >
                 <option value="ALL">Tous les statuts</option>
                 {GAME_STATUS_VALUES.map((value) => (
@@ -156,7 +156,7 @@ export function LibraryPage({
               <select
                 value={platformFilter}
                 onChange={(event) => setPlatformFilter(event.target.value)}
-                className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition focus:border-emerald-400"
+                className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
               >
                 <option value="ALL">Toutes les plateformes</option>
                 {platforms.map((platform) => (
@@ -167,7 +167,7 @@ export function LibraryPage({
               </select>
             </label>
 
-            <div className="grid h-11 grid-cols-2 rounded-lg border border-white/10 bg-[#0f0f12] p-1">
+            <div className="grid h-11 grid-cols-2 rounded-lg border border-white/10 bg-[#0F1117] p-1">
               <button
                 type="button"
                 aria-label="Vue grille"
@@ -204,7 +204,7 @@ export function LibraryPage({
           </div>
 
           {filteredGames.length === 0 ? (
-            <section className="rounded-lg border border-dashed border-white/15 bg-[#141417] p-8">
+            <section className="rounded-lg border border-dashed border-white/15 bg-[#181B23] p-8">
               <h2 className="text-lg font-semibold text-white">Aucun jeu ne correspond.</h2>
               <p className="mt-2 text-sm leading-6 text-zinc-500">
                 Ajustez la recherche ou les filtres pour retrouver votre chapitre.

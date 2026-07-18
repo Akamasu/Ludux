@@ -54,7 +54,7 @@ export function AddGameForm({ idPrefix, isSaving, onCreateGame }: AddGameFormPro
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="Monster Hunter World"
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
           />
         </div>
 
@@ -67,7 +67,7 @@ export function AddGameForm({ idPrefix, isSaving, onCreateGame }: AddGameFormPro
             value={platformName}
             onChange={(event) => setPlatformName(event.target.value)}
             placeholder="PC"
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
           />
         </div>
 
@@ -79,7 +79,7 @@ export function AddGameForm({ idPrefix, isSaving, onCreateGame }: AddGameFormPro
             id={`${idPrefix}-status`}
             value={status}
             onChange={(event) => setStatus(event.target.value as CreateGameInput['status'])}
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition focus:border-emerald-400"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
           >
             {GAME_STATUS_VALUES.map((value) => (
               <option key={value} value={value}>
@@ -100,7 +100,7 @@ export function AddGameForm({ idPrefix, isSaving, onCreateGame }: AddGameFormPro
             value={coverUrl}
             onChange={(event) => setCoverUrl(event.target.value)}
             placeholder="https://..."
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
           />
         </div>
 
@@ -113,7 +113,7 @@ export function AddGameForm({ idPrefix, isSaving, onCreateGame }: AddGameFormPro
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             placeholder="Pourquoi ce jeu rejoint votre histoire ?"
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
           />
         </div>
 

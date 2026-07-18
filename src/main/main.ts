@@ -14,7 +14,7 @@ async function createWindow() {
     minHeight: 680,
     show: false,
     title: 'Ludux',
-    backgroundColor: '#0f0f12',
+    backgroundColor: '#0F1117',
     webPreferences: {
       preload: join(__dirname, '../preload/preload.js'),
       contextIsolation: true,

@@ -37,7 +37,7 @@ function ChronicleCover({ chronicle }: { chronicle: ChronicleTimelineItem }) {
   }
 
   return (
-    <div className="grid h-16 w-12 place-items-center rounded-md bg-emerald-400/10 text-emerald-200">
+    <div className="grid h-16 w-12 place-items-center rounded-md bg-[#7C5CFF]/10 text-[#D8D0FF]">
       <BookText size={20} aria-hidden="true" />
     </div>
   )
@@ -95,13 +95,13 @@ export function ChroniclesPage({
     <div className="flex flex-1 flex-col gap-7">
       <header className="flex items-start justify-between gap-6 border-b border-white/10 pb-7">
         <div>
-          <p className="text-sm font-medium text-emerald-300">Chroniques</p>
+          <p className="text-sm font-medium text-[#A797FF]">Chroniques</p>
           <h1 className="mt-2 text-4xl font-semibold text-white">Journal des souvenirs</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
             Retrouvez les moments marquants notes au fil de vos jeux.
           </p>
         </div>
-        <div className="rounded-lg border border-white/10 bg-[#16161a] px-4 py-3 text-right">
+        <div className="rounded-lg border border-white/10 bg-[#181B23] px-4 py-3 text-right">
           <p className="text-xs text-zinc-500">Entrees</p>
           <p className="mt-1 text-sm font-medium text-zinc-100">
             {isLoading ? 'Chargement' : chronicles.length}
@@ -116,7 +116,7 @@ export function ChroniclesPage({
       ) : null}
 
       <section className="grid min-h-[620px] gap-4 xl:grid-cols-[380px_1fr]">
-        <aside className="flex min-h-0 flex-col rounded-lg border border-white/10 bg-[#16161a] p-4">
+        <aside className="flex min-h-0 flex-col rounded-lg border border-white/10 bg-[#181B23] p-4">
           <div className="grid gap-3">
             <label className="relative block">
               <span className="sr-only">Rechercher une chronique</span>
@@ -129,7 +129,7 @@ export function ChroniclesPage({
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Rechercher un souvenir..."
-                className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-emerald-400"
+                className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
               />
             </label>
 
@@ -139,7 +139,7 @@ export function ChroniclesPage({
                 <select
                   value={gameFilter}
                   onChange={(event) => setGameFilter(event.target.value)}
-                  className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition focus:border-emerald-400"
+                  className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
                 >
                   <option value="ALL">Tous les jeux</option>
                   {games.map((game) => (
@@ -156,7 +156,7 @@ export function ChroniclesPage({
                   <select
                     value={emotionFilter}
                     onChange={(event) => setEmotionFilter(event.target.value as EmotionFilter)}
-                    className="h-11 w-full rounded-lg border border-white/10 bg-[#0f0f12] px-3 text-sm text-white outline-none transition focus:border-emerald-400"
+                    className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
                   >
                     <option value="ALL">Toutes les emotions</option>
                     {EMOTION_VALUES.map((emotion) => (
@@ -174,7 +174,7 @@ export function ChroniclesPage({
                   title="Favoris"
                   onClick={() => setShowFavorites((current) => !current)}
                   className={cn(
-                    'grid h-11 w-11 place-items-center rounded-lg border border-white/10 bg-[#0f0f12] text-zinc-500 transition hover:text-white',
+                    'grid h-11 w-11 place-items-center rounded-lg border border-white/10 bg-[#0F1117] text-zinc-500 transition hover:text-white',
                     showFavorites && 'border-amber-300/50 bg-amber-300/10 text-amber-200',
                   )}
                 >
@@ -190,7 +190,7 @@ export function ChroniclesPage({
 
           <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
             {filteredChronicles.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-white/15 bg-[#101013] p-5">
+              <div className="rounded-lg border border-dashed border-white/15 bg-[#121620] p-5">
                 <h2 className="text-sm font-medium text-white">Aucune chronique</h2>
                 <p className="mt-2 text-sm leading-6 text-zinc-500">
                   Ajoutez un souvenir depuis la fiche d'un jeu pour le retrouver ici.
@@ -204,9 +204,9 @@ export function ChroniclesPage({
                     type="button"
                     onClick={() => setSelectedId(chronicle.id)}
                     className={cn(
-                      'flex w-full items-start gap-3 rounded-lg border border-white/10 bg-[#101013] p-3 text-left transition hover:border-white/20',
+                      'flex w-full items-start gap-3 rounded-lg border border-white/10 bg-[#121620] p-3 text-left transition hover:border-[#7C5CFF]/40',
                       selectedChronicle?.id === chronicle.id &&
-                        'border-emerald-300/50 bg-emerald-400/8',
+                        'border-[#A797FF]/50 bg-[#7C5CFF]/10',
                     )}
                   >
                     <ChronicleCover chronicle={chronicle} />
@@ -233,7 +233,7 @@ export function ChroniclesPage({
           </div>
         </aside>
 
-        <article className="rounded-lg border border-white/10 bg-[#16161a] p-6">
+        <article className="rounded-lg border border-white/10 bg-[#181B23] p-6">
           {selectedChronicle ? (
             <div className="flex h-full flex-col">
               <div className="flex items-start justify-between gap-5 border-b border-white/10 pb-6">
@@ -241,7 +241,7 @@ export function ChroniclesPage({
                   <div className="mb-4 flex items-center gap-3">
                     <ChronicleCover chronicle={selectedChronicle} />
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-emerald-300">
+                      <p className="truncate text-sm font-medium text-[#A797FF]">
                         {selectedChronicle.gameTitle}
                       </p>
                       <p className="mt-1 text-xs text-zinc-500">
@@ -255,7 +255,7 @@ export function ChroniclesPage({
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
                     <span>{formatDate(selectedChronicle.date)}</span>
                     {selectedChronicle.emotion ? (
-                      <span className="rounded-lg bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200">
+                      <span className="rounded-lg bg-[#7C5CFF]/10 px-3 py-1 text-xs text-[#D8D0FF]">
                         {EMOTION_LABELS[selectedChronicle.emotion]}
                       </span>
                     ) : null}
@@ -283,9 +283,9 @@ export function ChroniclesPage({
               </div>
             </div>
           ) : (
-            <div className="grid h-full min-h-[420px] place-items-center rounded-lg border border-dashed border-white/15 bg-[#101013] p-8 text-center">
+            <div className="grid h-full min-h-[420px] place-items-center rounded-lg border border-dashed border-white/15 bg-[#121620] p-8 text-center">
               <div>
-                <div className="mx-auto grid h-12 w-12 place-items-center rounded-lg bg-emerald-400/10 text-emerald-200">
+                <div className="mx-auto grid h-12 w-12 place-items-center rounded-lg bg-[#7C5CFF]/10 text-[#D8D0FF]">
                   <BookOpen size={22} aria-hidden="true" />
                 </div>
                 <h2 className="mt-4 text-lg font-semibold text-white">

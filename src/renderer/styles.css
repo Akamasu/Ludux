@@ -2,7 +2,14 @@
 
 :root {
   color: #f4f4f5;
-  background: #0f0f12;
+  background: #0F1117;
+  --ludux-bg: #0F1117;
+  --ludux-card: #181B23;
+  --ludux-card-soft: #121620;
+  --ludux-primary: #7C5CFF;
+  --ludux-electric: #4F7CFF;
+  --ludux-text: #F8FAFC;
+  --ludux-muted: #A6ADBB;
   color-scheme: dark;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
@@ -44,6 +51,6 @@ button:disabled {
 }
 
 ::selection {
-  color: #0f0f12;
-  background: #34d399;
+  color: #0F1117;
+  background: #7C5CFF;
 }

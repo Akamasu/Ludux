@@ -25,10 +25,10 @@ interface StatisticsPageProps {
 }
 
 const barTones = [
-  'bg-emerald-400',
-  'bg-cyan-400',
-  'bg-amber-300',
-  'bg-rose-400',
+  'bg-[#7C5CFF]',
+  'bg-[#4F7CFF]',
+  'bg-[#C9A646]',
+  'bg-[#A33D69]',
 ] as const
 
 function getBarWidth(value: number, max: number) {
@@ -56,13 +56,13 @@ function StatusDistribution({ stats }: { stats: StatusStat[] }) {
   const max = Math.max(...stats.map((stat) => stat.count), 0)
 
   return (
-    <section className="rounded-lg border border-white/10 bg-[#16161a] p-5">
+    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Repartition</h2>
           <p className="mt-1 text-sm text-zinc-500">Par statut de progression</p>
         </div>
-        <BarChart3 className="text-emerald-300" size={20} aria-hidden="true" />
+        <BarChart3 className="text-[#A797FF]" size={20} aria-hidden="true" />
       </div>
 
       <div className="space-y-4">
@@ -94,13 +94,13 @@ function PlatformBreakdown({ stats }: { stats: PlatformStat[] }) {
   const max = Math.max(...visibleStats.map((stat) => stat.games), 0)
 
   return (
-    <section className="rounded-lg border border-white/10 bg-[#16161a] p-5">
+    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Plateformes</h2>
           <p className="mt-1 text-sm text-zinc-500">Jeux possedes et temps rattache</p>
         </div>
-        <Gamepad2 className="text-cyan-300" size={20} aria-hidden="true" />
+        <Gamepad2 className="text-[#8CA7FF]" size={20} aria-hidden="true" />
       </div>
 
       {visibleStats.length === 0 ? (
@@ -133,13 +133,13 @@ function EmotionPulse({ stats }: { stats: EmotionStat[] }) {
   const visibleStats = stats.filter((stat) => stat.count > 0)
 
   return (
-    <section className="rounded-lg border border-white/10 bg-[#16161a] p-5">
+    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Emotions</h2>
           <p className="mt-1 text-sm text-zinc-500">Tonalite des chroniques</p>
         </div>
-        <Activity className="text-rose-300" size={20} aria-hidden="true" />
+        <Activity className="text-[#C46A91]" size={20} aria-hidden="true" />
       </div>
 
       {visibleStats.length === 0 ? (
@@ -151,7 +151,7 @@ function EmotionPulse({ stats }: { stats: EmotionStat[] }) {
           {visibleStats.map((stat) => (
             <span
               key={stat.emotion}
-              className="rounded-lg border border-white/10 bg-[#101013] px-3 py-2 text-sm text-zinc-200"
+              className="rounded-lg border border-white/10 bg-[#121620] px-3 py-2 text-sm text-zinc-200"
             >
               {EMOTION_LABELS[stat.emotion]} · {stat.count}
             </span>
@@ -166,13 +166,13 @@ function MonthlyActivity({ stats }: { stats: MonthlyPlayStat[] }) {
   const max = Math.max(...stats.map((stat) => stat.totalMinutes), 0)
 
   return (
-    <section className="rounded-lg border border-white/10 bg-[#16161a] p-5 xl:col-span-2">
+    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5 xl:col-span-2">
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Activite mensuelle</h2>
           <p className="mt-1 text-sm text-zinc-500">Sessions sur les douze derniers mois joues</p>
         </div>
-        <Clock3 className="text-amber-200" size={20} aria-hidden="true" />
+        <Clock3 className="text-[#DBC46E]" size={20} aria-hidden="true" />
       </div>
 
       {stats.length === 0 ? (
@@ -183,7 +183,7 @@ function MonthlyActivity({ stats }: { stats: MonthlyPlayStat[] }) {
         <div className="flex h-48 items-end gap-3">
           {stats.map((stat, index) => (
             <div key={stat.month} className="flex min-w-0 flex-1 flex-col items-center gap-2">
-              <div className="flex h-32 w-full items-end rounded-lg bg-[#101013] px-2 pb-2">
+              <div className="flex h-32 w-full items-end rounded-lg bg-[#121620] px-2 pb-2">
                 <div
                   className={`w-full rounded-md ${barTones[index % barTones.length]}`}
                   style={{
@@ -216,14 +216,14 @@ export function StatisticsPage({ error, isLoading, statistics }: StatisticsPageP
     <div className="flex flex-1 flex-col gap-7">
       <header className="flex items-start justify-between gap-6 border-b border-white/10 pb-7">
         <div>
-          <p className="text-sm font-medium text-emerald-300">Statistiques</p>
+          <p className="text-sm font-medium text-[#A797FF]">Statistiques</p>
           <h1 className="mt-2 text-4xl font-semibold text-white">Tableau de bord</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
             Une lecture claire de votre bibliotheque, de votre temps de jeu et des
             souvenirs consignes.
           </p>
         </div>
-        <div className="rounded-lg border border-white/10 bg-[#16161a] px-4 py-3 text-right">
+        <div className="rounded-lg border border-white/10 bg-[#181B23] px-4 py-3 text-right">
           <p className="text-xs text-zinc-500">Completion</p>
           <p className="mt-1 text-sm font-medium text-zinc-100">
             {isLoading ? 'Chargement' : `${statistics.completionRate} %`}
@@ -242,46 +242,46 @@ export function StatisticsPage({ error, isLoading, statistics }: StatisticsPageP
           label="Jeux"
           value={String(statistics.gamesOwned)}
           icon={Gamepad2}
-          tone="emerald"
+          tone="violet"
         />
         <StatTile
           label="Temps joue"
           value={formatHours(statistics.totalMinutes)}
           icon={Clock3}
-          tone="cyan"
+          tone="blue"
         />
         <StatTile
           label="Termines"
           value={String(statistics.gamesCompleted)}
           icon={Trophy}
-          tone="amber"
+          tone="gold"
         />
         <StatTile
           label="Sessions"
           value={String(statistics.totalSessions)}
           icon={Activity}
-          tone="rose"
+          tone="magenta"
         />
         <StatTile
           label="Chroniques"
           value={String(statistics.totalChronicles)}
           icon={BookText}
-          tone="emerald"
+          tone="violet"
         />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <StatusDistribution stats={statistics.statusStats} />
-        <div className="rounded-lg border border-white/10 bg-[#16161a] p-5">
+        <div className="rounded-lg border border-white/10 bg-[#181B23] p-5">
           <h2 className="text-lg font-semibold text-white">Rythme personnel</h2>
           <dl className="mt-5 grid gap-4">
-            <div className="rounded-lg border border-white/10 bg-[#101013] p-4">
+            <div className="rounded-lg border border-white/10 bg-[#121620] p-4">
               <dt className="text-sm text-zinc-500">Temps moyen par jeu</dt>
               <dd className="mt-2 text-2xl font-semibold text-white">
                 {formatHours(averageMinutes)}
               </dd>
             </div>
-            <div className="rounded-lg border border-white/10 bg-[#101013] p-4">
+            <div className="rounded-lg border border-white/10 bg-[#121620] p-4">
               <dt className="text-sm text-zinc-500">Jeux termines</dt>
               <dd className="mt-2 text-2xl font-semibold text-white">
                 {statistics.gamesCompleted} / {statistics.gamesOwned}

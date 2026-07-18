@@ -11,17 +11,17 @@ export function GameCard({ game, onOpen }: GameCardProps) {
   const initial = game.title.trim().charAt(0).toUpperCase()
 
   return (
-    <article className="overflow-hidden rounded-lg border border-white/10 bg-[#16161a]">
+    <article className="overflow-hidden rounded-lg border border-white/10 bg-[#181B23]">
       <button
         type="button"
         onClick={() => onOpen?.(game.id)}
         className="block w-full text-left"
       >
-      <div className="relative aspect-[4/3] bg-[#101013]">
+      <div className="relative aspect-[4/3] bg-[#121620]">
         {game.coverUrl ? (
           <img className="h-full w-full object-cover" src={game.coverUrl} alt="" />
         ) : (
-          <div className="grid h-full place-items-center bg-[radial-gradient(circle_at_top_left,#22d3ee33,transparent_42%),linear-gradient(135deg,#18181b,#0f0f12)]">
+          <div className="grid h-full place-items-center bg-[radial-gradient(circle_at_top_left,#4F7CFF33,transparent_42%),linear-gradient(135deg,#181B23,#0F1117)]">
             <span className="text-5xl font-semibold text-zinc-600">{initial}</span>
           </div>
         )}
