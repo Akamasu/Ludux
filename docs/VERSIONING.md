@@ -14,15 +14,17 @@ Ludux conserve son historique avec Git.
 ```bash
 git log --oneline --decorate
 git tag
+git checkout v0.1.0
 git checkout v0.2.0
 ```
 
 ## Premier jalon
 
-Le tag `v0.2.0` correspond au premier socle Ludux utilisable avec une bibliotheque locale.
+Le tag `v0.1.0` correspond au bootstrap initial de Ludux : socle Electron/React, base locale et premiere interface.
 
 ## Jalons actuels
 
+- `v0.1.0` : fondation technique initiale.
 - `v0.2.0` : socle Electron/React, base locale et bibliotheque.
 - `v0.3.0` : fiches de jeux, sessions et chroniques.
 - `v0.4.0` : tableau de bord statistique.

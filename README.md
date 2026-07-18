@@ -199,6 +199,7 @@ Le projet utilise des tags Git pour marquer les jalons utilisables.
 
 Tags principaux :
 
+- `v0.1.0` : fondation technique initiale.
 - `v0.2.0` : socle Electron/React, base locale et bibliothèque.
 - `v0.3.0` : fiches de jeux, sessions et chroniques.
 - `v0.4.0` : tableau de bord statistique.

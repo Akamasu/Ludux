@@ -16,6 +16,14 @@ Le projet suit des versions de developpement simples :
 - `v0.10.x` : notes et evaluations detaillees.
 - `v0.11.x` : archivage, restauration et suppression de jeux.
 
+## v0.1.0 - 2026-07-16
+
+- Initialisation du depot Ludux.
+- Ajout du socle Electron, React, TypeScript et Vite.
+- Ajout du schema SQLite/Prisma initial et du client de base locale.
+- Ajout des premiers contrats IPC securises entre main process et renderer.
+- Ajout de la premiere interface avec accueil, bibliotheque et navigation.
+
 ## v0.2.0 - 2026-07-16
 
 - Initialisation de l'application Electron, React, TypeScript et Vite.
