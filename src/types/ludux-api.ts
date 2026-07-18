@@ -1,15 +1,18 @@
 import type {
   ChronicleTimelineItem,
+  CreateAchievementInput,
   CreateChronicleInput,
   CreateDlcInput,
   CreateGameInput,
   CreatePlaySessionInput,
+  DeleteAchievementInput,
   DeleteDlcInput,
   GameDetail,
   GameListItem,
   LibraryOverview,
   LibraryStatistics,
   LifeBookEvent,
+  UpdateAchievementInput,
   UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
@@ -36,6 +39,9 @@ export interface LuduxApi {
     createDlc: (input: CreateDlcInput) => Promise<GameDetail>
     updateDlc: (input: UpdateDlcInput) => Promise<GameDetail>
     deleteDlc: (input: DeleteDlcInput) => Promise<GameDetail>
+    createAchievement: (input: CreateAchievementInput) => Promise<GameDetail>
+    updateAchievement: (input: UpdateAchievementInput) => Promise<GameDetail>
+    deleteAchievement: (input: DeleteAchievementInput) => Promise<GameDetail>
     createChronicle: (input: CreateChronicleInput) => Promise<GameDetail>
     createPlaySession: (input: CreatePlaySessionInput) => Promise<GameDetail>
   }

@@ -1,14 +1,17 @@
 import { prisma } from '../database/client'
 import type {
+  CreateAchievementInput,
   CreateChronicleInput,
   CreateDlcInput,
   CreateGameInput,
   CreatePlaySessionInput,
+  DeleteAchievementInput,
   DeleteDlcInput,
   Emotion,
   GameDetail,
   GameListItem,
   GameStatus,
+  UpdateAchievementInput,
   UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
@@ -55,6 +58,11 @@ async function fetchGameDetail(id: string) {
         },
       },
       dlcs: {
+        orderBy: {
+          name: 'asc',
+        },
+      },
+      achievements: {
         orderBy: {
           name: 'asc',
         },
@@ -123,6 +131,15 @@ function toGameDetail(game: GameDetailWithRelations): GameDetail {
       releaseDate: dlc.releaseDate?.toISOString() ?? null,
       owned: dlc.owned,
       completed: dlc.completed,
+    })),
+    achievements: game.achievements.map((achievement) => ({
+      id: achievement.id,
+      name: achievement.name,
+      description: achievement.description,
+      iconUrl: achievement.iconUrl,
+      unlocked: achievement.unlocked,
+      unlockDate: achievement.unlockDate?.toISOString() ?? null,
+      provider: achievement.provider,
     })),
     chronicles: game.chronicles.map((chronicle) => ({
       id: chronicle.id,
@@ -354,6 +371,84 @@ class GameService {
 
     if (result.count === 0) {
       throw new Error('DLC introuvable.')
+    }
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async createAchievement(input: CreateAchievementInput): Promise<GameDetail> {
+    const name = input.name.trim()
+
+    if (name.length === 0) {
+      throw new Error('Le nom du succes est obligatoire.')
+    }
+
+    const unlocked = input.unlocked ?? false
+
+    await prisma.achievement.create({
+      data: {
+        gameId: input.gameId,
+        name,
+        description: trimNullable(input.description),
+        iconUrl: trimNullable(input.iconUrl),
+        provider: trimNullable(input.provider),
+        unlocked,
+        unlockDate: unlocked ? parseNullableDate(input.unlockDate) ?? new Date() : null,
+      },
+    })
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async updateAchievement(input: UpdateAchievementInput): Promise<GameDetail> {
+    const data: {
+      name?: string
+      description?: string | null
+      iconUrl?: string | null
+      provider?: string | null
+      unlocked?: boolean
+      unlockDate?: Date | null
+    } = {
+      name: trimOptional(input.name),
+      description: trimNullable(input.description),
+      iconUrl: trimNullable(input.iconUrl),
+      provider: trimNullable(input.provider),
+    }
+
+    if (input.unlocked !== undefined) {
+      data.unlocked = input.unlocked
+      data.unlockDate = input.unlocked
+        ? parseNullableDate(input.unlockDate) ?? new Date()
+        : null
+    } else if (input.unlockDate !== undefined) {
+      data.unlockDate = parseNullableDate(input.unlockDate)
+    }
+
+    const result = await prisma.achievement.updateMany({
+      where: {
+        id: input.id,
+        gameId: input.gameId,
+      },
+      data,
+    })
+
+    if (result.count === 0) {
+      throw new Error('Succes introuvable.')
+    }
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async deleteAchievement(input: DeleteAchievementInput): Promise<GameDetail> {
+    const result = await prisma.achievement.deleteMany({
+      where: {
+        id: input.id,
+        gameId: input.gameId,
+      },
+    })
+
+    if (result.count === 0) {
+      throw new Error('Succes introuvable.')
     }
 
     return toGameDetail(await requireGameDetail(input.gameId))

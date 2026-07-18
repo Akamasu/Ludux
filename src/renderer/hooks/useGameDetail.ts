@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import type {
+  CreateAchievementInput,
   CreateChronicleInput,
   CreateDlcInput,
   CreatePlaySessionInput,
+  DeleteAchievementInput,
   DeleteDlcInput,
   GameDetail,
   GameListItem,
+  UpdateAchievementInput,
   UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
@@ -21,6 +24,7 @@ function detailFromListItem(game: GameListItem): GameDetail {
     website: null,
     review: null,
     dlcs: [],
+    achievements: [],
     chronicles: [],
     sessions: [],
   }
@@ -283,6 +287,129 @@ export function useGameDetail(
     }
   }, [])
 
+  const createAchievement = useCallback(async (input: CreateAchievementInput) => {
+    const api = window.ludux
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      if (!api) {
+        const unlocked = input.unlocked ?? false
+
+        setDetail((current) =>
+          current
+            ? {
+                ...current,
+                achievements: [
+                  ...current.achievements,
+                  {
+                    id: crypto.randomUUID(),
+                    name: input.name,
+                    description: input.description ?? null,
+                    iconUrl: input.iconUrl ?? null,
+                    provider: input.provider ?? null,
+                    unlocked,
+                    unlockDate: unlocked
+                      ? input.unlockDate ?? new Date().toISOString()
+                      : null,
+                  },
+                ],
+              }
+            : current,
+        )
+        return
+      }
+
+      setDetail(await api.games.createAchievement(input))
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [])
+
+  const updateAchievement = useCallback(async (input: UpdateAchievementInput) => {
+    const api = window.ludux
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      if (!api) {
+        setDetail((current) =>
+          current
+            ? {
+                ...current,
+                achievements: current.achievements.map((achievement) => {
+                  if (achievement.id !== input.id) {
+                    return achievement
+                  }
+
+                  const unlocked = input.unlocked ?? achievement.unlocked
+                  const unlockDate =
+                    input.unlocked === false
+                      ? null
+                      : input.unlockDate === undefined
+                        ? achievement.unlockDate
+                        : input.unlockDate
+
+                  return {
+                    ...achievement,
+                    name: input.name ?? achievement.name,
+                    description:
+                      input.description === undefined
+                        ? achievement.description
+                        : input.description,
+                    iconUrl:
+                      input.iconUrl === undefined ? achievement.iconUrl : input.iconUrl,
+                    provider:
+                      input.provider === undefined ? achievement.provider : input.provider,
+                    unlocked,
+                    unlockDate:
+                      unlocked && !unlockDate ? new Date().toISOString() : unlockDate,
+                  }
+                }),
+              }
+            : current,
+        )
+        return
+      }
+
+      setDetail(await api.games.updateAchievement(input))
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [])
+
+  const deleteAchievement = useCallback(async (input: DeleteAchievementInput) => {
+    const api = window.ludux
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      if (!api) {
+        setDetail((current) =>
+          current
+            ? {
+                ...current,
+                achievements: current.achievements.filter(
+                  (achievement) => achievement.id !== input.id,
+                ),
+              }
+            : current,
+        )
+        return
+      }
+
+      setDetail(await api.games.deleteAchievement(input))
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [])
+
   const createPlaySession = useCallback(
     async (input: CreatePlaySessionInput) => {
       const api = window.ludux
@@ -339,6 +466,9 @@ export function useGameDetail(
     createDlc,
     updateDlc,
     deleteDlc,
+    createAchievement,
+    updateAchievement,
+    deleteAchievement,
     createChronicle,
     createPlaySession,
   }

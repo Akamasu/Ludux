@@ -139,7 +139,6 @@ Avant les fonctionnalités plus ambitieuses, Ludux doit permettre de :
 
 Les prochaines étapes les plus cohérentes avec le document de conception sont :
 
-- Succès : ajouter une première gestion locale manuelle.
 - Captures : rattacher des images aux jeux et chroniques.
 - Providers : préparer une interface de fournisseur externe sans intégration
   réseau obligatoire au départ.

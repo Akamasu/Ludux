@@ -1,16 +1,19 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
   ChronicleTimelineItem,
+  CreateAchievementInput,
   CreateChronicleInput,
   CreateDlcInput,
   CreateGameInput,
   CreatePlaySessionInput,
+  DeleteAchievementInput,
   DeleteDlcInput,
   GameDetail,
   GameListItem,
   LibraryOverview,
   LibraryStatistics,
   LifeBookEvent,
+  UpdateAchievementInput,
   UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
@@ -50,6 +53,12 @@ const api: LuduxApi = {
       ipcRenderer.invoke('games:updateDlc', input) as Promise<GameDetail>,
     deleteDlc: (input: DeleteDlcInput) =>
       ipcRenderer.invoke('games:deleteDlc', input) as Promise<GameDetail>,
+    createAchievement: (input: CreateAchievementInput) =>
+      ipcRenderer.invoke('games:createAchievement', input) as Promise<GameDetail>,
+    updateAchievement: (input: UpdateAchievementInput) =>
+      ipcRenderer.invoke('games:updateAchievement', input) as Promise<GameDetail>,
+    deleteAchievement: (input: DeleteAchievementInput) =>
+      ipcRenderer.invoke('games:deleteAchievement', input) as Promise<GameDetail>,
     createChronicle: (input: CreateChronicleInput) =>
       ipcRenderer.invoke('games:createChronicle', input) as Promise<GameDetail>,
     createPlaySession: (input: CreatePlaySessionInput) =>

@@ -85,6 +85,16 @@ export interface DlcListItem {
   completed: boolean
 }
 
+export interface AchievementListItem {
+  id: string
+  name: string
+  description: string | null
+  iconUrl: string | null
+  unlocked: boolean
+  unlockDate: string | null
+  provider: string | null
+}
+
 export interface GameReview {
   id: string
   rating: number
@@ -122,6 +132,7 @@ export interface GameDetail extends GameListItem {
   website: string | null
   review: GameReview | null
   dlcs: DlcListItem[]
+  achievements: AchievementListItem[]
   chronicles: ChronicleListItem[]
   sessions: PlaySessionListItem[]
 }
@@ -226,6 +237,32 @@ export interface UpdateDlcInput {
 }
 
 export interface DeleteDlcInput {
+  gameId: string
+  id: string
+}
+
+export interface CreateAchievementInput {
+  gameId: string
+  name: string
+  description?: string
+  iconUrl?: string
+  provider?: string
+  unlocked?: boolean
+  unlockDate?: string
+}
+
+export interface UpdateAchievementInput {
+  gameId: string
+  id: string
+  name?: string
+  description?: string | null
+  iconUrl?: string | null
+  provider?: string | null
+  unlocked?: boolean
+  unlockDate?: string | null
+}
+
+export interface DeleteAchievementInput {
   gameId: string
   id: string
 }

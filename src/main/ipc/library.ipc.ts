@@ -4,13 +4,16 @@ import { libraryService } from '../../services/library.service'
 import {
   EMOTION_VALUES,
   GAME_STATUS_VALUES,
+  type CreateAchievementInput,
   type CreateChronicleInput,
   type CreateDlcInput,
   type CreateGameInput,
   type CreatePlaySessionInput,
+  type DeleteAchievementInput,
   type DeleteDlcInput,
   type Emotion,
   type GameStatus,
+  type UpdateAchievementInput,
   type UpdateDlcInput,
   type UpdateGameInput,
   type UpdateReviewInput,
@@ -187,6 +190,50 @@ function parseDeleteDlcInput(value: unknown): DeleteDlcInput {
   }
 }
 
+function parseCreateAchievementInput(value: unknown): CreateAchievementInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees du succes sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    name: readRequiredString(value['name'], 'Le nom du succes est obligatoire.'),
+    description: readOptionalString(value['description']),
+    iconUrl: readOptionalString(value['iconUrl']),
+    provider: readOptionalString(value['provider']),
+    unlocked: readOptionalBoolean(value['unlocked'], 'Etat de deblocage invalide.'),
+    unlockDate: readOptionalString(value['unlockDate']),
+  }
+}
+
+function parseUpdateAchievementInput(value: unknown): UpdateAchievementInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees du succes sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de succes invalide.'),
+    name: readOptionalString(value['name']),
+    description: readNullableString(value['description'], 'Description invalide.'),
+    iconUrl: readNullableString(value['iconUrl'], 'Icone invalide.'),
+    provider: readNullableString(value['provider'], 'Fournisseur invalide.'),
+    unlocked: readOptionalBoolean(value['unlocked'], 'Etat de deblocage invalide.'),
+    unlockDate: readNullableString(value['unlockDate'], 'Date de deblocage invalide.'),
+  }
+}
+
+function parseDeleteAchievementInput(value: unknown): DeleteAchievementInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees du succes sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de succes invalide.'),
+  }
+}
+
 function parseUpdateReviewInput(value: unknown): UpdateReviewInput {
   if (!isRecord(value) || typeof value['rating'] !== 'number') {
     throw new Error('Les donnees de l evaluation sont invalides.')
@@ -350,6 +397,33 @@ export function registerLibraryHandlers() {
   ipcMain.handle('games:deleteDlc', async (_event, input: unknown) => {
     try {
       return await gameService.deleteDlc(parseDeleteDlcInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:createAchievement', async (_event, input: unknown) => {
+    try {
+      return await gameService.createAchievement(parseCreateAchievementInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:updateAchievement', async (_event, input: unknown) => {
+    try {
+      return await gameService.updateAchievement(parseUpdateAchievementInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:deleteAchievement', async (_event, input: unknown) => {
+    try {
+      return await gameService.deleteAchievement(parseDeleteAchievementInput(input))
     } catch (error) {
       logger.error('[LibraryIPC]', error)
       throw error

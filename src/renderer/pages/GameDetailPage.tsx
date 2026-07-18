@@ -10,6 +10,7 @@ import {
   Save,
   Star,
   Trash2,
+  Trophy,
 } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import {
@@ -17,14 +18,18 @@ import {
   EMOTION_VALUES,
   GAME_STATUS_LABELS,
   GAME_STATUS_VALUES,
+  type AchievementListItem,
+  type CreateAchievementInput,
   type CreateChronicleInput,
   type CreateDlcInput,
   type CreatePlaySessionInput,
+  type DeleteAchievementInput,
   type DeleteDlcInput,
   type DlcListItem,
   type Emotion,
   type GameDetail,
   type GameStatus,
+  type UpdateAchievementInput,
   type UpdateDlcInput,
   type UpdateGameInput,
   type UpdateReviewInput,
@@ -39,10 +44,13 @@ interface GameDetailPageProps {
   isSaving: boolean
   onBack: () => void
   onArchiveGame: (gameId: string) => Promise<void>
+  onCreateAchievement: (input: CreateAchievementInput) => Promise<void>
   onCreateChronicle: (input: CreateChronicleInput) => Promise<void>
   onCreateDlc: (input: CreateDlcInput) => Promise<void>
   onCreatePlaySession: (input: CreatePlaySessionInput) => Promise<void>
+  onDeleteAchievement: (input: DeleteAchievementInput) => Promise<void>
   onDeleteDlc: (input: DeleteDlcInput) => Promise<void>
+  onUpdateAchievement: (input: UpdateAchievementInput) => Promise<void>
   onUpdateDlc: (input: UpdateDlcInput) => Promise<void>
   onUpdateGame: (input: UpdateGameInput) => Promise<void>
   onUpdateReview: (input: UpdateReviewInput) => Promise<void>
@@ -59,10 +67,13 @@ export function GameDetailPage({
   isSaving,
   onBack,
   onArchiveGame,
+  onCreateAchievement,
   onCreateChronicle,
   onCreateDlc,
   onCreatePlaySession,
+  onDeleteAchievement,
   onDeleteDlc,
+  onUpdateAchievement,
   onUpdateDlc,
   onUpdateGame,
   onUpdateReview,
@@ -148,6 +159,10 @@ export function GameDetailPage({
               <span className="font-medium text-white">{detail.dlcs.length}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
+              <span className="text-zinc-500">Succes</span>
+              <span className="font-medium text-white">{detail.achievements.length}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
               <span className="text-zinc-500">Note</span>
               <span className="font-medium text-white">
                 {detail.review ? `${detail.review.rating}/10` : 'Non note'}
@@ -180,6 +195,14 @@ export function GameDetailPage({
         onCreateDlc={onCreateDlc}
         onDeleteDlc={onDeleteDlc}
         onUpdateDlc={onUpdateDlc}
+      />
+
+      <AchievementPanel
+        detail={detail}
+        isSaving={isSaving}
+        onCreateAchievement={onCreateAchievement}
+        onDeleteAchievement={onDeleteAchievement}
+        onUpdateAchievement={onUpdateAchievement}
       />
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
@@ -615,6 +638,240 @@ function DlcPanel({
                   aria-label={`Supprimer ${dlc.name}`}
                   title="Supprimer"
                   onClick={() => handleDeleteDlc(dlc)}
+                  disabled={isSaving}
+                  className="h-10 border-rose-400/30 bg-rose-400/10 text-rose-100 hover:border-rose-300/60 hover:bg-rose-400/15"
+                >
+                  <Trash2 size={16} aria-hidden="true" />
+                </Button>
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
+  )
+}
+
+function AchievementPanel({
+  detail,
+  isSaving,
+  onCreateAchievement,
+  onDeleteAchievement,
+  onUpdateAchievement,
+}: DetailChildProps & {
+  onCreateAchievement: (input: CreateAchievementInput) => Promise<void>
+  onDeleteAchievement: (input: DeleteAchievementInput) => Promise<void>
+  onUpdateAchievement: (input: UpdateAchievementInput) => Promise<void>
+}) {
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [provider, setProvider] = useState('')
+  const [unlocked, setUnlocked] = useState(false)
+  const [unlockDate, setUnlockDate] = useState(todayInputValue())
+  const unlockedCount = detail.achievements.filter((achievement) => achievement.unlocked).length
+  const lockedCount = detail.achievements.length - unlockedCount
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    await onCreateAchievement({
+      gameId: detail.id,
+      name,
+      description,
+      provider,
+      unlocked,
+      unlockDate: unlocked ? unlockDate || undefined : undefined,
+    })
+
+    setName('')
+    setDescription('')
+    setProvider('')
+    setUnlocked(false)
+    setUnlockDate(todayInputValue())
+  }
+
+  async function handleToggleAchievement(
+    achievement: AchievementListItem,
+    nextUnlocked: boolean,
+  ) {
+    await onUpdateAchievement({
+      gameId: detail.id,
+      id: achievement.id,
+      unlocked: nextUnlocked,
+      unlockDate: nextUnlocked
+        ? achievement.unlockDate ?? new Date().toISOString()
+        : null,
+    })
+  }
+
+  async function handleDeleteAchievement(achievement: AchievementListItem) {
+    const confirmed = window.confirm(`Supprimer le succes "${achievement.name}" ?`)
+
+    if (confirmed) {
+      await onDeleteAchievement({
+        gameId: detail.id,
+        id: achievement.id,
+      })
+    }
+  }
+
+  return (
+    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Succes</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Objectifs, trophees et accomplissements a suivre manuellement.
+          </p>
+        </div>
+        <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#4F7CFF]/10 text-[#C9D6FF]">
+          <Trophy size={18} aria-hidden="true" />
+        </div>
+      </div>
+
+      <div className="mb-5 grid gap-3 md:grid-cols-3">
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Succes</p>
+          <p className="mt-1 text-xl font-semibold text-white">{detail.achievements.length}</p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Debloques</p>
+          <p className="mt-1 text-xl font-semibold text-white">{unlockedCount}</p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Restants</p>
+          <p className="mt-1 text-xl font-semibold text-white">{lockedCount}</p>
+        </div>
+      </div>
+
+      <form className="grid gap-3" onSubmit={handleSubmit}>
+        <div className="grid gap-3 xl:grid-cols-[1fr_180px_180px]">
+          <label>
+            <span className="sr-only">Nom du succes</span>
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Nom du succes"
+              className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+            />
+          </label>
+          <label>
+            <span className="sr-only">Fournisseur du succes</span>
+            <input
+              value={provider}
+              onChange={(event) => setProvider(event.target.value)}
+              placeholder="Steam, Xbox..."
+              className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+            />
+          </label>
+          <label>
+            <span className="sr-only">Date de deblocage</span>
+            <input
+              type="date"
+              value={unlockDate}
+              onChange={(event) => setUnlockDate(event.target.value)}
+              disabled={!unlocked}
+              className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition disabled:text-zinc-600 focus:border-[#7C5CFF]"
+            />
+          </label>
+        </div>
+
+        <div className="grid gap-3 xl:grid-cols-[1fr_auto]">
+          <label>
+            <span className="sr-only">Description du succes</span>
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              rows={3}
+              placeholder="Condition, souvenir ou note associee..."
+              className="w-full resize-none rounded-lg border border-white/10 bg-[#0F1117] px-3 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+            />
+          </label>
+          <div className="flex flex-wrap items-center gap-3 xl:items-start">
+            <label className="flex h-11 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={unlocked}
+                onChange={(event) => {
+                  setUnlocked(event.target.checked)
+
+                  if (event.target.checked && unlockDate.length === 0) {
+                    setUnlockDate(todayInputValue())
+                  }
+                }}
+                className="accent-[#7C5CFF]"
+              />
+              Debloque
+            </label>
+            <Button type="submit" disabled={isSaving || name.trim().length === 0}>
+              <Trophy size={17} aria-hidden="true" />
+              Ajouter
+            </Button>
+          </div>
+        </div>
+      </form>
+
+      <div className="mt-5 space-y-3">
+        {detail.achievements.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
+            Aucun succes renseigne pour ce jeu.
+          </p>
+        ) : (
+          detail.achievements.map((achievement) => (
+            <article
+              key={achievement.id}
+              className="grid gap-4 rounded-lg border border-white/10 bg-[#121620] p-4 xl:grid-cols-[1fr_auto]"
+            >
+              <div className="min-w-0">
+                <h3 className="truncate font-medium text-white">{achievement.name}</h3>
+                {achievement.description ? (
+                  <p className="mt-2 text-sm leading-6 text-zinc-400">
+                    {achievement.description}
+                  </p>
+                ) : null}
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                  {achievement.provider ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/7 px-2.5 py-1 text-zinc-300">
+                      {achievement.provider}
+                    </span>
+                  ) : null}
+                  {achievement.unlocked ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#7C5CFF]/10 px-2.5 py-1 text-[#D8D0FF]">
+                      <CheckCircle2 size={14} aria-hidden="true" />
+                      Debloque
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/7 px-2.5 py-1 text-zinc-400">
+                      Verrouille
+                    </span>
+                  )}
+                  {achievement.unlockDate ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#4F7CFF]/10 px-2.5 py-1 text-[#C9D6FF]">
+                      <CalendarDays size={14} aria-hidden="true" />
+                      {formatDate(achievement.unlockDate)}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={achievement.unlocked}
+                    onChange={(event) =>
+                      handleToggleAchievement(achievement, event.target.checked)
+                    }
+                    disabled={isSaving}
+                    className="accent-[#7C5CFF]"
+                  />
+                  Debloque
+                </label>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  aria-label={`Supprimer ${achievement.name}`}
+                  title="Supprimer"
+                  onClick={() => handleDeleteAchievement(achievement)}
                   disabled={isSaving}
                   className="h-10 border-rose-400/30 bg-rose-400/10 text-rose-100 hover:border-rose-300/60 hover:bg-rose-400/15"
                 >

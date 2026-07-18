@@ -16,6 +16,7 @@ Le projet suit des versions de developpement simples :
 - `v0.10.x` : notes et evaluations detaillees.
 - `v0.11.x` : archivage, restauration et suppression de jeux.
 - `v0.12.x` : gestion locale des DLC.
+- `v0.13.x` : gestion locale des succes.
 
 ## v0.1.0 - 2026-07-16
 
@@ -113,4 +114,13 @@ Le projet suit des versions de developpement simples :
 - Ajout des compteurs de DLC, DLC possedes et DLC termines.
 - Ajout des actions rapides pour marquer un DLC possede ou termine.
 - Ajout de la suppression d'un DLC avec confirmation.
+- Exposition des actions via le service game, l'IPC Electron et le preload securise.
+
+## v0.13.0 - 2026-07-18
+
+- Ajout d'une gestion locale manuelle des succes depuis les fiches de jeux.
+- Ajout de la creation d'un succes avec nom, description, fournisseur et etat debloque.
+- Ajout des compteurs de succes, succes debloques et succes restants.
+- Ajout des actions rapides pour marquer un succes debloque ou verrouille.
+- Ajout de la suppression d'un succes avec confirmation.
 - Exposition des actions via le service game, l'IPC Electron et le preload securise.
