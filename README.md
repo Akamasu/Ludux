@@ -191,7 +191,8 @@ Tags principaux :
 - `v0.6.0` : identité visuelle, palette et logo.
 - `v0.7.0` : musée des jeux terminés.
 
-Plus de détails dans `docs/VERSIONING.md` et `CHANGELOG.md`.
+Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
+`docs/PRODUCT_VISION.md`.
 
 ## Feuille de Route
 
@@ -203,6 +204,8 @@ Prochaines pistes naturelles :
 - Gestion des captures d'écran et souvenirs visuels.
 - Import/export de données.
 - Intégrations optionnelles avec des plateformes de jeu.
+
+La vision produit détaillée est synthétisée dans `docs/PRODUCT_VISION.md`.
 
 ## Licence
 
