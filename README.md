@@ -5,37 +5,48 @@
 </p>
 
 <p align="center">
-  <strong>Toute votre vie de joueur, au meme endroit.</strong>
+  <strong>Toute votre vie de joueur, au même endroit.</strong>
 </p>
 
 Ludux est une application desktop local-first pour conserver, organiser et relire
-la memoire d'une vie de joueur : bibliotheque, sessions, chroniques,
+la mémoire d'une vie de joueur : bibliothèque, sessions, chroniques,
 statistiques et jeux accomplis.
 
 Le projet est construit comme une application personnelle, locale et durable :
-les donnees utilisateur restent sur la machine, dans une base SQLite ignoree par
+les données utilisateur restent sur la machine, dans une base SQLite ignorée par
 Git.
 
-## Etat du projet
+## Origine
+
+Le nom Ludux vient de deux idées :
+
+- `Ludus`, le jeu ;
+- `Index`, le catalogue, le classement, la trace.
+
+L'objectif est de créer une mémoire vidéoludique personnelle : un endroit unique
+pour retrouver les jeux possédés, les aventures terminées, les heures jouées et
+les souvenirs qui donnent du sens au parcours.
+
+## État du projet
 
 Version courante : `v0.7.0`
 
-Ludux est en developpement actif. Les fondations techniques et plusieurs ecrans
-utilisables sont deja en place :
+Ludux est en développement actif. Les fondations techniques et plusieurs écrans
+utilisables sont déjà en place :
 
-- Accueil avec resume de la bibliotheque.
-- Bibliotheque avec ajout de jeux, recherche, filtres et vues grille/liste.
-- Fiche detail d'un jeu avec statut, note personnelle, sessions et chroniques.
+- Accueil avec résumé de la bibliothèque.
+- Bibliothèque avec ajout de jeux, recherche, filtres et vues grille/liste.
+- Fiche détail d'un jeu avec statut, note personnelle, sessions et chroniques.
 - Journal des chroniques avec recherche et filtres.
-- Musee des jeux termines et termines a 100 %.
+- Musée des jeux terminés et terminés à 100 %.
 - Tableau de bord statistique.
 - Stockage local SQLite via Prisma.
-- IPC Electron securise entre le renderer et le main process.
-- Identite visuelle Ludux avec palette sombre, violet et bleu electrique.
+- IPC Electron sécurisé entre le renderer et le main process.
+- Identité visuelle Ludux avec palette sombre, violet et bleu électrique.
 
-## Apercu fonctionnel
+## Aperçu Fonctionnel
 
-### Bibliotheque
+### Bibliothèque
 
 Ajoutez les jeux qui composent votre parcours, filtrez-les par statut ou
 plateforme, puis ouvrez chaque fiche pour enrichir son histoire.
@@ -46,32 +57,32 @@ Chaque jeu peut recevoir :
 
 - un statut de progression ;
 - une note personnelle ;
-- des sessions de jeu avec duree, plateforme et commentaire ;
-- des chroniques avec emotion associee.
+- des sessions de jeu avec durée, plateforme et commentaire ;
+- des chroniques avec émotion associée.
 
 ### Chroniques
 
-Le journal transversal regroupe les souvenirs ecrits depuis les fiches de jeux.
+Le journal transversal regroupe les souvenirs écrits depuis les fiches de jeux.
 Il permet de chercher dans les titres, contenus et noms de jeux, puis de filtrer
-par jeu, emotion ou favori.
+par jeu, émotion ou favori.
 
-### Musee
+### Musée
 
-Les jeux termines deviennent des pieces exposees. Le musee propose une galerie,
-des statistiques dediees, une recherche, un filtre d'accomplissement et un tri.
+Les jeux terminés deviennent des pièces exposées. Le musée propose une galerie,
+des statistiques dédiées, une recherche, un filtre d'accomplissement et un tri.
 
 ### Statistiques
 
 Le tableau de bord calcule localement :
 
-- jeux possedes ;
-- jeux termines ;
-- temps joue ;
+- jeux possédés ;
+- jeux terminés ;
+- temps joué ;
 - nombre de sessions ;
 - nombre de chroniques ;
-- repartitions par statut, plateforme, emotion et activite mensuelle.
+- répartitions par statut, plateforme, émotion et activité mensuelle.
 
-## Stack technique
+## Stack Technique
 
 - Electron
 - React
@@ -83,11 +94,11 @@ Le tableau de bord calcule localement :
 - Vitest
 - oxlint
 
-## Demarrage local
+## Démarrage Local
 
-### Prerequis
+### Prérequis
 
-- Node.js et npm installes.
+- Node.js et npm installés.
 - Git pour cloner et versionner le projet.
 
 ### Installation
@@ -108,7 +119,7 @@ Sur Windows PowerShell :
 Copy-Item .env.example .env
 ```
 
-Preparez la base locale :
+Préparez la base locale :
 
 ```bash
 npm run prisma:migrate
@@ -120,51 +131,51 @@ Lancez l'application :
 npm run dev
 ```
 
-Le mode developpement lance l'application Electron avec son renderer Vite.
+Le mode développement lance l'application Electron avec son renderer Vite.
 
-## Scripts utiles
+## Scripts Utiles
 
 ```bash
-npm run dev              # Lance l'application en developpement
-npm run build            # Compile TypeScript et genere le build Electron/Vite
+npm run dev              # Lance l'application en développement
+npm run build            # Compile TypeScript et génère le build Electron/Vite
 npm run preview          # Lance une preview du build
-npm run typecheck        # Verifie les types TypeScript
+npm run typecheck        # Vérifie les types TypeScript
 npm run lint             # Lance oxlint
 npm test                 # Lance les tests Vitest
-npm run prisma:generate  # Genere le client Prisma
-npm run prisma:migrate   # Applique/cree les migrations SQLite
+npm run prisma:generate  # Génère le client Prisma
+npm run prisma:migrate   # Applique/crée les migrations SQLite
 ```
 
-## Donnees locales
+## Données Locales
 
-Par defaut, la base SQLite utilise :
+Par défaut, la base SQLite utilise :
 
 ```text
 userdata/database/ludux.db
 ```
 
-Les donnees locales, exports, sauvegardes et fichiers generes ne sont pas
-versionnes. Voir `.gitignore` pour le detail.
+Les données locales, exports, sauvegardes et fichiers générés ne sont pas
+versionnés. Voir `.gitignore` pour le détail.
 
-## Structure du projet
+## Structure du Projet
 
 ```text
 Ludux/
 |-- public/                 # Assets publics, logo et favicon
-|-- prisma/                 # Schema Prisma et migrations SQLite
+|-- prisma/                 # Schéma Prisma et migrations SQLite
 |-- src/
 |   |-- database/           # Client Prisma
 |   |-- main/               # Processus principal Electron, preload et IPC
 |   |-- renderer/           # Interface React
 |   |   |-- components/     # Composants UI et layout
 |   |   |-- hooks/          # Hooks de chargement et mutations
-|   |   |-- pages/          # Ecrans principaux de l'application
+|   |   |-- pages/          # Écrans principaux de l'application
 |   |   `-- utils/          # Helpers renderer
-|   |-- services/           # Logique metier locale
-|   |-- types/              # Contrats partages main/renderer
+|   |-- services/           # Logique métier locale
+|   |-- types/              # Contrats partagés main/renderer
 |   `-- utils/              # Helpers transverses
 |-- tests/                  # Tests Vitest
-`-- userdata/               # Donnees locales ignorees par Git
+`-- userdata/               # Données locales ignorées par Git
 ```
 
 ## Versioning
@@ -173,26 +184,26 @@ Le projet utilise des tags Git pour marquer les jalons utilisables.
 
 Tags principaux :
 
-- `v0.2.0` : socle Electron/React, base locale et bibliotheque.
+- `v0.2.0` : socle Electron/React, base locale et bibliothèque.
 - `v0.3.0` : fiches de jeux, sessions et chroniques.
 - `v0.4.0` : tableau de bord statistique.
 - `v0.5.0` : journal transversal des chroniques.
-- `v0.6.0` : identite visuelle, palette et logo.
-- `v0.7.0` : musee des jeux termines.
+- `v0.6.0` : identité visuelle, palette et logo.
+- `v0.7.0` : musée des jeux terminés.
 
-Plus de details dans `docs/VERSIONING.md` et `CHANGELOG.md`.
+Plus de détails dans `docs/VERSIONING.md` et `CHANGELOG.md`.
 
-## Feuille de route
+## Feuille de Route
 
 Prochaines pistes naturelles :
 
 - Livre de Vie : chronologie globale du parcours.
-- Parametres : sauvegardes, exports et preferences locales.
-- Edition avancee des chroniques.
-- Gestion des captures d'ecran et souvenirs visuels.
-- Import/export de donnees.
-- Integrations optionnelles avec des plateformes de jeu.
+- Paramètres : sauvegardes, exports et préférences locales.
+- Édition avancée des chroniques.
+- Gestion des captures d'écran et souvenirs visuels.
+- Import/export de données.
+- Intégrations optionnelles avec des plateformes de jeu.
 
 ## Licence
 
-Licence non definie pour le moment.
+Licence non définie pour le moment.
