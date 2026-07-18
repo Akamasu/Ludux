@@ -8,6 +8,7 @@ import type {
   GameListItem,
   LibraryOverview,
   LibraryStatistics,
+  LifeBookEvent,
   UpdateGameInput,
 } from '../types/game'
 import type { LuduxApi } from '../types/ludux-api'
@@ -20,6 +21,8 @@ const api: LuduxApi = {
       ipcRenderer.invoke('library:getStatistics') as Promise<LibraryStatistics>,
     listChronicles: () =>
       ipcRenderer.invoke('library:listChronicles') as Promise<ChronicleTimelineItem[]>,
+    listLifeEvents: () =>
+      ipcRenderer.invoke('library:listLifeEvents') as Promise<LifeBookEvent[]>,
   },
   games: {
     list: () => ipcRenderer.invoke('games:list') as Promise<GameListItem[]>,

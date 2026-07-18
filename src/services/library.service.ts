@@ -8,6 +8,7 @@ import {
   type GameStatus,
   type LibraryOverview,
   type LibraryStatistics,
+  type LifeBookEvent,
 } from '../types/game'
 import { gameService } from './game.service'
 
@@ -270,6 +271,69 @@ class LibraryService {
       gameCoverUrl: chronicle.game.coverUrl,
       gameStatus: chronicle.game.status as GameStatus,
     }))
+  }
+
+  async listLifeEvents(): Promise<LifeBookEvent[]> {
+    const [chronicles, sessions] = await Promise.all([
+      prisma.chronicle.findMany({
+        where: {
+          game: {
+            archived: false,
+          },
+        },
+        include: {
+          game: true,
+        },
+        orderBy: {
+          date: 'desc',
+        },
+      }),
+      prisma.playSession.findMany({
+        where: {
+          game: {
+            archived: false,
+          },
+        },
+        include: {
+          game: true,
+          platform: true,
+        },
+        orderBy: {
+          start: 'desc',
+        },
+      }),
+    ])
+
+    return [
+      ...chronicles.map((chronicle): LifeBookEvent => ({
+        id: `chronicle-${chronicle.id}`,
+        kind: 'CHRONICLE',
+        title: chronicle.title,
+        description: chronicle.content,
+        date: chronicle.date.toISOString(),
+        gameId: chronicle.gameId,
+        gameTitle: chronicle.game.title,
+        gameCoverUrl: chronicle.game.coverUrl,
+        gameStatus: chronicle.game.status as GameStatus,
+        emotion: chronicle.emotion as Emotion | null,
+        durationMinutes: null,
+        platformName: null,
+      })),
+      ...sessions.map((session): LifeBookEvent => ({
+        id: `session-${session.id}`,
+        kind: 'SESSION',
+        title: 'Session de jeu',
+        description: session.note,
+        date: session.start.toISOString(),
+        gameId: session.gameId,
+        gameTitle: session.game.title,
+        gameCoverUrl: session.game.coverUrl,
+        gameStatus: session.game.status as GameStatus,
+        emotion: null,
+        durationMinutes: session.durationMinutes,
+        platformName: session.platform?.name ?? null,
+      })),
+    ].sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime())
   }
 }
 

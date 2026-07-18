@@ -11,6 +11,7 @@ Le projet suit des versions de developpement simples :
 - `v0.5.x` : journal transversal des chroniques.
 - `v0.6.x` : identite visuelle et logo.
 - `v0.7.x` : musee des jeux accomplis.
+- `v0.8.x` : livre de vie et chronologie globale.
 
 ## v0.2.0 - 2026-07-16
 
@@ -59,3 +60,11 @@ Le projet suit des versions de developpement simples :
 - Ajout des statistiques de musee : jeux termines, 100 %, temps expose et piece majeure.
 - Ajout de filtres par accomplissement, recherche et tri par recence, temps joue ou titre.
 - Ajout d'une vitrine de cartes ouvrant directement la fiche du jeu associe.
+
+## v0.8.0 - 2026-07-18
+
+- Remplacement du placeholder Livre de Vie par une chronologie globale.
+- Fusion des sessions de jeu et des chroniques dans une timeline annuelle et mensuelle.
+- Ajout des compteurs, de la recherche, du filtre par type de moment et du filtre par jeu.
+- Ajout d'un raccourci vers la fiche du jeu associe depuis chaque moment.
+- Exposition des evenements via le service library, IPC Electron et preload securise.

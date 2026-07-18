@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { AppShell } from './components/layout/AppShell'
 import { useChronicles } from './hooks/useChronicles'
 import { useGameDetail } from './hooks/useGameDetail'
+import { useLifeBook } from './hooks/useLifeBook'
 import { useLibraryOverview } from './hooks/useLibraryOverview'
 import { useLibraryStatistics } from './hooks/useLibraryStatistics'
 import { ChroniclesPage } from './pages/ChroniclesPage'
 import { GameDetailPage } from './pages/GameDetailPage'
 import { HomePage } from './pages/HomePage'
+import { LifeBookPage } from './pages/LifeBookPage'
 import { LibraryPage } from './pages/LibraryPage'
 import { MuseumPage } from './pages/MuseumPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
@@ -18,6 +20,7 @@ export default function App() {
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
   const libraryState = useLibraryOverview()
   const chroniclesState = useChronicles(libraryState.games)
+  const lifeBookState = useLifeBook(libraryState.games)
   const statisticsState = useLibraryStatistics(libraryState.games)
   const selectedListItem =
     libraryState.games.find((game) => game.id === selectedGameId) ?? null
@@ -77,10 +80,11 @@ export default function App() {
         />
       ) : null}
       {!selectedGameId && activeView === 'lifeBook' ? (
-        <PlaceholderPage
-          eyebrow="Livre de Vie"
-          title="Chronologie du parcours"
-          description="Le Livre de Vie organisera les chapitres par annees et periodes."
+        <LifeBookPage
+          events={lifeBookState.events}
+          isLoading={lifeBookState.isLoading}
+          error={lifeBookState.error}
+          onOpenGame={openGame}
         />
       ) : null}
       {!selectedGameId && activeView === 'statistics' ? (

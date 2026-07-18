@@ -77,6 +77,23 @@ export interface PlaySessionListItem {
   platformName: string | null
 }
 
+export type LifeBookEventKind = 'CHRONICLE' | 'SESSION'
+
+export interface LifeBookEvent {
+  id: string
+  kind: LifeBookEventKind
+  title: string
+  description: string | null
+  date: string
+  gameId: string
+  gameTitle: string
+  gameCoverUrl: string | null
+  gameStatus: GameStatus
+  emotion: Emotion | null
+  durationMinutes: number | null
+  platformName: string | null
+}
+
 export interface GameDetail extends GameListItem {
   description: string | null
   developer: string | null

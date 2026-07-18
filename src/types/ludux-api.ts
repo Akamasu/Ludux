@@ -7,6 +7,7 @@ import type {
   GameListItem,
   LibraryOverview,
   LibraryStatistics,
+  LifeBookEvent,
   UpdateGameInput,
 } from './game'
 
@@ -15,6 +16,7 @@ export interface LuduxApi {
     getOverview: () => Promise<LibraryOverview>
     getStatistics: () => Promise<LibraryStatistics>
     listChronicles: () => Promise<ChronicleTimelineItem[]>
+    listLifeEvents: () => Promise<LifeBookEvent[]>
   }
   games: {
     list: () => Promise<GameListItem[]>
