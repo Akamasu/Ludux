@@ -30,3 +30,4 @@ Le tag `v0.2.0` correspond au premier socle Ludux utilisable avec une bibliotheq
 - `v0.6.0` : identite visuelle, palette et logo.
 - `v0.7.0` : musee des jeux termines.
 - `v0.8.0` : livre de vie et chronologie globale.
+- `v0.9.0` : parametres, sauvegardes et exports locaux.

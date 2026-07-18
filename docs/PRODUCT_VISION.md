@@ -139,8 +139,6 @@ Avant les fonctionnalités plus ambitieuses, Ludux doit permettre de :
 
 Les prochaines étapes les plus cohérentes avec le document de conception sont :
 
-- Livre de Vie : chronologie globale de toutes les sessions et chroniques.
-- Paramètres : sauvegarde, export et préférences locales.
 - Notes et évaluations : rendre la notation utilisable depuis les fiches.
 - DLC : ajouter une première gestion locale simple.
 - Succès : ajouter une première gestion locale manuelle.

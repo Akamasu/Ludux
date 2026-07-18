@@ -12,6 +12,7 @@ Le projet suit des versions de developpement simples :
 - `v0.6.x` : identite visuelle et logo.
 - `v0.7.x` : musee des jeux accomplis.
 - `v0.8.x` : livre de vie et chronologie globale.
+- `v0.9.x` : parametres, sauvegardes et exports locaux.
 
 ## v0.2.0 - 2026-07-16
 
@@ -68,3 +69,12 @@ Le projet suit des versions de developpement simples :
 - Ajout des compteurs, de la recherche, du filtre par type de moment et du filtre par jeu.
 - Ajout d'un raccourci vers la fiche du jeu associe depuis chaque moment.
 - Exposition des evenements via le service library, IPC Electron et preload securise.
+
+## v0.9.0 - 2026-07-18
+
+- Remplacement du placeholder Parametres par un centre de controle local.
+- Ajout de l'aperçu de la base SQLite, des dossiers d'exports et de sauvegardes.
+- Ajout d'une sauvegarde locale de la base dans `userdata/backups`.
+- Ajout d'un export JSON complet de la bibliotheque avec jeux, sessions, chroniques, DLC, succes et collections.
+- Ajout de l'ouverture du dossier local depuis l'application.
+- Ajout d'une preference persistante pour choisir la page d'ouverture.

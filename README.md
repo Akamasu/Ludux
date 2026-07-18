@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.7.0`
+Version courante : `v0.9.0`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
@@ -39,7 +39,9 @@ utilisables sont déjà en place :
 - Fiche détail d'un jeu avec statut, note personnelle, sessions et chroniques.
 - Journal des chroniques avec recherche et filtres.
 - Musée des jeux terminés et terminés à 100 %.
+- Livre de Vie avec chronologie globale des sessions et chroniques.
 - Tableau de bord statistique.
+- Paramètres locaux avec sauvegarde SQLite, export JSON et préférences.
 - Stockage local SQLite via Prisma.
 - IPC Electron sécurisé entre le renderer et le main process.
 - Identité visuelle Ludux avec palette sombre, violet et bleu électrique.
@@ -71,6 +73,12 @@ par jeu, émotion ou favori.
 Les jeux terminés deviennent des pièces exposées. Le musée propose une galerie,
 des statistiques dédiées, une recherche, un filtre d'accomplissement et un tri.
 
+### Livre de Vie
+
+Le Livre de Vie rassemble les sessions de jeu et les chroniques dans une
+chronologie globale, groupée par année et par mois, avec recherche et filtres par
+type de moment ou par jeu.
+
 ### Statistiques
 
 Le tableau de bord calcule localement :
@@ -81,6 +89,11 @@ Le tableau de bord calcule localement :
 - nombre de sessions ;
 - nombre de chroniques ;
 - répartitions par statut, plateforme, émotion et activité mensuelle.
+
+### Paramètres
+
+Les paramètres donnent accès aux chemins locaux, à une sauvegarde de la base
+SQLite, à un export JSON complet et au choix de la page d'ouverture.
 
 ## Stack Technique
 
@@ -190,6 +203,8 @@ Tags principaux :
 - `v0.5.0` : journal transversal des chroniques.
 - `v0.6.0` : identité visuelle, palette et logo.
 - `v0.7.0` : musée des jeux terminés.
+- `v0.8.0` : livre de vie et chronologie globale.
+- `v0.9.0` : paramètres, sauvegardes et exports locaux.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.
@@ -198,11 +213,10 @@ Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 
 Prochaines pistes naturelles :
 
-- Livre de Vie : chronologie globale du parcours.
-- Paramètres : sauvegardes, exports et préférences locales.
+- Notes et évaluations détaillées.
 - Édition avancée des chroniques.
 - Gestion des captures d'écran et souvenirs visuels.
-- Import/export de données.
+- Gestion locale des DLC et succès.
 - Intégrations optionnelles avec des plateformes de jeu.
 
 La vision produit détaillée est synthétisée dans `docs/PRODUCT_VISION.md`.

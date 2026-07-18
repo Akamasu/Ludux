@@ -7,8 +7,18 @@ const globalForPrisma = globalThis as unknown as {
   luduxPrisma?: PrismaClient
 }
 
-function getDatabaseUrl() {
+export function getDatabaseUrl() {
   return process.env['DATABASE_URL'] ?? 'file:./userdata/database/ludux.db'
+}
+
+export function getDatabaseFilePath() {
+  const databaseUrl = getDatabaseUrl()
+
+  if (databaseUrl === ':memory:') {
+    return null
+  }
+
+  return resolve(databaseUrl.replace(/^file:/, ''))
 }
 
 function ensureSqliteDirectory(databaseUrl: string) {
@@ -16,8 +26,11 @@ function ensureSqliteDirectory(databaseUrl: string) {
     return
   }
 
-  const databasePath = databaseUrl.replace(/^file:/, '')
-  mkdirSync(dirname(resolve(databasePath)), { recursive: true })
+  const databasePath = getDatabaseFilePath()
+
+  if (databasePath) {
+    mkdirSync(dirname(databasePath), { recursive: true })
+  }
 }
 
 const databaseUrl = getDatabaseUrl()

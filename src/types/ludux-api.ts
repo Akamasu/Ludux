@@ -10,6 +10,7 @@ import type {
   LifeBookEvent,
   UpdateGameInput,
 } from './game'
+import type { SettingsActionResult, SettingsOverview } from './settings'
 
 export interface LuduxApi {
   library: {
@@ -25,6 +26,12 @@ export interface LuduxApi {
     update: (input: UpdateGameInput) => Promise<GameDetail>
     createChronicle: (input: CreateChronicleInput) => Promise<GameDetail>
     createPlaySession: (input: CreatePlaySessionInput) => Promise<GameDetail>
+  }
+  settings: {
+    getOverview: () => Promise<SettingsOverview>
+    exportLibrary: () => Promise<SettingsActionResult>
+    createBackup: () => Promise<SettingsActionResult>
+    openDataFolder: () => Promise<boolean>
   }
 }
 

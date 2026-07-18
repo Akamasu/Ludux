@@ -3,8 +3,10 @@ import { join } from 'node:path'
 import { prisma } from '../database/client'
 import { logger } from '../utils/logger'
 import { registerLibraryHandlers } from './ipc/library.ipc'
+import { registerSettingsHandlers } from './ipc/settings.ipc'
 
 registerLibraryHandlers()
+registerSettingsHandlers()
 
 async function createWindow() {
   const mainWindow = new BrowserWindow({

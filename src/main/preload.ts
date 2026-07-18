@@ -12,6 +12,7 @@ import type {
   UpdateGameInput,
 } from '../types/game'
 import type { LuduxApi } from '../types/ludux-api'
+import type { SettingsActionResult, SettingsOverview } from '../types/settings'
 
 const api: LuduxApi = {
   library: {
@@ -36,6 +37,16 @@ const api: LuduxApi = {
       ipcRenderer.invoke('games:createChronicle', input) as Promise<GameDetail>,
     createPlaySession: (input: CreatePlaySessionInput) =>
       ipcRenderer.invoke('games:createPlaySession', input) as Promise<GameDetail>,
+  },
+  settings: {
+    getOverview: () =>
+      ipcRenderer.invoke('settings:getOverview') as Promise<SettingsOverview>,
+    exportLibrary: () =>
+      ipcRenderer.invoke('settings:exportLibrary') as Promise<SettingsActionResult>,
+    createBackup: () =>
+      ipcRenderer.invoke('settings:createBackup') as Promise<SettingsActionResult>,
+    openDataFolder: () =>
+      ipcRenderer.invoke('settings:openDataFolder') as Promise<boolean>,
   },
 }
 
