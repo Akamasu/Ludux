@@ -26,3 +26,4 @@ Le tag `v0.2.0` correspond au premier socle Ludux utilisable avec une bibliotheq
 - `v0.2.0` : socle Electron/React, base locale et bibliotheque.
 - `v0.3.0` : fiches de jeux, sessions et chroniques.
 - `v0.4.0` : tableau de bord statistique.
+- `v0.5.0` : journal transversal des chroniques.

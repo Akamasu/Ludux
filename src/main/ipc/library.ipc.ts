@@ -133,6 +133,15 @@ export function registerLibraryHandlers() {
     }
   })
 
+  ipcMain.handle('library:listChronicles', async () => {
+    try {
+      return await libraryService.listChronicles()
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
   ipcMain.handle('games:list', async () => {
     try {
       return await gameService.listGames()

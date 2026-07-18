@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { AppShell } from './components/layout/AppShell'
+import { useChronicles } from './hooks/useChronicles'
 import { useGameDetail } from './hooks/useGameDetail'
 import { useLibraryOverview } from './hooks/useLibraryOverview'
 import { useLibraryStatistics } from './hooks/useLibraryStatistics'
+import { ChroniclesPage } from './pages/ChroniclesPage'
 import { GameDetailPage } from './pages/GameDetailPage'
 import { HomePage } from './pages/HomePage'
 import { LibraryPage } from './pages/LibraryPage'
@@ -14,6 +16,7 @@ export default function App() {
   const [activeView, setActiveView] = useState<AppView>('home')
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
   const libraryState = useLibraryOverview()
+  const chroniclesState = useChronicles(libraryState.games)
   const statisticsState = useLibraryStatistics(libraryState.games)
   const selectedListItem =
     libraryState.games.find((game) => game.id === selectedGameId) ?? null
@@ -58,10 +61,11 @@ export default function App() {
         <LibraryPage {...libraryState} onOpenGame={openGame} />
       ) : null}
       {!selectedGameId && activeView === 'chronicles' ? (
-        <PlaceholderPage
-          eyebrow="Chroniques"
-          title="Journal des souvenirs"
-          description="La prochaine etape consistera a relier les chroniques aux jeux et aux sessions."
+        <ChroniclesPage
+          chronicles={chroniclesState.chronicles}
+          isLoading={chroniclesState.isLoading}
+          error={chroniclesState.error}
+          onOpenGame={openGame}
         />
       ) : null}
       {!selectedGameId && activeView === 'museum' ? (

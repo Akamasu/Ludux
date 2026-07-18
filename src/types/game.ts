@@ -61,6 +61,13 @@ export interface ChronicleListItem {
   favorite: boolean
 }
 
+export interface ChronicleTimelineItem extends ChronicleListItem {
+  gameId: string
+  gameTitle: string
+  gameCoverUrl: string | null
+  gameStatus: GameStatus
+}
+
 export interface PlaySessionListItem {
   id: string
   start: string

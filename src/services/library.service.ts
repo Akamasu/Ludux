@@ -2,6 +2,7 @@ import { prisma } from '../database/client'
 import {
   EMOTION_VALUES,
   GAME_STATUS_VALUES,
+  type ChronicleTimelineItem,
   type Emotion,
   type GameListItem,
   type GameStatus,
@@ -75,6 +76,11 @@ class LibraryService {
     const [games, recentChronicle] = await Promise.all([
       gameService.listGames(),
       prisma.chronicle.findFirst({
+        where: {
+          game: {
+            archived: false,
+          },
+        },
         include: {
           game: true,
         },
@@ -235,6 +241,35 @@ class LibraryService {
         .sort((left, right) => left.month.localeCompare(right.month))
         .slice(-12),
     }
+  }
+
+  async listChronicles(): Promise<ChronicleTimelineItem[]> {
+    const chronicles = await prisma.chronicle.findMany({
+      where: {
+        game: {
+          archived: false,
+        },
+      },
+      include: {
+        game: true,
+      },
+      orderBy: {
+        date: 'desc',
+      },
+    })
+
+    return chronicles.map((chronicle) => ({
+      id: chronicle.id,
+      title: chronicle.title,
+      content: chronicle.content,
+      date: chronicle.date.toISOString(),
+      emotion: chronicle.emotion as Emotion | null,
+      favorite: chronicle.favorite,
+      gameId: chronicle.gameId,
+      gameTitle: chronicle.game.title,
+      gameCoverUrl: chronicle.game.coverUrl,
+      gameStatus: chronicle.game.status as GameStatus,
+    }))
   }
 }
 

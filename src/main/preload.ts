@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
+  ChronicleTimelineItem,
   CreateChronicleInput,
   CreateGameInput,
   CreatePlaySessionInput,
@@ -17,6 +18,8 @@ const api: LuduxApi = {
       ipcRenderer.invoke('library:getOverview') as Promise<LibraryOverview>,
     getStatistics: () =>
       ipcRenderer.invoke('library:getStatistics') as Promise<LibraryStatistics>,
+    listChronicles: () =>
+      ipcRenderer.invoke('library:listChronicles') as Promise<ChronicleTimelineItem[]>,
   },
   games: {
     list: () => ipcRenderer.invoke('games:list') as Promise<GameListItem[]>,

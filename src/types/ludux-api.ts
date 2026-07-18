@@ -1,4 +1,5 @@
 import type {
+  ChronicleTimelineItem,
   CreateChronicleInput,
   CreateGameInput,
   CreatePlaySessionInput,
@@ -13,6 +14,7 @@ export interface LuduxApi {
   library: {
     getOverview: () => Promise<LibraryOverview>
     getStatistics: () => Promise<LibraryStatistics>
+    listChronicles: () => Promise<ChronicleTimelineItem[]>
   }
   games: {
     list: () => Promise<GameListItem[]>
