@@ -212,6 +212,15 @@ export function registerLibraryHandlers() {
     }
   })
 
+  ipcMain.handle('games:listArchived', async () => {
+    try {
+      return await gameService.listArchivedGames()
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
   ipcMain.handle('games:create', async (_event, input: unknown) => {
     try {
       return await gameService.createGame(parseCreateGameInput(input))
@@ -235,6 +244,33 @@ export function registerLibraryHandlers() {
   ipcMain.handle('games:update', async (_event, input: unknown) => {
     try {
       return await gameService.updateGame(parseUpdateGameInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:archive', async (_event, id: unknown) => {
+    try {
+      await gameService.archiveGame(readRequiredString(id, 'Identifiant de jeu invalide.'))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:restore', async (_event, id: unknown) => {
+    try {
+      await gameService.restoreGame(readRequiredString(id, 'Identifiant de jeu invalide.'))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:delete', async (_event, id: unknown) => {
+    try {
+      await gameService.deleteGame(readRequiredString(id, 'Identifiant de jeu invalide.'))
     } catch (error) {
       logger.error('[LibraryIPC]', error)
       throw error

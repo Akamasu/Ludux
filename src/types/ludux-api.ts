@@ -22,9 +22,13 @@ export interface LuduxApi {
   }
   games: {
     list: () => Promise<GameListItem[]>
+    listArchived: () => Promise<GameListItem[]>
     create: (input: CreateGameInput) => Promise<GameListItem>
     getById: (id: string) => Promise<GameDetail | null>
     update: (input: UpdateGameInput) => Promise<GameDetail>
+    archive: (id: string) => Promise<void>
+    restore: (id: string) => Promise<void>
+    delete: (id: string) => Promise<void>
     updateReview: (input: UpdateReviewInput) => Promise<GameDetail>
     createChronicle: (input: CreateChronicleInput) => Promise<GameDetail>
     createPlaySession: (input: CreatePlaySessionInput) => Promise<GameDetail>

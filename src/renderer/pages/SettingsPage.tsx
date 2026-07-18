@@ -7,8 +7,11 @@ import {
   HardDrive,
   Home,
   RefreshCw,
+  RotateCcw,
   Settings,
+  Trash2,
 } from 'lucide-react'
+import type { GameListItem } from '../../types/game'
 import type { SettingsActionResult, SettingsOverview } from '../../types/settings'
 import type { AppView } from '../types/navigation'
 import { Button } from '../components/ui/Button'
@@ -20,12 +23,15 @@ interface SettingsPageProps {
   isBusy: boolean
   error: string | null
   actionResult: SettingsActionResult | null
+  archivedGames: GameListItem[]
   launchView: AppView
   onChangeLaunchView: (view: AppView) => void
   onCreateBackup: () => Promise<void>
+  onDeleteGame: (gameId: string) => Promise<void>
   onExportLibrary: () => Promise<void>
   onOpenDataFolder: () => Promise<void>
   onRefresh: () => Promise<void>
+  onRestoreGame: (gameId: string) => Promise<void>
 }
 
 const launchViewOptions: {
@@ -76,17 +82,102 @@ function ResultMessage({ result }: { result: SettingsActionResult }) {
   )
 }
 
+function ArchivedGamesPanel({
+  archivedGames,
+  isBusy,
+  onDeleteGame,
+  onRestoreGame,
+}: {
+  archivedGames: GameListItem[]
+  isBusy: boolean
+  onDeleteGame: (gameId: string) => Promise<void>
+  onRestoreGame: (gameId: string) => Promise<void>
+}) {
+  async function handleDelete(game: GameListItem) {
+    const confirmed = window.confirm(
+      `Supprimer definitivement "${game.title}" ? Cette action supprimera aussi ses sessions, chroniques et souvenirs.`,
+    )
+
+    if (confirmed) {
+      await onDeleteGame(game.id)
+    }
+  }
+
+  return (
+    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Jeux archives</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Les jeux archives quittent la bibliotheque active sans perdre leurs donnees.
+          </p>
+        </div>
+        <Archive className="text-[#A797FF]" size={20} aria-hidden="true" />
+      </div>
+
+      {archivedGames.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
+          Aucun jeu archive pour le moment.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {archivedGames.map((game) => (
+            <article
+              key={game.id}
+              className="grid gap-4 rounded-lg border border-white/10 bg-[#121620] p-4 xl:grid-cols-[1fr_auto]"
+            >
+              <div className="min-w-0">
+                <h3 className="truncate font-medium text-white">{game.title}</h3>
+                <p className="mt-1 truncate text-sm text-zinc-500">
+                  {game.platforms.join(', ') || 'Plateforme non renseignee'}
+                </p>
+                <p className="mt-2 text-xs text-zinc-600">
+                  Archive le {formatDate(game.updatedAt)} / {game.rating ? `${game.rating}/10` : 'Non note'}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => onRestoreGame(game.id)}
+                  disabled={isBusy}
+                >
+                  <RotateCcw size={17} aria-hidden="true" />
+                  Restaurer
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => handleDelete(game)}
+                  disabled={isBusy}
+                  className="border-rose-400/30 bg-rose-400/10 text-rose-100 hover:border-rose-300/60 hover:bg-rose-400/15"
+                >
+                  <Trash2 size={17} aria-hidden="true" />
+                  Supprimer
+                </Button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 export function SettingsPage({
   actionResult,
+  archivedGames,
   error,
   isBusy,
   isLoading,
   launchView,
   onChangeLaunchView,
   onCreateBackup,
+  onDeleteGame,
   onExportLibrary,
   onOpenDataFolder,
   onRefresh,
+  onRestoreGame,
   overview,
 }: SettingsPageProps) {
   return (
@@ -245,6 +336,13 @@ export function SettingsPage({
           <DetailRow label="Sauvegardes" value={overview.backupDirectory} />
         </dl>
       </section>
+
+      <ArchivedGamesPanel
+        archivedGames={archivedGames}
+        isBusy={isBusy}
+        onDeleteGame={onDeleteGame}
+        onRestoreGame={onRestoreGame}
+      />
     </div>
   )
 }

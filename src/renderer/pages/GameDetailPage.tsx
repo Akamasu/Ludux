@@ -1,4 +1,4 @@
-import { ArrowLeft, BookText, CalendarDays, Clock3, Save, Star } from 'lucide-react'
+import { Archive, ArrowLeft, BookText, CalendarDays, Clock3, Save, Star } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   EMOTION_LABELS,
@@ -22,6 +22,7 @@ interface GameDetailPageProps {
   isLoading: boolean
   isSaving: boolean
   onBack: () => void
+  onArchiveGame: (gameId: string) => Promise<void>
   onCreateChronicle: (input: CreateChronicleInput) => Promise<void>
   onCreatePlaySession: (input: CreatePlaySessionInput) => Promise<void>
   onUpdateGame: (input: UpdateGameInput) => Promise<void>
@@ -38,6 +39,7 @@ export function GameDetailPage({
   isLoading,
   isSaving,
   onBack,
+  onArchiveGame,
   onCreateChronicle,
   onCreatePlaySession,
   onUpdateGame,
@@ -66,13 +68,36 @@ export function GameDetailPage({
     )
   }
 
+  const currentDetail = detail
+
+  async function handleArchiveGame() {
+    const confirmed = window.confirm(
+      `Archiver "${currentDetail.title}" ? Vous pourrez le restaurer depuis les parametres.`,
+    )
+
+    if (confirmed) {
+      await onArchiveGame(currentDetail.id)
+    }
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-6">
       <header className="border-b border-white/10 pb-7">
-        <Button type="button" variant="secondary" onClick={onBack}>
-          <ArrowLeft size={17} aria-hidden="true" />
-          Bibliotheque
-        </Button>
+        <div className="flex items-center justify-between gap-4">
+          <Button type="button" variant="secondary" onClick={onBack}>
+            <ArrowLeft size={17} aria-hidden="true" />
+            Bibliotheque
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleArchiveGame}
+            disabled={isSaving}
+          >
+            <Archive size={17} aria-hidden="true" />
+            Archiver
+          </Button>
+        </div>
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_280px]">
           <div>
             <p className="text-sm font-medium text-[#A797FF]">

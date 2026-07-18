@@ -11,10 +11,10 @@ import type {
   UpdateReviewInput,
 } from '../types/game'
 
-async function fetchGames() {
+async function fetchGames(archived = false) {
   return prisma.game.findMany({
     where: {
-      archived: false,
+      archived,
     },
     include: {
       platforms: {
@@ -158,6 +158,11 @@ class GameService {
     return games.map(toGameListItem)
   }
 
+  async listArchivedGames(): Promise<GameListItem[]> {
+    const games = await fetchGames(true)
+    return games.map(toGameListItem)
+  }
+
   async createGame(input: CreateGameInput): Promise<GameListItem> {
     const title = input.title.trim()
 
@@ -266,6 +271,36 @@ class GameService {
     })
 
     return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async archiveGame(id: string): Promise<void> {
+    await prisma.game.update({
+      where: {
+        id,
+      },
+      data: {
+        archived: true,
+      },
+    })
+  }
+
+  async restoreGame(id: string): Promise<void> {
+    await prisma.game.update({
+      where: {
+        id,
+      },
+      data: {
+        archived: false,
+      },
+    })
+  }
+
+  async deleteGame(id: string): Promise<void> {
+    await prisma.game.delete({
+      where: {
+        id,
+      },
+    })
   }
 
   async createChronicle(input: CreateChronicleInput): Promise<GameDetail> {

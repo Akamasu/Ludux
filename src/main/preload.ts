@@ -28,12 +28,17 @@ const api: LuduxApi = {
   },
   games: {
     list: () => ipcRenderer.invoke('games:list') as Promise<GameListItem[]>,
+    listArchived: () =>
+      ipcRenderer.invoke('games:listArchived') as Promise<GameListItem[]>,
     create: (input: CreateGameInput) =>
       ipcRenderer.invoke('games:create', input) as Promise<GameListItem>,
     getById: (id: string) =>
       ipcRenderer.invoke('games:getById', id) as Promise<GameDetail | null>,
     update: (input: UpdateGameInput) =>
       ipcRenderer.invoke('games:update', input) as Promise<GameDetail>,
+    archive: (id: string) => ipcRenderer.invoke('games:archive', id) as Promise<void>,
+    restore: (id: string) => ipcRenderer.invoke('games:restore', id) as Promise<void>,
+    delete: (id: string) => ipcRenderer.invoke('games:delete', id) as Promise<void>,
     updateReview: (input: UpdateReviewInput) =>
       ipcRenderer.invoke('games:updateReview', input) as Promise<GameDetail>,
     createChronicle: (input: CreateChronicleInput) =>

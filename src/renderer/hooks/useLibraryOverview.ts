@@ -48,6 +48,7 @@ function buildOverviewFromGames(games: GameListItem[]): LibraryOverview {
 export function useLibraryOverview() {
   const [overview, setOverview] = useState<LibraryOverview>(EMPTY_OVERVIEW)
   const [games, setGames] = useState<GameListItem[]>([])
+  const [archivedGames, setArchivedGames] = useState<GameListItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -64,13 +65,15 @@ export function useLibraryOverview() {
     setError(null)
 
     try {
-      const [nextOverview, nextGames] = await Promise.all([
+      const [nextOverview, nextGames, nextArchivedGames] = await Promise.all([
         api.library.getOverview(),
         api.games.list(),
+        api.games.listArchived(),
       ])
 
       setOverview(nextOverview)
       setGames(nextGames)
+      setArchivedGames(nextArchivedGames)
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
     } finally {
@@ -103,6 +106,98 @@ export function useLibraryOverview() {
     [games, refresh],
   )
 
+  const archiveGame = useCallback(
+    async (gameId: string) => {
+      const api = window.ludux
+      setIsSaving(true)
+      setError(null)
+
+      try {
+        if (!api) {
+          const game = games.find((item) => item.id === gameId)
+          const nextGames = games.filter((item) => item.id !== gameId)
+
+          setGames(nextGames)
+          setOverview(buildOverviewFromGames(nextGames))
+
+          if (game) {
+            setArchivedGames((current) => [game, ...current])
+          }
+
+          return
+        }
+
+        await api.games.archive(gameId)
+        await refresh()
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [games, refresh],
+  )
+
+  const restoreGame = useCallback(
+    async (gameId: string) => {
+      const api = window.ludux
+      setIsSaving(true)
+      setError(null)
+
+      try {
+        if (!api) {
+          const game = archivedGames.find((item) => item.id === gameId)
+          const nextArchivedGames = archivedGames.filter((item) => item.id !== gameId)
+
+          setArchivedGames(nextArchivedGames)
+
+          if (game) {
+            const nextGames = [game, ...games]
+            setGames(nextGames)
+            setOverview(buildOverviewFromGames(nextGames))
+          }
+
+          return
+        }
+
+        await api.games.restore(gameId)
+        await refresh()
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [archivedGames, games, refresh],
+  )
+
+  const deleteGame = useCallback(
+    async (gameId: string) => {
+      const api = window.ludux
+      setIsSaving(true)
+      setError(null)
+
+      try {
+        if (!api) {
+          const nextGames = games.filter((item) => item.id !== gameId)
+
+          setGames(nextGames)
+          setArchivedGames((current) => current.filter((item) => item.id !== gameId))
+          setOverview(buildOverviewFromGames(nextGames))
+          return
+        }
+
+        await api.games.delete(gameId)
+        await refresh()
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [games, refresh],
+  )
+
   useEffect(() => {
     void refresh()
   }, [refresh])
@@ -110,10 +205,14 @@ export function useLibraryOverview() {
   return {
     overview,
     games,
+    archivedGames,
     isLoading,
     isSaving,
     error,
     createGame,
+    archiveGame,
+    restoreGame,
+    deleteGame,
     refresh,
   }
 }

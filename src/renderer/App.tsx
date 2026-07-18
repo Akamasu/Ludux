@@ -67,6 +67,16 @@ export default function App() {
     setActiveView('library')
   }
 
+  async function archiveGame(gameId: string) {
+    await libraryState.archiveGame(gameId)
+    setSelectedGameId(null)
+    setActiveView('library')
+  }
+
+  async function refreshSettingsView() {
+    await Promise.all([settingsState.refresh(), libraryState.refresh()])
+  }
+
   function changeLaunchView(view: AppView) {
     setLaunchViewState(view)
 
@@ -86,6 +96,7 @@ export default function App() {
           isLoading={gameDetailState.isLoading}
           isSaving={gameDetailState.isSaving}
           onBack={() => setSelectedGameId(null)}
+          onArchiveGame={archiveGame}
           onCreateChronicle={gameDetailState.createChronicle}
           onCreatePlaySession={gameDetailState.createPlaySession}
           onUpdateGame={gameDetailState.updateGame}
@@ -136,15 +147,18 @@ export default function App() {
         <SettingsPage
           overview={settingsState.overview}
           isLoading={settingsState.isLoading}
-          isBusy={settingsState.isBusy}
-          error={settingsState.error}
+          isBusy={settingsState.isBusy || libraryState.isSaving}
+          error={settingsState.error ?? libraryState.error}
           actionResult={settingsState.actionResult}
+          archivedGames={libraryState.archivedGames}
           launchView={launchView}
           onChangeLaunchView={changeLaunchView}
           onCreateBackup={settingsState.createBackup}
+          onDeleteGame={libraryState.deleteGame}
           onExportLibrary={settingsState.exportLibrary}
           onOpenDataFolder={settingsState.openDataFolder}
-          onRefresh={settingsState.refresh}
+          onRefresh={refreshSettingsView}
+          onRestoreGame={libraryState.restoreGame}
         />
       ) : null}
     </AppShell>

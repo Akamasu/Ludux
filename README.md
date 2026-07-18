@@ -29,13 +29,13 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.10.0`
+Version courante : `v0.11.0`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
 
 - Accueil avec résumé de la bibliothèque.
-- Bibliothèque avec ajout de jeux, recherche, filtres et vues grille/liste.
+- Bibliothèque avec ajout de jeux, recherche, filtres, vues grille/liste et archivage.
 - Fiche détail d'un jeu avec statut, note personnelle, évaluation, sessions et chroniques.
 - Journal des chroniques avec recherche et filtres.
 - Musée des jeux terminés et terminés à 100 %.
@@ -94,7 +94,8 @@ Le tableau de bord calcule localement :
 ### Paramètres
 
 Les paramètres donnent accès aux chemins locaux, à une sauvegarde de la base
-SQLite, à un export JSON complet et au choix de la page d'ouverture.
+SQLite, à un export JSON complet, au choix de la page d'ouverture et aux jeux
+archivés, restaurables ou supprimables définitivement.
 
 ## Stack Technique
 
@@ -207,6 +208,7 @@ Tags principaux :
 - `v0.8.0` : livre de vie et chronologie globale.
 - `v0.9.0` : paramètres, sauvegardes et exports locaux.
 - `v0.10.0` : notes et évaluations détaillées.
+- `v0.11.0` : archivage, restauration et suppression de jeux.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.

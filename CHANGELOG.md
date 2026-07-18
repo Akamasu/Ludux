@@ -14,6 +14,7 @@ Le projet suit des versions de developpement simples :
 - `v0.8.x` : livre de vie et chronologie globale.
 - `v0.9.x` : parametres, sauvegardes et exports locaux.
 - `v0.10.x` : notes et evaluations detaillees.
+- `v0.11.x` : archivage, restauration et suppression de jeux.
 
 ## v0.2.0 - 2026-07-16
 
@@ -87,3 +88,11 @@ Le projet suit des versions de developpement simples :
 - Ajout du marquage coup de coeur sur une evaluation.
 - Persistance des evaluations via le modele Review existant, le service game, l'IPC Electron et le preload securise.
 - Remontee automatique de la note dans les cartes de bibliotheque et du musee.
+
+## v0.11.0 - 2026-07-18
+
+- Ajout de l'archivage d'un jeu depuis sa fiche detail.
+- Ajout d'une liste des jeux archives dans les parametres.
+- Ajout de la restauration d'un jeu archive vers la bibliotheque active.
+- Ajout de la suppression definitive d'un jeu archive avec confirmation.
+- Exposition des actions via le service game, l'IPC Electron et le preload securise.
