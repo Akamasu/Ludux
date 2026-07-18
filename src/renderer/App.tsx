@@ -101,12 +101,15 @@ export default function App() {
           onCreateChronicle={gameDetailState.createChronicle}
           onCreateDlc={gameDetailState.createDlc}
           onCreatePlaySession={gameDetailState.createPlaySession}
+          onCreateScreenshot={gameDetailState.createScreenshot}
           onDeleteAchievement={gameDetailState.deleteAchievement}
           onDeleteDlc={gameDetailState.deleteDlc}
+          onDeleteScreenshot={gameDetailState.deleteScreenshot}
           onUpdateAchievement={gameDetailState.updateAchievement}
           onUpdateDlc={gameDetailState.updateDlc}
           onUpdateGame={gameDetailState.updateGame}
           onUpdateReview={gameDetailState.updateReview}
+          onUpdateScreenshot={gameDetailState.updateScreenshot}
         />
       ) : null}
       {!selectedGameId && activeView === 'home' ? (

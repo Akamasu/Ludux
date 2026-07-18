@@ -5,8 +5,10 @@ import type {
   CreateDlcInput,
   CreateGameInput,
   CreatePlaySessionInput,
+  CreateScreenshotInput,
   DeleteAchievementInput,
   DeleteDlcInput,
+  DeleteScreenshotInput,
   Emotion,
   GameDetail,
   GameListItem,
@@ -15,6 +17,7 @@ import type {
   UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
+  UpdateScreenshotInput,
 } from '../types/game'
 
 async function fetchGames(archived = false) {
@@ -65,6 +68,19 @@ async function fetchGameDetail(id: string) {
       achievements: {
         orderBy: {
           name: 'asc',
+        },
+      },
+      screenshots: {
+        include: {
+          chronicle: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
         },
       },
       sessions: {
@@ -141,6 +157,14 @@ function toGameDetail(game: GameDetailWithRelations): GameDetail {
       unlockDate: achievement.unlockDate?.toISOString() ?? null,
       provider: achievement.provider,
     })),
+    screenshots: game.screenshots.map((screenshot) => ({
+      id: screenshot.id,
+      path: screenshot.path,
+      description: screenshot.description,
+      createdAt: screenshot.createdAt.toISOString(),
+      chronicleId: screenshot.chronicle?.id ?? null,
+      chronicleTitle: screenshot.chronicle?.title ?? null,
+    })),
     chronicles: game.chronicles.map((chronicle) => ({
       id: chronicle.id,
       title: chronicle.title,
@@ -194,6 +218,19 @@ async function requireGameDetail(id: string) {
   }
 
   return game
+}
+
+async function requireChronicleForGame(gameId: string, chronicleId: string) {
+  const count = await prisma.chronicle.count({
+    where: {
+      id: chronicleId,
+      gameId,
+    },
+  })
+
+  if (count === 0) {
+    throw new Error('Chronique introuvable pour ce jeu.')
+  }
 }
 
 class GameService {
@@ -449,6 +486,72 @@ class GameService {
 
     if (result.count === 0) {
       throw new Error('Succes introuvable.')
+    }
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async createScreenshot(input: CreateScreenshotInput): Promise<GameDetail> {
+    const path = input.path.trim()
+
+    if (path.length === 0) {
+      throw new Error('Le chemin de la capture est obligatoire.')
+    }
+
+    const chronicleId = trimOptional(input.chronicleId)
+
+    if (chronicleId) {
+      await requireChronicleForGame(input.gameId, chronicleId)
+    }
+
+    await prisma.screenshot.create({
+      data: {
+        gameId: input.gameId,
+        path,
+        description: trimNullable(input.description),
+        chronicleId,
+      },
+    })
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async updateScreenshot(input: UpdateScreenshotInput): Promise<GameDetail> {
+    const chronicleId = trimNullable(input.chronicleId)
+
+    if (chronicleId) {
+      await requireChronicleForGame(input.gameId, chronicleId)
+    }
+
+    const result = await prisma.screenshot.updateMany({
+      where: {
+        id: input.id,
+        gameId: input.gameId,
+      },
+      data: {
+        path: trimOptional(input.path),
+        description: trimNullable(input.description),
+        chronicleId,
+      },
+    })
+
+    if (result.count === 0) {
+      throw new Error('Capture introuvable.')
+    }
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async deleteScreenshot(input: DeleteScreenshotInput): Promise<GameDetail> {
+    const result = await prisma.screenshot.deleteMany({
+      where: {
+        id: input.id,
+        gameId: input.gameId,
+      },
+    })
+
+    if (result.count === 0) {
+      throw new Error('Capture introuvable.')
     }
 
     return toGameDetail(await requireGameDetail(input.gameId))

@@ -95,6 +95,15 @@ export interface AchievementListItem {
   provider: string | null
 }
 
+export interface ScreenshotListItem {
+  id: string
+  path: string
+  description: string | null
+  createdAt: string
+  chronicleId: string | null
+  chronicleTitle: string | null
+}
+
 export interface GameReview {
   id: string
   rating: number
@@ -133,6 +142,7 @@ export interface GameDetail extends GameListItem {
   review: GameReview | null
   dlcs: DlcListItem[]
   achievements: AchievementListItem[]
+  screenshots: ScreenshotListItem[]
   chronicles: ChronicleListItem[]
   sessions: PlaySessionListItem[]
 }
@@ -263,6 +273,26 @@ export interface UpdateAchievementInput {
 }
 
 export interface DeleteAchievementInput {
+  gameId: string
+  id: string
+}
+
+export interface CreateScreenshotInput {
+  gameId: string
+  path: string
+  description?: string
+  chronicleId?: string
+}
+
+export interface UpdateScreenshotInput {
+  gameId: string
+  id: string
+  path?: string
+  description?: string | null
+  chronicleId?: string | null
+}
+
+export interface DeleteScreenshotInput {
   gameId: string
   id: string
 }

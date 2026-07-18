@@ -9,14 +9,17 @@ import {
   type CreateDlcInput,
   type CreateGameInput,
   type CreatePlaySessionInput,
+  type CreateScreenshotInput,
   type DeleteAchievementInput,
   type DeleteDlcInput,
+  type DeleteScreenshotInput,
   type Emotion,
   type GameStatus,
   type UpdateAchievementInput,
   type UpdateDlcInput,
   type UpdateGameInput,
   type UpdateReviewInput,
+  type UpdateScreenshotInput,
 } from '../../types/game'
 import { logger } from '../../utils/logger'
 
@@ -234,6 +237,44 @@ function parseDeleteAchievementInput(value: unknown): DeleteAchievementInput {
   }
 }
 
+function parseCreateScreenshotInput(value: unknown): CreateScreenshotInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees de la capture sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    path: readRequiredString(value['path'], 'Le chemin de la capture est obligatoire.'),
+    description: readOptionalString(value['description']),
+    chronicleId: readOptionalString(value['chronicleId']),
+  }
+}
+
+function parseUpdateScreenshotInput(value: unknown): UpdateScreenshotInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees de la capture sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de capture invalide.'),
+    path: readOptionalString(value['path']),
+    description: readNullableString(value['description'], 'Description invalide.'),
+    chronicleId: readNullableString(value['chronicleId'], 'Chronique liee invalide.'),
+  }
+}
+
+function parseDeleteScreenshotInput(value: unknown): DeleteScreenshotInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees de la capture sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de capture invalide.'),
+  }
+}
+
 function parseUpdateReviewInput(value: unknown): UpdateReviewInput {
   if (!isRecord(value) || typeof value['rating'] !== 'number') {
     throw new Error('Les donnees de l evaluation sont invalides.')
@@ -424,6 +465,33 @@ export function registerLibraryHandlers() {
   ipcMain.handle('games:deleteAchievement', async (_event, input: unknown) => {
     try {
       return await gameService.deleteAchievement(parseDeleteAchievementInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:createScreenshot', async (_event, input: unknown) => {
+    try {
+      return await gameService.createScreenshot(parseCreateScreenshotInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:updateScreenshot', async (_event, input: unknown) => {
+    try {
+      return await gameService.updateScreenshot(parseUpdateScreenshotInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:deleteScreenshot', async (_event, input: unknown) => {
+    try {
+      return await gameService.deleteScreenshot(parseDeleteScreenshotInput(input))
     } catch (error) {
       logger.error('[LibraryIPC]', error)
       throw error

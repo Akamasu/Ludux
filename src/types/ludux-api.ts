@@ -5,8 +5,10 @@ import type {
   CreateDlcInput,
   CreateGameInput,
   CreatePlaySessionInput,
+  CreateScreenshotInput,
   DeleteAchievementInput,
   DeleteDlcInput,
+  DeleteScreenshotInput,
   GameDetail,
   GameListItem,
   LibraryOverview,
@@ -16,6 +18,7 @@ import type {
   UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
+  UpdateScreenshotInput,
 } from './game'
 import type { SettingsActionResult, SettingsOverview } from './settings'
 
@@ -42,6 +45,9 @@ export interface LuduxApi {
     createAchievement: (input: CreateAchievementInput) => Promise<GameDetail>
     updateAchievement: (input: UpdateAchievementInput) => Promise<GameDetail>
     deleteAchievement: (input: DeleteAchievementInput) => Promise<GameDetail>
+    createScreenshot: (input: CreateScreenshotInput) => Promise<GameDetail>
+    updateScreenshot: (input: UpdateScreenshotInput) => Promise<GameDetail>
+    deleteScreenshot: (input: DeleteScreenshotInput) => Promise<GameDetail>
     createChronicle: (input: CreateChronicleInput) => Promise<GameDetail>
     createPlaySession: (input: CreatePlaySessionInput) => Promise<GameDetail>
   }

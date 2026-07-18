@@ -6,8 +6,10 @@ import type {
   CreateDlcInput,
   CreateGameInput,
   CreatePlaySessionInput,
+  CreateScreenshotInput,
   DeleteAchievementInput,
   DeleteDlcInput,
+  DeleteScreenshotInput,
   GameDetail,
   GameListItem,
   LibraryOverview,
@@ -17,6 +19,7 @@ import type {
   UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
+  UpdateScreenshotInput,
 } from '../types/game'
 import type { LuduxApi } from '../types/ludux-api'
 import type { SettingsActionResult, SettingsOverview } from '../types/settings'
@@ -59,6 +62,12 @@ const api: LuduxApi = {
       ipcRenderer.invoke('games:updateAchievement', input) as Promise<GameDetail>,
     deleteAchievement: (input: DeleteAchievementInput) =>
       ipcRenderer.invoke('games:deleteAchievement', input) as Promise<GameDetail>,
+    createScreenshot: (input: CreateScreenshotInput) =>
+      ipcRenderer.invoke('games:createScreenshot', input) as Promise<GameDetail>,
+    updateScreenshot: (input: UpdateScreenshotInput) =>
+      ipcRenderer.invoke('games:updateScreenshot', input) as Promise<GameDetail>,
+    deleteScreenshot: (input: DeleteScreenshotInput) =>
+      ipcRenderer.invoke('games:deleteScreenshot', input) as Promise<GameDetail>,
     createChronicle: (input: CreateChronicleInput) =>
       ipcRenderer.invoke('games:createChronicle', input) as Promise<GameDetail>,
     createPlaySession: (input: CreatePlaySessionInput) =>

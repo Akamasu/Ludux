@@ -4,14 +4,17 @@ import type {
   CreateChronicleInput,
   CreateDlcInput,
   CreatePlaySessionInput,
+  CreateScreenshotInput,
   DeleteAchievementInput,
   DeleteDlcInput,
+  DeleteScreenshotInput,
   GameDetail,
   GameListItem,
   UpdateAchievementInput,
   UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
+  UpdateScreenshotInput,
 } from '../../types/game'
 
 function detailFromListItem(game: GameListItem): GameDetail {
@@ -25,6 +28,7 @@ function detailFromListItem(game: GameListItem): GameDetail {
     review: null,
     dlcs: [],
     achievements: [],
+    screenshots: [],
     chronicles: [],
     sessions: [],
   }
@@ -410,6 +414,128 @@ export function useGameDetail(
     }
   }, [])
 
+  const createScreenshot = useCallback(async (input: CreateScreenshotInput) => {
+    const api = window.ludux
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      if (!api) {
+        setDetail((current) => {
+          const linkedChronicle = current?.chronicles.find(
+            (chronicle) => chronicle.id === input.chronicleId,
+          )
+
+          return current
+            ? {
+                ...current,
+                screenshots: [
+                  {
+                    id: crypto.randomUUID(),
+                    path: input.path,
+                    description: input.description ?? null,
+                    createdAt: new Date().toISOString(),
+                    chronicleId: linkedChronicle?.id ?? null,
+                    chronicleTitle: linkedChronicle?.title ?? null,
+                  },
+                  ...current.screenshots,
+                ],
+              }
+            : current
+        })
+        return
+      }
+
+      setDetail(await api.games.createScreenshot(input))
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [])
+
+  const updateScreenshot = useCallback(async (input: UpdateScreenshotInput) => {
+    const api = window.ludux
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      if (!api) {
+        setDetail((current) =>
+          current
+            ? {
+                ...current,
+                screenshots: current.screenshots.map((screenshot) => {
+                  if (screenshot.id !== input.id) {
+                    return screenshot
+                  }
+
+                  const linkedChronicle =
+                    input.chronicleId && input.chronicleId.length > 0
+                      ? current.chronicles.find(
+                          (chronicle) => chronicle.id === input.chronicleId,
+                        )
+                      : null
+
+                  return {
+                    ...screenshot,
+                    path: input.path ?? screenshot.path,
+                    description:
+                      input.description === undefined
+                        ? screenshot.description
+                        : input.description,
+                    chronicleId:
+                      input.chronicleId === undefined
+                        ? screenshot.chronicleId
+                        : linkedChronicle?.id ?? null,
+                    chronicleTitle:
+                      input.chronicleId === undefined
+                        ? screenshot.chronicleTitle
+                        : linkedChronicle?.title ?? null,
+                  }
+                }),
+              }
+            : current,
+        )
+        return
+      }
+
+      setDetail(await api.games.updateScreenshot(input))
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [])
+
+  const deleteScreenshot = useCallback(async (input: DeleteScreenshotInput) => {
+    const api = window.ludux
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      if (!api) {
+        setDetail((current) =>
+          current
+            ? {
+                ...current,
+                screenshots: current.screenshots.filter(
+                  (screenshot) => screenshot.id !== input.id,
+                ),
+              }
+            : current,
+        )
+        return
+      }
+
+      setDetail(await api.games.deleteScreenshot(input))
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [])
+
   const createPlaySession = useCallback(
     async (input: CreatePlaySessionInput) => {
       const api = window.ludux
@@ -469,6 +595,9 @@ export function useGameDetail(
     createAchievement,
     updateAchievement,
     deleteAchievement,
+    createScreenshot,
+    updateScreenshot,
+    deleteScreenshot,
     createChronicle,
     createPlaySession,
   }

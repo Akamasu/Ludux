@@ -119,6 +119,7 @@ Avant les fonctionnalités plus ambitieuses, Ludux doit permettre de :
 - ajouter des DLC ;
 - suivre les succès ;
 - tenir un journal ;
+- rattacher des captures d'écran ;
 - voir des statistiques simples ;
 - éviter les crashs bloquants.
 
@@ -139,6 +140,5 @@ Avant les fonctionnalités plus ambitieuses, Ludux doit permettre de :
 
 Les prochaines étapes les plus cohérentes avec le document de conception sont :
 
-- Captures : rattacher des images aux jeux et chroniques.
 - Providers : préparer une interface de fournisseur externe sans intégration
   réseau obligatoire au départ.

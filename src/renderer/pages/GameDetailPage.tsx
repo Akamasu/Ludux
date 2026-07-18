@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock3,
   Download,
+  ImagePlus,
   Puzzle,
   Save,
   Star,
@@ -23,16 +24,20 @@ import {
   type CreateChronicleInput,
   type CreateDlcInput,
   type CreatePlaySessionInput,
+  type CreateScreenshotInput,
   type DeleteAchievementInput,
   type DeleteDlcInput,
+  type DeleteScreenshotInput,
   type DlcListItem,
   type Emotion,
   type GameDetail,
   type GameStatus,
+  type ScreenshotListItem,
   type UpdateAchievementInput,
   type UpdateDlcInput,
   type UpdateGameInput,
   type UpdateReviewInput,
+  type UpdateScreenshotInput,
 } from '../../types/game'
 import { Button } from '../components/ui/Button'
 import { formatDate, formatHours } from '../utils/formatters'
@@ -48,16 +53,41 @@ interface GameDetailPageProps {
   onCreateChronicle: (input: CreateChronicleInput) => Promise<void>
   onCreateDlc: (input: CreateDlcInput) => Promise<void>
   onCreatePlaySession: (input: CreatePlaySessionInput) => Promise<void>
+  onCreateScreenshot: (input: CreateScreenshotInput) => Promise<void>
   onDeleteAchievement: (input: DeleteAchievementInput) => Promise<void>
   onDeleteDlc: (input: DeleteDlcInput) => Promise<void>
+  onDeleteScreenshot: (input: DeleteScreenshotInput) => Promise<void>
   onUpdateAchievement: (input: UpdateAchievementInput) => Promise<void>
   onUpdateDlc: (input: UpdateDlcInput) => Promise<void>
   onUpdateGame: (input: UpdateGameInput) => Promise<void>
   onUpdateReview: (input: UpdateReviewInput) => Promise<void>
+  onUpdateScreenshot: (input: UpdateScreenshotInput) => Promise<void>
 }
 
 function todayInputValue() {
   return new Date().toISOString().slice(0, 10)
+}
+
+function screenshotSource(path: string) {
+  const value = path.trim()
+
+  if (/^(https?:|blob:|data:|file:)/i.test(value)) {
+    return value
+  }
+
+  if (/^[a-z]:[\\/]/i.test(value)) {
+    return encodeURI(`file:///${value.replace(/\\/g, '/')}`)
+  }
+
+  if (value.startsWith('\\\\')) {
+    return encodeURI(`file:${value.replace(/\\/g, '/')}`)
+  }
+
+  if (value.startsWith('/')) {
+    return encodeURI(`file://${value}`)
+  }
+
+  return value
 }
 
 export function GameDetailPage({
@@ -71,12 +101,15 @@ export function GameDetailPage({
   onCreateChronicle,
   onCreateDlc,
   onCreatePlaySession,
+  onCreateScreenshot,
   onDeleteAchievement,
   onDeleteDlc,
+  onDeleteScreenshot,
   onUpdateAchievement,
   onUpdateDlc,
   onUpdateGame,
   onUpdateReview,
+  onUpdateScreenshot,
 }: GameDetailPageProps) {
   if (isLoading) {
     return (
@@ -163,6 +196,10 @@ export function GameDetailPage({
               <span className="font-medium text-white">{detail.achievements.length}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
+              <span className="text-zinc-500">Captures</span>
+              <span className="font-medium text-white">{detail.screenshots.length}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
               <span className="text-zinc-500">Note</span>
               <span className="font-medium text-white">
                 {detail.review ? `${detail.review.rating}/10` : 'Non note'}
@@ -203,6 +240,14 @@ export function GameDetailPage({
         onCreateAchievement={onCreateAchievement}
         onDeleteAchievement={onDeleteAchievement}
         onUpdateAchievement={onUpdateAchievement}
+      />
+
+      <ScreenshotPanel
+        detail={detail}
+        isSaving={isSaving}
+        onCreateScreenshot={onCreateScreenshot}
+        onDeleteScreenshot={onDeleteScreenshot}
+        onUpdateScreenshot={onUpdateScreenshot}
       />
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
@@ -883,6 +928,235 @@ function AchievementPanel({
         )}
       </div>
     </section>
+  )
+}
+
+function ScreenshotPanel({
+  detail,
+  isSaving,
+  onCreateScreenshot,
+  onDeleteScreenshot,
+  onUpdateScreenshot,
+}: DetailChildProps & {
+  onCreateScreenshot: (input: CreateScreenshotInput) => Promise<void>
+  onDeleteScreenshot: (input: DeleteScreenshotInput) => Promise<void>
+  onUpdateScreenshot: (input: UpdateScreenshotInput) => Promise<void>
+}) {
+  const [path, setPath] = useState('')
+  const [description, setDescription] = useState('')
+  const [chronicleId, setChronicleId] = useState('')
+  const linkedCount = detail.screenshots.filter((screenshot) => screenshot.chronicleId).length
+  const lastScreenshot = detail.screenshots[0] ?? null
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    await onCreateScreenshot({
+      gameId: detail.id,
+      path,
+      description,
+      chronicleId: chronicleId || undefined,
+    })
+
+    setPath('')
+    setDescription('')
+    setChronicleId('')
+  }
+
+  async function handleChronicleChange(screenshot: ScreenshotListItem, value: string) {
+    await onUpdateScreenshot({
+      gameId: detail.id,
+      id: screenshot.id,
+      chronicleId: value || null,
+    })
+  }
+
+  async function handleDeleteScreenshot(screenshot: ScreenshotListItem) {
+    const confirmed = window.confirm('Supprimer cette capture ?')
+
+    if (confirmed) {
+      await onDeleteScreenshot({
+        gameId: detail.id,
+        id: screenshot.id,
+      })
+    }
+  }
+
+  return (
+    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Souvenirs visuels</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Captures et images locales rattachees a ce jeu.
+          </p>
+        </div>
+        <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#7C5CFF]/10 text-[#D8D0FF]">
+          <ImagePlus size={18} aria-hidden="true" />
+        </div>
+      </div>
+
+      <div className="mb-5 grid gap-3 md:grid-cols-3">
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Captures</p>
+          <p className="mt-1 text-xl font-semibold text-white">{detail.screenshots.length}</p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Liees</p>
+          <p className="mt-1 text-xl font-semibold text-white">{linkedCount}</p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Derniere</p>
+          <p className="mt-1 truncate text-xl font-semibold text-white">
+            {lastScreenshot ? formatDate(lastScreenshot.createdAt) : '-'}
+          </p>
+        </div>
+      </div>
+
+      <form className="grid gap-3" onSubmit={handleSubmit}>
+        <div className="grid gap-3 xl:grid-cols-[1fr_240px_auto]">
+          <label>
+            <span className="sr-only">Chemin de la capture</span>
+            <input
+              value={path}
+              onChange={(event) => setPath(event.target.value)}
+              placeholder="Chemin local ou URL de l'image"
+              className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+            />
+          </label>
+          <label>
+            <span className="sr-only">Chronique liee</span>
+            <select
+              value={chronicleId}
+              onChange={(event) => setChronicleId(event.target.value)}
+              className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+            >
+              <option value="">Aucune chronique</option>
+              {detail.chronicles.map((chronicle) => (
+                <option key={chronicle.id} value={chronicle.id}>
+                  {chronicle.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button type="submit" disabled={isSaving || path.trim().length === 0}>
+            <ImagePlus size={17} aria-hidden="true" />
+            Ajouter
+          </Button>
+        </div>
+
+        <label>
+          <span className="sr-only">Description de la capture</span>
+          <textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            rows={3}
+            placeholder="Pourquoi cette image merite de rester dans votre parcours..."
+            className="w-full resize-none rounded-lg border border-white/10 bg-[#0F1117] px-3 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+          />
+        </label>
+      </form>
+
+      <div className="mt-5">
+        {detail.screenshots.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
+            Aucune capture renseignee pour ce jeu.
+          </p>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+            {detail.screenshots.map((screenshot) => (
+              <article
+                key={screenshot.id}
+                className="overflow-hidden rounded-lg border border-white/10 bg-[#121620]"
+              >
+                <ScreenshotPreview screenshot={screenshot} />
+                <div className="grid gap-3 p-4">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/7 px-2.5 py-1 text-zinc-300">
+                        <CalendarDays size={14} aria-hidden="true" />
+                        {formatDate(screenshot.createdAt)}
+                      </span>
+                      {screenshot.chronicleTitle ? (
+                        <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-[#4F7CFF]/10 px-2.5 py-1 text-[#C9D6FF]">
+                          <BookText size={14} aria-hidden="true" />
+                          <span className="truncate">{screenshot.chronicleTitle}</span>
+                        </span>
+                      ) : null}
+                    </div>
+                    {screenshot.description ? (
+                      <p className="mt-3 text-sm leading-6 text-zinc-400">
+                        {screenshot.description}
+                      </p>
+                    ) : null}
+                    <p className="mt-3 truncate text-xs text-zinc-600" title={screenshot.path}>
+                      {screenshot.path}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="min-w-[200px] flex-1">
+                      <span className="sr-only">Changer la chronique liee</span>
+                      <select
+                        value={screenshot.chronicleId ?? ''}
+                        onChange={(event) =>
+                          handleChronicleChange(screenshot, event.target.value)
+                        }
+                        disabled={isSaving}
+                        className="h-10 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+                      >
+                        <option value="">Aucune chronique</option>
+                        {detail.chronicles.map((chronicle) => (
+                          <option key={chronicle.id} value={chronicle.id}>
+                            {chronicle.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      aria-label="Supprimer la capture"
+                      title="Supprimer"
+                      onClick={() => handleDeleteScreenshot(screenshot)}
+                      disabled={isSaving}
+                      className="h-10 border-rose-400/30 bg-rose-400/10 text-rose-100 hover:border-rose-300/60 hover:bg-rose-400/15"
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                    </Button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function ScreenshotPreview({ screenshot }: { screenshot: ScreenshotListItem }) {
+  const [hasFailed, setHasFailed] = useState(false)
+
+  useEffect(() => {
+    setHasFailed(false)
+  }, [screenshot.path])
+
+  if (hasFailed) {
+    return (
+      <div className="grid aspect-video place-items-center bg-[#0F1117] p-4 text-center text-sm text-zinc-500">
+        Image indisponible
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={screenshotSource(screenshot.path)}
+      alt={screenshot.description ?? screenshot.chronicleTitle ?? 'Capture Ludux'}
+      onError={() => setHasFailed(true)}
+      className="aspect-video w-full bg-[#0F1117] object-cover"
+    />
   )
 }
 

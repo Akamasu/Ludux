@@ -17,6 +17,7 @@ Le projet suit des versions de developpement simples :
 - `v0.11.x` : archivage, restauration et suppression de jeux.
 - `v0.12.x` : gestion locale des DLC.
 - `v0.13.x` : gestion locale des succes.
+- `v0.14.x` : captures d'ecran et souvenirs visuels.
 
 ## v0.1.0 - 2026-07-16
 
@@ -123,4 +124,14 @@ Le projet suit des versions de developpement simples :
 - Ajout des compteurs de succes, succes debloques et succes restants.
 - Ajout des actions rapides pour marquer un succes debloque ou verrouille.
 - Ajout de la suppression d'un succes avec confirmation.
+- Exposition des actions via le service game, l'IPC Electron et le preload securise.
+
+## v0.14.0 - 2026-07-18
+
+- Ajout d'une galerie de souvenirs visuels depuis les fiches de jeux.
+- Ajout de la creation d'une capture avec chemin local ou URL, description et chronique liee.
+- Ajout de compteurs pour les captures, les images liees a une chronique et la derniere capture.
+- Ajout d'une conversion des chemins locaux Windows en sources `file:///` affichables dans Electron.
+- Ajout de la modification rapide de la chronique liee a une capture.
+- Ajout de la suppression d'une capture avec confirmation.
 - Exposition des actions via le service game, l'IPC Electron et le preload securise.
