@@ -1,4 +1,16 @@
-import { Archive, ArrowLeft, BookText, CalendarDays, Clock3, Save, Star } from 'lucide-react'
+import {
+  Archive,
+  ArrowLeft,
+  BookText,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  Download,
+  Puzzle,
+  Save,
+  Star,
+  Trash2,
+} from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   EMOTION_LABELS,
@@ -6,10 +18,14 @@ import {
   GAME_STATUS_LABELS,
   GAME_STATUS_VALUES,
   type CreateChronicleInput,
+  type CreateDlcInput,
   type CreatePlaySessionInput,
+  type DeleteDlcInput,
+  type DlcListItem,
   type Emotion,
   type GameDetail,
   type GameStatus,
+  type UpdateDlcInput,
   type UpdateGameInput,
   type UpdateReviewInput,
 } from '../../types/game'
@@ -24,7 +40,10 @@ interface GameDetailPageProps {
   onBack: () => void
   onArchiveGame: (gameId: string) => Promise<void>
   onCreateChronicle: (input: CreateChronicleInput) => Promise<void>
+  onCreateDlc: (input: CreateDlcInput) => Promise<void>
   onCreatePlaySession: (input: CreatePlaySessionInput) => Promise<void>
+  onDeleteDlc: (input: DeleteDlcInput) => Promise<void>
+  onUpdateDlc: (input: UpdateDlcInput) => Promise<void>
   onUpdateGame: (input: UpdateGameInput) => Promise<void>
   onUpdateReview: (input: UpdateReviewInput) => Promise<void>
 }
@@ -41,7 +60,10 @@ export function GameDetailPage({
   onBack,
   onArchiveGame,
   onCreateChronicle,
+  onCreateDlc,
   onCreatePlaySession,
+  onDeleteDlc,
+  onUpdateDlc,
   onUpdateGame,
   onUpdateReview,
 }: GameDetailPageProps) {
@@ -122,6 +144,10 @@ export function GameDetailPage({
               <span className="font-medium text-white">{detail.sessions.length}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
+              <span className="text-zinc-500">DLC</span>
+              <span className="font-medium text-white">{detail.dlcs.length}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
               <span className="text-zinc-500">Note</span>
               <span className="font-medium text-white">
                 {detail.review ? `${detail.review.rating}/10` : 'Non note'}
@@ -147,6 +173,14 @@ export function GameDetailPage({
         <GameEditPanel detail={detail} isSaving={isSaving} onUpdateGame={onUpdateGame} />
         <ReviewPanel detail={detail} isSaving={isSaving} onUpdateReview={onUpdateReview} />
       </section>
+
+      <DlcPanel
+        detail={detail}
+        isSaving={isSaving}
+        onCreateDlc={onCreateDlc}
+        onDeleteDlc={onDeleteDlc}
+        onUpdateDlc={onUpdateDlc}
+      />
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
         <SessionForm detail={detail} isSaving={isSaving} onCreatePlaySession={onCreatePlaySession} />
@@ -366,6 +400,232 @@ function ReviewPanel({
         Enregistrer l'avis
       </Button>
     </form>
+  )
+}
+
+function DlcPanel({
+  detail,
+  isSaving,
+  onCreateDlc,
+  onDeleteDlc,
+  onUpdateDlc,
+}: DetailChildProps & {
+  onCreateDlc: (input: CreateDlcInput) => Promise<void>
+  onDeleteDlc: (input: DeleteDlcInput) => Promise<void>
+  onUpdateDlc: (input: UpdateDlcInput) => Promise<void>
+}) {
+  const [name, setName] = useState('')
+  const [releaseDate, setReleaseDate] = useState('')
+  const [owned, setOwned] = useState(false)
+  const [completed, setCompleted] = useState(false)
+  const completedCount = detail.dlcs.filter((dlc) => dlc.completed).length
+  const ownedCount = detail.dlcs.filter((dlc) => dlc.owned).length
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    await onCreateDlc({
+      gameId: detail.id,
+      name,
+      releaseDate: releaseDate || undefined,
+      owned,
+      completed,
+    })
+
+    setName('')
+    setReleaseDate('')
+    setOwned(false)
+    setCompleted(false)
+  }
+
+  async function updateDlcState(
+    dlc: DlcListItem,
+    patch: Pick<UpdateDlcInput, 'owned' | 'completed'>,
+  ) {
+    await onUpdateDlc({
+      gameId: detail.id,
+      id: dlc.id,
+      ...patch,
+    })
+  }
+
+  async function handleDeleteDlc(dlc: DlcListItem) {
+    const confirmed = window.confirm(`Supprimer le DLC "${dlc.name}" ?`)
+
+    if (confirmed) {
+      await onDeleteDlc({
+        gameId: detail.id,
+        id: dlc.id,
+      })
+    }
+  }
+
+  return (
+    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">DLC</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Extensions possedees et terminees pour ce jeu.
+          </p>
+        </div>
+        <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#7C5CFF]/10 text-[#D8D0FF]">
+          <Puzzle size={18} aria-hidden="true" />
+        </div>
+      </div>
+
+      <div className="mb-5 grid gap-3 md:grid-cols-3">
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">DLC</p>
+          <p className="mt-1 text-xl font-semibold text-white">{detail.dlcs.length}</p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Possedes</p>
+          <p className="mt-1 text-xl font-semibold text-white">{ownedCount}</p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Termines</p>
+          <p className="mt-1 text-xl font-semibold text-white">{completedCount}</p>
+        </div>
+      </div>
+
+      <form className="grid gap-3 xl:grid-cols-[1fr_180px_auto]" onSubmit={handleSubmit}>
+        <label>
+          <span className="sr-only">Nom du DLC</span>
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Nom du DLC"
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+          />
+        </label>
+        <label>
+          <span className="sr-only">Date de sortie du DLC</span>
+          <input
+            type="date"
+            value={releaseDate}
+            onChange={(event) => setReleaseDate(event.target.value)}
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+          />
+        </label>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex h-11 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
+            <input
+              type="checkbox"
+              checked={owned}
+              onChange={(event) => {
+                setOwned(event.target.checked)
+
+                if (!event.target.checked) {
+                  setCompleted(false)
+                }
+              }}
+              className="accent-[#7C5CFF]"
+            />
+            Possede
+          </label>
+          <label className="flex h-11 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
+            <input
+              type="checkbox"
+              checked={completed}
+              onChange={(event) => {
+                setCompleted(event.target.checked)
+
+                if (event.target.checked) {
+                  setOwned(true)
+                }
+              }}
+              className="accent-[#7C5CFF]"
+            />
+            Termine
+          </label>
+          <Button type="submit" disabled={isSaving || name.trim().length === 0}>
+            <Download size={17} aria-hidden="true" />
+            Ajouter
+          </Button>
+        </div>
+      </form>
+
+      <div className="mt-5 space-y-3">
+        {detail.dlcs.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
+            Aucun DLC renseigne pour ce jeu.
+          </p>
+        ) : (
+          detail.dlcs.map((dlc) => (
+            <article
+              key={dlc.id}
+              className="grid gap-4 rounded-lg border border-white/10 bg-[#121620] p-4 xl:grid-cols-[1fr_auto]"
+            >
+              <div className="min-w-0">
+                <h3 className="truncate font-medium text-white">{dlc.name}</h3>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                  {dlc.releaseDate ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/7 px-2.5 py-1 text-zinc-300">
+                      <CalendarDays size={14} aria-hidden="true" />
+                      {formatDate(dlc.releaseDate)}
+                    </span>
+                  ) : null}
+                  {dlc.owned ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#4F7CFF]/10 px-2.5 py-1 text-[#C9D6FF]">
+                      <Download size={14} aria-hidden="true" />
+                      Possede
+                    </span>
+                  ) : null}
+                  {dlc.completed ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#7C5CFF]/10 px-2.5 py-1 text-[#D8D0FF]">
+                      <CheckCircle2 size={14} aria-hidden="true" />
+                      Termine
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={dlc.owned}
+                    onChange={(event) =>
+                      updateDlcState(dlc, {
+                        owned: event.target.checked,
+                      })
+                    }
+                    disabled={isSaving}
+                    className="accent-[#7C5CFF]"
+                  />
+                  Possede
+                </label>
+                <label className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={dlc.completed}
+                    onChange={(event) =>
+                      updateDlcState(dlc, {
+                        completed: event.target.checked,
+                      })
+                    }
+                    disabled={isSaving}
+                    className="accent-[#7C5CFF]"
+                  />
+                  Termine
+                </label>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  aria-label={`Supprimer ${dlc.name}`}
+                  title="Supprimer"
+                  onClick={() => handleDeleteDlc(dlc)}
+                  disabled={isSaving}
+                  className="h-10 border-rose-400/30 bg-rose-400/10 text-rose-100 hover:border-rose-300/60 hover:bg-rose-400/15"
+                >
+                  <Trash2 size={16} aria-hidden="true" />
+                </Button>
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
   )
 }
 

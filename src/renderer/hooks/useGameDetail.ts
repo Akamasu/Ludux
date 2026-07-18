@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import type {
   CreateChronicleInput,
+  CreateDlcInput,
   CreatePlaySessionInput,
+  DeleteDlcInput,
   GameDetail,
   GameListItem,
+  UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
 } from '../../types/game'
@@ -17,6 +20,7 @@ function detailFromListItem(game: GameListItem): GameDetail {
     releaseDate: null,
     website: null,
     review: null,
+    dlcs: [],
     chronicles: [],
     sessions: [],
   }
@@ -175,6 +179,110 @@ export function useGameDetail(
     [onChanged],
   )
 
+  const createDlc = useCallback(
+    async (input: CreateDlcInput) => {
+      const api = window.ludux
+      setIsSaving(true)
+      setError(null)
+
+      try {
+        if (!api) {
+          setDetail((current) =>
+            current
+              ? {
+                  ...current,
+                  dlcs: [
+                    ...current.dlcs,
+                    {
+                      id: crypto.randomUUID(),
+                      name: input.name,
+                      releaseDate: input.releaseDate ?? null,
+                      owned: input.completed ? true : input.owned ?? false,
+                      completed: input.completed ?? false,
+                    },
+                  ],
+                }
+              : current,
+          )
+          return
+        }
+
+        setDetail(await api.games.createDlc(input))
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [],
+  )
+
+  const updateDlc = useCallback(async (input: UpdateDlcInput) => {
+    const api = window.ludux
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      if (!api) {
+        setDetail((current) =>
+          current
+            ? {
+                ...current,
+                dlcs: current.dlcs.map((dlc) =>
+                  dlc.id === input.id
+                    ? {
+                        ...dlc,
+                        name: input.name ?? dlc.name,
+                        releaseDate:
+                          input.releaseDate === undefined
+                            ? dlc.releaseDate
+                            : input.releaseDate,
+                        owned: input.completed ? true : input.owned ?? dlc.owned,
+                        completed:
+                          input.owned === false ? false : input.completed ?? dlc.completed,
+                      }
+                    : dlc,
+                ),
+              }
+            : current,
+        )
+        return
+      }
+
+      setDetail(await api.games.updateDlc(input))
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [])
+
+  const deleteDlc = useCallback(async (input: DeleteDlcInput) => {
+    const api = window.ludux
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      if (!api) {
+        setDetail((current) =>
+          current
+            ? {
+                ...current,
+                dlcs: current.dlcs.filter((dlc) => dlc.id !== input.id),
+              }
+            : current,
+        )
+        return
+      }
+
+      setDetail(await api.games.deleteDlc(input))
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [])
+
   const createPlaySession = useCallback(
     async (input: CreatePlaySessionInput) => {
       const api = window.ludux
@@ -228,6 +336,9 @@ export function useGameDetail(
     refresh,
     updateGame,
     updateReview,
+    createDlc,
+    updateDlc,
+    deleteDlc,
     createChronicle,
     createPlaySession,
   }

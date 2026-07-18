@@ -2,13 +2,16 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type {
   ChronicleTimelineItem,
   CreateChronicleInput,
+  CreateDlcInput,
   CreateGameInput,
   CreatePlaySessionInput,
+  DeleteDlcInput,
   GameDetail,
   GameListItem,
   LibraryOverview,
   LibraryStatistics,
   LifeBookEvent,
+  UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
 } from '../types/game'
@@ -41,6 +44,12 @@ const api: LuduxApi = {
     delete: (id: string) => ipcRenderer.invoke('games:delete', id) as Promise<void>,
     updateReview: (input: UpdateReviewInput) =>
       ipcRenderer.invoke('games:updateReview', input) as Promise<GameDetail>,
+    createDlc: (input: CreateDlcInput) =>
+      ipcRenderer.invoke('games:createDlc', input) as Promise<GameDetail>,
+    updateDlc: (input: UpdateDlcInput) =>
+      ipcRenderer.invoke('games:updateDlc', input) as Promise<GameDetail>,
+    deleteDlc: (input: DeleteDlcInput) =>
+      ipcRenderer.invoke('games:deleteDlc', input) as Promise<GameDetail>,
     createChronicle: (input: CreateChronicleInput) =>
       ipcRenderer.invoke('games:createChronicle', input) as Promise<GameDetail>,
     createPlaySession: (input: CreatePlaySessionInput) =>

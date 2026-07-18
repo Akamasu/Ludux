@@ -35,3 +35,4 @@ Le tag `v0.1.0` correspond au bootstrap initial de Ludux : socle Electron/React,
 - `v0.9.0` : parametres, sauvegardes et exports locaux.
 - `v0.10.0` : notes et evaluations detaillees.
 - `v0.11.0` : archivage, restauration et suppression de jeux.
+- `v0.12.0` : gestion locale des DLC.

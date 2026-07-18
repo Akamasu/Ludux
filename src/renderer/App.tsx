@@ -98,7 +98,10 @@ export default function App() {
           onBack={() => setSelectedGameId(null)}
           onArchiveGame={archiveGame}
           onCreateChronicle={gameDetailState.createChronicle}
+          onCreateDlc={gameDetailState.createDlc}
           onCreatePlaySession={gameDetailState.createPlaySession}
+          onDeleteDlc={gameDetailState.deleteDlc}
+          onUpdateDlc={gameDetailState.updateDlc}
           onUpdateGame={gameDetailState.updateGame}
           onUpdateReview={gameDetailState.updateReview}
         />

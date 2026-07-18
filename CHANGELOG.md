@@ -15,6 +15,7 @@ Le projet suit des versions de developpement simples :
 - `v0.9.x` : parametres, sauvegardes et exports locaux.
 - `v0.10.x` : notes et evaluations detaillees.
 - `v0.11.x` : archivage, restauration et suppression de jeux.
+- `v0.12.x` : gestion locale des DLC.
 
 ## v0.1.0 - 2026-07-16
 
@@ -103,4 +104,13 @@ Le projet suit des versions de developpement simples :
 - Ajout d'une liste des jeux archives dans les parametres.
 - Ajout de la restauration d'un jeu archive vers la bibliotheque active.
 - Ajout de la suppression definitive d'un jeu archive avec confirmation.
+- Exposition des actions via le service game, l'IPC Electron et le preload securise.
+
+## v0.12.0 - 2026-07-18
+
+- Ajout d'une gestion locale simple des DLC depuis les fiches de jeux.
+- Ajout de la creation d'un DLC avec nom, date de sortie, possession et completion.
+- Ajout des compteurs de DLC, DLC possedes et DLC termines.
+- Ajout des actions rapides pour marquer un DLC possede ou termine.
+- Ajout de la suppression d'un DLC avec confirmation.
 - Exposition des actions via le service game, l'IPC Electron et le preload securise.

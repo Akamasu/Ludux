@@ -1,13 +1,16 @@
 import type {
   ChronicleTimelineItem,
   CreateChronicleInput,
+  CreateDlcInput,
   CreateGameInput,
   CreatePlaySessionInput,
+  DeleteDlcInput,
   GameDetail,
   GameListItem,
   LibraryOverview,
   LibraryStatistics,
   LifeBookEvent,
+  UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
 } from './game'
@@ -30,6 +33,9 @@ export interface LuduxApi {
     restore: (id: string) => Promise<void>
     delete: (id: string) => Promise<void>
     updateReview: (input: UpdateReviewInput) => Promise<GameDetail>
+    createDlc: (input: CreateDlcInput) => Promise<GameDetail>
+    updateDlc: (input: UpdateDlcInput) => Promise<GameDetail>
+    deleteDlc: (input: DeleteDlcInput) => Promise<GameDetail>
     createChronicle: (input: CreateChronicleInput) => Promise<GameDetail>
     createPlaySession: (input: CreatePlaySessionInput) => Promise<GameDetail>
   }

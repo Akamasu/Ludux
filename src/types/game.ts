@@ -77,6 +77,14 @@ export interface PlaySessionListItem {
   platformName: string | null
 }
 
+export interface DlcListItem {
+  id: string
+  name: string
+  releaseDate: string | null
+  owned: boolean
+  completed: boolean
+}
+
 export interface GameReview {
   id: string
   rating: number
@@ -113,6 +121,7 @@ export interface GameDetail extends GameListItem {
   releaseDate: string | null
   website: string | null
   review: GameReview | null
+  dlcs: DlcListItem[]
   chronicles: ChronicleListItem[]
   sessions: PlaySessionListItem[]
 }
@@ -197,6 +206,28 @@ export interface UpdateReviewInput {
   weaknesses?: string | null
   mainMemory?: string | null
   favorite?: boolean
+}
+
+export interface CreateDlcInput {
+  gameId: string
+  name: string
+  releaseDate?: string
+  owned?: boolean
+  completed?: boolean
+}
+
+export interface UpdateDlcInput {
+  gameId: string
+  id: string
+  name?: string
+  releaseDate?: string | null
+  owned?: boolean
+  completed?: boolean
+}
+
+export interface DeleteDlcInput {
+  gameId: string
+  id: string
 }
 
 export interface CreateChronicleInput {

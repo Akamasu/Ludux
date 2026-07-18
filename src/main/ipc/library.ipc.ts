@@ -5,10 +5,13 @@ import {
   EMOTION_VALUES,
   GAME_STATUS_VALUES,
   type CreateChronicleInput,
+  type CreateDlcInput,
   type CreateGameInput,
   type CreatePlaySessionInput,
+  type DeleteDlcInput,
   type Emotion,
   type GameStatus,
+  type UpdateDlcInput,
   type UpdateGameInput,
   type UpdateReviewInput,
 } from '../../types/game'
@@ -141,6 +144,46 @@ function parseCreatePlaySessionInput(value: unknown): CreatePlaySessionInput {
     durationMinutes: value['durationMinutes'],
     note: readOptionalString(value['note']),
     platformName: readOptionalString(value['platformName']),
+  }
+}
+
+function parseCreateDlcInput(value: unknown): CreateDlcInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees du DLC sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    name: readRequiredString(value['name'], 'Le nom du DLC est obligatoire.'),
+    releaseDate: readOptionalString(value['releaseDate']),
+    owned: readOptionalBoolean(value['owned'], 'Etat de possession invalide.'),
+    completed: readOptionalBoolean(value['completed'], 'Etat de completion invalide.'),
+  }
+}
+
+function parseUpdateDlcInput(value: unknown): UpdateDlcInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees du DLC sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de DLC invalide.'),
+    name: readOptionalString(value['name']),
+    releaseDate: readNullableString(value['releaseDate'], 'Date de sortie invalide.'),
+    owned: readOptionalBoolean(value['owned'], 'Etat de possession invalide.'),
+    completed: readOptionalBoolean(value['completed'], 'Etat de completion invalide.'),
+  }
+}
+
+function parseDeleteDlcInput(value: unknown): DeleteDlcInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees du DLC sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de DLC invalide.'),
   }
 }
 
@@ -280,6 +323,33 @@ export function registerLibraryHandlers() {
   ipcMain.handle('games:updateReview', async (_event, input: unknown) => {
     try {
       return await gameService.updateReview(parseUpdateReviewInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:createDlc', async (_event, input: unknown) => {
+    try {
+      return await gameService.createDlc(parseCreateDlcInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:updateDlc', async (_event, input: unknown) => {
+    try {
+      return await gameService.updateDlc(parseUpdateDlcInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:deleteDlc', async (_event, input: unknown) => {
+    try {
+      return await gameService.deleteDlc(parseDeleteDlcInput(input))
     } catch (error) {
       logger.error('[LibraryIPC]', error)
       throw error

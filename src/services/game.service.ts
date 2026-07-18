@@ -1,12 +1,15 @@
 import { prisma } from '../database/client'
 import type {
   CreateChronicleInput,
+  CreateDlcInput,
   CreateGameInput,
   CreatePlaySessionInput,
+  DeleteDlcInput,
   Emotion,
   GameDetail,
   GameListItem,
   GameStatus,
+  UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
 } from '../types/game'
@@ -49,6 +52,11 @@ async function fetchGameDetail(id: string) {
       platforms: {
         include: {
           platform: true,
+        },
+      },
+      dlcs: {
+        orderBy: {
+          name: 'asc',
         },
       },
       sessions: {
@@ -109,6 +117,13 @@ function toGameDetail(game: GameDetailWithRelations): GameDetail {
           updatedAt: game.review.updatedAt.toISOString(),
         }
       : null,
+    dlcs: game.dlcs.map((dlc) => ({
+      id: dlc.id,
+      name: dlc.name,
+      releaseDate: dlc.releaseDate?.toISOString() ?? null,
+      owned: dlc.owned,
+      completed: dlc.completed,
+    })),
     chronicles: game.chronicles.map((chronicle) => ({
       id: chronicle.id,
       title: chronicle.title,
@@ -140,6 +155,18 @@ function trimNullable(value: string | null | undefined) {
 
   const trimmed = value?.trim()
   return trimmed ? trimmed : null
+}
+
+function parseNullableDate(value: string | null | undefined) {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (value === null || value.trim().length === 0) {
+    return null
+  }
+
+  return new Date(value)
 }
 
 async function requireGameDetail(id: string) {
@@ -269,6 +296,65 @@ class GameService {
         favorite: input.favorite,
       },
     })
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async createDlc(input: CreateDlcInput): Promise<GameDetail> {
+    const name = input.name.trim()
+
+    if (name.length === 0) {
+      throw new Error('Le nom du DLC est obligatoire.')
+    }
+
+    await prisma.dlc.create({
+      data: {
+        gameId: input.gameId,
+        name,
+        releaseDate: parseNullableDate(input.releaseDate),
+        owned: input.completed ? true : input.owned ?? false,
+        completed: input.completed ?? false,
+      },
+    })
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async updateDlc(input: UpdateDlcInput): Promise<GameDetail> {
+    const name = trimOptional(input.name)
+    const owned = input.completed ? true : input.owned
+    const completed = input.owned === false ? false : input.completed
+    const result = await prisma.dlc.updateMany({
+      where: {
+        id: input.id,
+        gameId: input.gameId,
+      },
+      data: {
+        name,
+        releaseDate: parseNullableDate(input.releaseDate),
+        owned,
+        completed,
+      },
+    })
+
+    if (result.count === 0) {
+      throw new Error('DLC introuvable.')
+    }
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async deleteDlc(input: DeleteDlcInput): Promise<GameDetail> {
+    const result = await prisma.dlc.deleteMany({
+      where: {
+        id: input.id,
+        gameId: input.gameId,
+      },
+    })
+
+    if (result.count === 0) {
+      throw new Error('DLC introuvable.')
+    }
 
     return toGameDetail(await requireGameDetail(input.gameId))
   }

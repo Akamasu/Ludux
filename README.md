@@ -29,14 +29,14 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.11.0`
+Version courante : `v0.12.0`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
 
 - Accueil avec résumé de la bibliothèque.
 - Bibliothèque avec ajout de jeux, recherche, filtres, vues grille/liste et archivage.
-- Fiche détail d'un jeu avec statut, note personnelle, évaluation, sessions et chroniques.
+- Fiche détail d'un jeu avec statut, note personnelle, évaluation, DLC, sessions et chroniques.
 - Journal des chroniques avec recherche et filtres.
 - Musée des jeux terminés et terminés à 100 %.
 - Livre de Vie avec chronologie globale des sessions et chroniques.
@@ -60,6 +60,7 @@ Chaque jeu peut recevoir :
 - un statut de progression ;
 - une note personnelle ;
 - une évaluation détaillée avec note, avis, points forts/faibles et souvenir principal ;
+- des DLC avec possession et complétion ;
 - des sessions de jeu avec durée, plateforme et commentaire ;
 - des chroniques avec émotion associée.
 
@@ -210,6 +211,7 @@ Tags principaux :
 - `v0.9.0` : paramètres, sauvegardes et exports locaux.
 - `v0.10.0` : notes et évaluations détaillées.
 - `v0.11.0` : archivage, restauration et suppression de jeux.
+- `v0.12.0` : gestion locale des DLC.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.
@@ -220,7 +222,7 @@ Prochaines pistes naturelles :
 
 - Édition avancée des chroniques.
 - Gestion des captures d'écran et souvenirs visuels.
-- Gestion locale des DLC et succès.
+- Gestion locale des succès.
 - Intégrations optionnelles avec des plateformes de jeu.
 
 La vision produit détaillée est synthétisée dans `docs/PRODUCT_VISION.md`.
