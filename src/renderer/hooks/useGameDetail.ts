@@ -5,6 +5,7 @@ import type {
   GameDetail,
   GameListItem,
   UpdateGameInput,
+  UpdateReviewInput,
 } from '../../types/game'
 
 function detailFromListItem(game: GameListItem): GameDetail {
@@ -15,6 +16,7 @@ function detailFromListItem(game: GameListItem): GameDetail {
     publisher: null,
     releaseDate: null,
     website: null,
+    review: null,
     chronicles: [],
     sessions: [],
   }
@@ -132,6 +134,47 @@ export function useGameDetail(
     [onChanged],
   )
 
+  const updateReview = useCallback(
+    async (input: UpdateReviewInput) => {
+      const api = window.ludux
+      setIsSaving(true)
+      setError(null)
+
+      try {
+        if (!api) {
+          setDetail((current) =>
+            current
+              ? {
+                  ...current,
+                  rating: input.rating,
+                  review: {
+                    id: current.review?.id ?? crypto.randomUUID(),
+                    rating: input.rating,
+                    content: input.content ?? null,
+                    strengths: input.strengths ?? null,
+                    weaknesses: input.weaknesses ?? null,
+                    mainMemory: input.mainMemory ?? null,
+                    favorite: input.favorite ?? current.review?.favorite ?? false,
+                    createdAt: current.review?.createdAt ?? new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                  },
+                }
+              : current,
+          )
+          return
+        }
+
+        setDetail(await api.games.updateReview(input))
+        await onChanged()
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [onChanged],
+  )
+
   const createPlaySession = useCallback(
     async (input: CreatePlaySessionInput) => {
       const api = window.ludux
@@ -184,6 +227,7 @@ export function useGameDetail(
     isSaving,
     refresh,
     updateGame,
+    updateReview,
     createChronicle,
     createPlaySession,
   }

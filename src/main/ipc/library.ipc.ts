@@ -10,6 +10,7 @@ import {
   type Emotion,
   type GameStatus,
   type UpdateGameInput,
+  type UpdateReviewInput,
 } from '../../types/game'
 import { logger } from '../../utils/logger'
 
@@ -31,6 +32,35 @@ function readOptionalString(value: unknown) {
 
 function readRequiredString(value: unknown, message: string) {
   if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(message)
+  }
+
+  return value
+}
+
+function readNullableString(value: unknown, message: string) {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (value === null) {
+    return null
+  }
+
+  if (typeof value !== 'string') {
+    throw new Error(message)
+  }
+
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : null
+}
+
+function readOptionalBoolean(value: unknown, message: string) {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (typeof value !== 'boolean') {
     throw new Error(message)
   }
 
@@ -114,6 +144,28 @@ function parseCreatePlaySessionInput(value: unknown): CreatePlaySessionInput {
   }
 }
 
+function parseUpdateReviewInput(value: unknown): UpdateReviewInput {
+  if (!isRecord(value) || typeof value['rating'] !== 'number') {
+    throw new Error('Les donnees de l evaluation sont invalides.')
+  }
+
+  const rating = Math.round(value['rating'])
+
+  if (rating < 1 || rating > 10) {
+    throw new Error('La note doit etre comprise entre 1 et 10.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    rating,
+    content: readNullableString(value['content'], 'Avis invalide.'),
+    strengths: readNullableString(value['strengths'], 'Points forts invalides.'),
+    weaknesses: readNullableString(value['weaknesses'], 'Points faibles invalides.'),
+    mainMemory: readNullableString(value['mainMemory'], 'Souvenir principal invalide.'),
+    favorite: readOptionalBoolean(value['favorite'], 'Favori invalide.'),
+  }
+}
+
 export function registerLibraryHandlers() {
   ipcMain.handle('library:getOverview', async () => {
     try {
@@ -183,6 +235,15 @@ export function registerLibraryHandlers() {
   ipcMain.handle('games:update', async (_event, input: unknown) => {
     try {
       return await gameService.updateGame(parseUpdateGameInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:updateReview', async (_event, input: unknown) => {
+    try {
+      return await gameService.updateReview(parseUpdateReviewInput(input))
     } catch (error) {
       logger.error('[LibraryIPC]', error)
       throw error

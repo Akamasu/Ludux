@@ -1,4 +1,4 @@
-import { ArrowLeft, BookText, CalendarDays, Clock3, Save } from 'lucide-react'
+import { ArrowLeft, BookText, CalendarDays, Clock3, Save, Star } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   EMOTION_LABELS,
@@ -11,6 +11,7 @@ import {
   type GameDetail,
   type GameStatus,
   type UpdateGameInput,
+  type UpdateReviewInput,
 } from '../../types/game'
 import { Button } from '../components/ui/Button'
 import { formatDate, formatHours } from '../utils/formatters'
@@ -24,6 +25,7 @@ interface GameDetailPageProps {
   onCreateChronicle: (input: CreateChronicleInput) => Promise<void>
   onCreatePlaySession: (input: CreatePlaySessionInput) => Promise<void>
   onUpdateGame: (input: UpdateGameInput) => Promise<void>
+  onUpdateReview: (input: UpdateReviewInput) => Promise<void>
 }
 
 function todayInputValue() {
@@ -39,6 +41,7 @@ export function GameDetailPage({
   onCreateChronicle,
   onCreatePlaySession,
   onUpdateGame,
+  onUpdateReview,
 }: GameDetailPageProps) {
   if (isLoading) {
     return (
@@ -93,6 +96,18 @@ export function GameDetailPage({
               <span className="text-zinc-500">Sessions</span>
               <span className="font-medium text-white">{detail.sessions.length}</span>
             </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-zinc-500">Note</span>
+              <span className="font-medium text-white">
+                {detail.review ? `${detail.review.rating}/10` : 'Non note'}
+              </span>
+            </div>
+            {detail.review?.favorite ? (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-zinc-500">Coup de coeur</span>
+                <Star size={16} className="text-[#C9A646]" aria-hidden="true" />
+              </div>
+            ) : null}
           </div>
         </div>
       </header>
@@ -105,11 +120,15 @@ export function GameDetailPage({
 
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
         <GameEditPanel detail={detail} isSaving={isSaving} onUpdateGame={onUpdateGame} />
-        <SessionForm detail={detail} isSaving={isSaving} onCreatePlaySession={onCreatePlaySession} />
+        <ReviewPanel detail={detail} isSaving={isSaving} onUpdateReview={onUpdateReview} />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <SessionForm detail={detail} isSaving={isSaving} onCreatePlaySession={onCreatePlaySession} />
         <ChronicleForm detail={detail} isSaving={isSaving} onCreateChronicle={onCreateChronicle} />
+      </section>
+
+      <section>
         <Timeline detail={detail} />
       </section>
     </div>
@@ -188,6 +207,138 @@ function GameEditPanel({
       <Button className="mt-4" type="submit" disabled={isSaving || title.trim().length === 0}>
         <Save size={17} aria-hidden="true" />
         Enregistrer
+      </Button>
+    </form>
+  )
+}
+
+function ReviewPanel({
+  detail,
+  isSaving,
+  onUpdateReview,
+}: DetailChildProps & {
+  onUpdateReview: (input: UpdateReviewInput) => Promise<void>
+}) {
+  const [rating, setRating] = useState(String(detail.review?.rating ?? detail.rating ?? 8))
+  const [content, setContent] = useState(detail.review?.content ?? '')
+  const [strengths, setStrengths] = useState(detail.review?.strengths ?? '')
+  const [weaknesses, setWeaknesses] = useState(detail.review?.weaknesses ?? '')
+  const [mainMemory, setMainMemory] = useState(detail.review?.mainMemory ?? '')
+  const [favorite, setFavorite] = useState(detail.review?.favorite ?? false)
+
+  useEffect(() => {
+    setRating(String(detail.review?.rating ?? detail.rating ?? 8))
+    setContent(detail.review?.content ?? '')
+    setStrengths(detail.review?.strengths ?? '')
+    setWeaknesses(detail.review?.weaknesses ?? '')
+    setMainMemory(detail.review?.mainMemory ?? '')
+    setFavorite(detail.review?.favorite ?? false)
+  }, [detail])
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    await onUpdateReview({
+      gameId: detail.id,
+      rating: Number(rating),
+      content,
+      strengths,
+      weaknesses,
+      mainMemory,
+      favorite,
+    })
+  }
+
+  return (
+    <form className="rounded-lg border border-white/10 bg-[#181B23] p-5" onSubmit={handleSubmit}>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Evaluation personnelle</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Note, avis et souvenir principal pour garder une vraie trace.
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-label="Coup de coeur"
+          aria-pressed={favorite}
+          title="Coup de coeur"
+          onClick={() => setFavorite((current) => !current)}
+          className={`grid h-11 w-11 place-items-center rounded-lg border transition ${
+            favorite
+              ? 'border-[#C9A646]/60 bg-[#C9A646]/15 text-[#F1DA7A]'
+              : 'border-white/10 bg-[#0F1117] text-zinc-500 hover:text-white'
+          }`}
+        >
+          <Star size={18} aria-hidden="true" />
+        </button>
+      </div>
+
+      <div className="mt-5 grid gap-4">
+        <label>
+          <span className="mb-2 flex items-center justify-between gap-4 text-xs font-medium text-zinc-500">
+            <span>Note</span>
+            <span className="rounded-lg bg-[#7C5CFF]/10 px-3 py-1 text-[#D8D0FF]">
+              {rating}/10
+            </span>
+          </span>
+          <input
+            type="range"
+            min="1"
+            max="10"
+            step="1"
+            value={rating}
+            onChange={(event) => setRating(event.target.value)}
+            className="w-full accent-[#7C5CFF]"
+          />
+        </label>
+
+        <label>
+          <span className="mb-2 block text-xs font-medium text-zinc-500">Avis</span>
+          <textarea
+            value={content}
+            onChange={(event) => setContent(event.target.value)}
+            rows={4}
+            placeholder="Ce que ce jeu vous laisse comme impression..."
+            className="w-full resize-none rounded-lg border border-white/10 bg-[#0F1117] px-3 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+          />
+        </label>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <label>
+            <span className="mb-2 block text-xs font-medium text-zinc-500">Points forts</span>
+            <textarea
+              value={strengths}
+              onChange={(event) => setStrengths(event.target.value)}
+              rows={3}
+              className="w-full resize-none rounded-lg border border-white/10 bg-[#0F1117] px-3 py-3 text-sm leading-6 text-white outline-none transition focus:border-[#7C5CFF]"
+            />
+          </label>
+          <label>
+            <span className="mb-2 block text-xs font-medium text-zinc-500">Points faibles</span>
+            <textarea
+              value={weaknesses}
+              onChange={(event) => setWeaknesses(event.target.value)}
+              rows={3}
+              className="w-full resize-none rounded-lg border border-white/10 bg-[#0F1117] px-3 py-3 text-sm leading-6 text-white outline-none transition focus:border-[#7C5CFF]"
+            />
+          </label>
+        </div>
+
+        <label>
+          <span className="mb-2 block text-xs font-medium text-zinc-500">Souvenir principal</span>
+          <input
+            value={mainMemory}
+            onChange={(event) => setMainMemory(event.target.value)}
+            placeholder="Le moment que vous associez au jeu..."
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+          />
+        </label>
+      </div>
+
+      <Button className="mt-4" type="submit" disabled={isSaving}>
+        <Save size={17} aria-hidden="true" />
+        Enregistrer l'avis
       </Button>
     </form>
   )

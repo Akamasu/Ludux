@@ -13,6 +13,7 @@ Le projet suit des versions de developpement simples :
 - `v0.7.x` : musee des jeux accomplis.
 - `v0.8.x` : livre de vie et chronologie globale.
 - `v0.9.x` : parametres, sauvegardes et exports locaux.
+- `v0.10.x` : notes et evaluations detaillees.
 
 ## v0.2.0 - 2026-07-16
 
@@ -78,3 +79,11 @@ Le projet suit des versions de developpement simples :
 - Ajout d'un export JSON complet de la bibliotheque avec jeux, sessions, chroniques, DLC, succes et collections.
 - Ajout de l'ouverture du dossier local depuis l'application.
 - Ajout d'une preference persistante pour choisir la page d'ouverture.
+
+## v0.10.0 - 2026-07-18
+
+- Ajout d'une evaluation personnelle detaillee sur les fiches de jeux.
+- Ajout de la note sur 10, de l'avis, des points forts, des points faibles et du souvenir principal.
+- Ajout du marquage coup de coeur sur une evaluation.
+- Persistance des evaluations via le modele Review existant, le service game, l'IPC Electron et le preload securise.
+- Remontee automatique de la note dans les cartes de bibliotheque et du musee.

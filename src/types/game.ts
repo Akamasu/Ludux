@@ -77,6 +77,18 @@ export interface PlaySessionListItem {
   platformName: string | null
 }
 
+export interface GameReview {
+  id: string
+  rating: number
+  content: string | null
+  strengths: string | null
+  weaknesses: string | null
+  mainMemory: string | null
+  favorite: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export type LifeBookEventKind = 'CHRONICLE' | 'SESSION'
 
 export interface LifeBookEvent {
@@ -100,6 +112,7 @@ export interface GameDetail extends GameListItem {
   publisher: string | null
   releaseDate: string | null
   website: string | null
+  review: GameReview | null
   chronicles: ChronicleListItem[]
   sessions: PlaySessionListItem[]
 }
@@ -174,6 +187,16 @@ export interface UpdateGameInput {
   developer?: string
   publisher?: string
   website?: string
+}
+
+export interface UpdateReviewInput {
+  gameId: string
+  rating: number
+  content?: string | null
+  strengths?: string | null
+  weaknesses?: string | null
+  mainMemory?: string | null
+  favorite?: boolean
 }
 
 export interface CreateChronicleInput {

@@ -10,6 +10,7 @@ import type {
   LibraryStatistics,
   LifeBookEvent,
   UpdateGameInput,
+  UpdateReviewInput,
 } from '../types/game'
 import type { LuduxApi } from '../types/ludux-api'
 import type { SettingsActionResult, SettingsOverview } from '../types/settings'
@@ -33,6 +34,8 @@ const api: LuduxApi = {
       ipcRenderer.invoke('games:getById', id) as Promise<GameDetail | null>,
     update: (input: UpdateGameInput) =>
       ipcRenderer.invoke('games:update', input) as Promise<GameDetail>,
+    updateReview: (input: UpdateReviewInput) =>
+      ipcRenderer.invoke('games:updateReview', input) as Promise<GameDetail>,
     createChronicle: (input: CreateChronicleInput) =>
       ipcRenderer.invoke('games:createChronicle', input) as Promise<GameDetail>,
     createPlaySession: (input: CreatePlaySessionInput) =>

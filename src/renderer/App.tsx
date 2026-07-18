@@ -89,6 +89,7 @@ export default function App() {
           onCreateChronicle={gameDetailState.createChronicle}
           onCreatePlaySession={gameDetailState.createPlaySession}
           onUpdateGame={gameDetailState.updateGame}
+          onUpdateReview={gameDetailState.updateReview}
         />
       ) : null}
       {!selectedGameId && activeView === 'home' ? (

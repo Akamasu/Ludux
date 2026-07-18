@@ -8,6 +8,7 @@ import type {
   GameListItem,
   GameStatus,
   UpdateGameInput,
+  UpdateReviewInput,
 } from '../types/game'
 
 async function fetchGames() {
@@ -95,6 +96,19 @@ function toGameDetail(game: GameDetailWithRelations): GameDetail {
     publisher: game.publisher,
     releaseDate: game.releaseDate?.toISOString() ?? null,
     website: game.website,
+    review: game.review
+      ? {
+          id: game.review.id,
+          rating: game.review.rating,
+          content: game.review.content,
+          strengths: game.review.strengths,
+          weaknesses: game.review.weaknesses,
+          mainMemory: game.review.mainMemory,
+          favorite: game.review.favorite,
+          createdAt: game.review.createdAt.toISOString(),
+          updatedAt: game.review.updatedAt.toISOString(),
+        }
+      : null,
     chronicles: game.chronicles.map((chronicle) => ({
       id: chronicle.id,
       title: chronicle.title,
@@ -117,6 +131,15 @@ function toGameDetail(game: GameDetailWithRelations): GameDetail {
 function trimOptional(value: string | undefined) {
   const trimmed = value?.trim()
   return trimmed ? trimmed : undefined
+}
+
+function trimNullable(value: string | null | undefined) {
+  if (value === undefined) {
+    return undefined
+  }
+
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : null
 }
 
 async function requireGameDetail(id: string) {
@@ -212,6 +235,37 @@ class GameService {
     })
 
     return toGameDetail(await requireGameDetail(input.id))
+  }
+
+  async updateReview(input: UpdateReviewInput): Promise<GameDetail> {
+    if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 10) {
+      throw new Error('La note doit etre comprise entre 1 et 10.')
+    }
+
+    await prisma.review.upsert({
+      where: {
+        gameId: input.gameId,
+      },
+      create: {
+        gameId: input.gameId,
+        rating: input.rating,
+        content: trimNullable(input.content),
+        strengths: trimNullable(input.strengths),
+        weaknesses: trimNullable(input.weaknesses),
+        mainMemory: trimNullable(input.mainMemory),
+        favorite: input.favorite ?? false,
+      },
+      update: {
+        rating: input.rating,
+        content: trimNullable(input.content),
+        strengths: trimNullable(input.strengths),
+        weaknesses: trimNullable(input.weaknesses),
+        mainMemory: trimNullable(input.mainMemory),
+        favorite: input.favorite,
+      },
+    })
+
+    return toGameDetail(await requireGameDetail(input.gameId))
   }
 
   async createChronicle(input: CreateChronicleInput): Promise<GameDetail> {
