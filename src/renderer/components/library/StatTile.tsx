@@ -16,7 +16,7 @@ const toneClasses: Record<StatTileProps['tone'], string> = {
 
 export function StatTile({ label, value, icon: Icon, tone }: StatTileProps) {
   return (
-    <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">
+    <article className="rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
       <div className="mb-5 flex items-center justify-between gap-4">
         <p className="text-sm text-zinc-500">{label}</p>
         <div className={`grid h-9 w-9 place-items-center rounded-lg ${toneClasses[tone]}`}>

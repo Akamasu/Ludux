@@ -234,7 +234,7 @@ export function GameDetailPage({
             <p className="text-sm font-medium text-[#A797FF]">
               {GAME_STATUS_LABELS[detail.status]}
             </p>
-            <h1 className="mt-2 text-4xl font-semibold text-white">{detail.title}</h1>
+            <h1 className="mt-2 break-words text-3xl font-semibold text-white sm:text-4xl">{detail.title}</h1>
             <GameDescription description={detail.description} />
             {detail.metadataSources.length > 0 ? (
               <div className="mt-4 flex flex-wrap items-center gap-2">

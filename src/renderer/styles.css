@@ -8,6 +8,7 @@
   --ludux-card-soft: #121620;
   --ludux-primary: #7C5CFF;
   --ludux-electric: #4F7CFF;
+  --ludux-gold: #C9A646;
   --ludux-text: #F8FAFC;
   --ludux-muted: #A6ADBB;
   color-scheme: dark;
@@ -25,7 +26,6 @@
 }
 
 html {
-  min-width: 980px;
   min-height: 100%;
 }
 
@@ -33,6 +33,7 @@ body {
   min-height: 100vh;
   margin: 0;
   letter-spacing: 0;
+  overflow-x: hidden;
 }
 
 button,
@@ -40,6 +41,7 @@ input,
 select,
 textarea {
   font: inherit;
+  min-width: 0;
 }
 
 button {
@@ -53,4 +55,74 @@ button:disabled {
 ::selection {
   color: #0F1117;
   background: #7C5CFF;
+}
+
+.library-atmosphere {
+  background:
+    linear-gradient(90deg, rgba(201, 166, 70, 0.045), transparent 18rem),
+    linear-gradient(180deg, #0F1117 0%, #0B0D12 100%);
+}
+
+.library-grain {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, black, transparent 82%);
+}
+
+.book-card,
+.book-row {
+  position: relative;
+  box-shadow:
+    inset 5px 0 0 rgba(201, 166, 70, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.book-card::before,
+.book-row::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 1px;
+  content: '';
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(201, 166, 70, 0.45),
+    transparent
+  );
+  opacity: 0.7;
+}
+
+.library-shelf {
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid rgba(201, 166, 70, 0.16);
+  box-shadow: 0 18px 22px -24px rgba(201, 166, 70, 0.4);
+}
+
+.drag-region {
+  -webkit-app-region: drag;
+}
+
+.no-drag,
+.no-drag * {
+  -webkit-app-region: no-drag;
+}
+
+@keyframes view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) rotateX(1.2deg) scale(0.995);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .view-transition {
+    animation: view-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
 }

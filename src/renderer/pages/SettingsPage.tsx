@@ -623,10 +623,10 @@ export function SettingsPage({
 }: SettingsPageProps) {
   return (
     <div className="flex flex-1 flex-col gap-7">
-      <header className="flex items-start justify-between gap-6 border-b border-white/10 pb-7">
+      <header className="flex flex-col items-start justify-between gap-4 border-b border-white/10 pb-7 sm:flex-row">
         <div>
           <p className="text-sm font-medium text-[#A797FF]">Parametres</p>
-          <h1 className="mt-2 text-4xl font-semibold text-white">
+          <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
             Controle local des donnees
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
@@ -634,7 +634,7 @@ export function SettingsPage({
             chemins essentiels sous les yeux.
           </p>
         </div>
-        <Button type="button" variant="secondary" onClick={onRefresh} disabled={isBusy}>
+        <Button className="w-full sm:w-auto" type="button" variant="secondary" onClick={onRefresh} disabled={isBusy}>
           <RefreshCw size={17} aria-hidden="true" />
           Actualiser
         </Button>

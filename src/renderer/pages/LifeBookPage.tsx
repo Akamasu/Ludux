@@ -214,17 +214,17 @@ export function LifeBookPage({
 
   return (
     <div className="flex flex-1 flex-col gap-7">
-      <header className="flex items-start justify-between gap-6 border-b border-white/10 pb-7">
+      <header className="flex flex-col items-start justify-between gap-4 border-b border-white/10 pb-7 sm:flex-row">
         <div>
           <p className="text-sm font-medium text-[#A797FF]">Livre de Vie</p>
-          <h1 className="mt-2 text-4xl font-semibold text-white">
+          <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
             Chronologie du parcours
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
             Une ligne du temps qui rassemble sessions de jeu et chroniques personnelles.
           </p>
         </div>
-        <div className="rounded-lg border border-white/10 bg-[#181B23] px-4 py-3 text-right">
+        <div className="w-full rounded-lg border border-[#C9A646]/15 bg-[#181B23] px-4 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:w-auto sm:text-right">
           <p className="text-xs text-zinc-500">Moments</p>
           <p className="mt-1 text-sm font-medium text-zinc-100">
             {isLoading ? 'Chargement' : events.length}
@@ -363,7 +363,7 @@ export function LifeBookPage({
             {groups.map((group) => (
               <section key={group.year} className="grid gap-4 xl:grid-cols-[130px_1fr]">
                 <div>
-                  <p className="sticky top-7 text-3xl font-semibold text-white">
+                  <p className="sticky top-16 text-2xl font-semibold text-white sm:text-3xl">
                     {group.year}
                   </p>
                 </div>

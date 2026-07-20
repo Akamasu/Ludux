@@ -36,6 +36,12 @@ import type {
 } from '../types/settings'
 
 const api: LuduxApi = {
+  windowControls: {
+    minimize: () => ipcRenderer.invoke('window:minimize') as Promise<void>,
+    toggleMaximize: () =>
+      ipcRenderer.invoke('window:toggleMaximize') as Promise<void>,
+    close: () => ipcRenderer.invoke('window:close') as Promise<void>,
+  },
   library: {
     getOverview: () =>
       ipcRenderer.invoke('library:getOverview') as Promise<LibraryOverview>,

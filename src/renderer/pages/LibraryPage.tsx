@@ -81,16 +81,16 @@ export function LibraryPage({
 
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <header className="flex items-start justify-between gap-6 border-b border-white/10 pb-7">
+      <header className="flex flex-col items-start justify-between gap-4 border-b border-white/10 pb-7 sm:flex-row">
         <div>
           <p className="text-sm font-medium text-[#A797FF]">Bibliotheque</p>
-          <h1 className="mt-2 text-4xl font-semibold text-white">Vos jeux</h1>
+          <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">Vos jeux</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
             Cherchez, filtrez et ajoutez les jeux qui composent votre histoire.
           </p>
         </div>
         {games.length > 0 ? (
-          <Button type="button" onClick={() => setIsAddOpen((current) => !current)}>
+          <Button className="w-full sm:w-auto" type="button" onClick={() => setIsAddOpen((current) => !current)}>
             <Plus size={17} aria-hidden="true" />
             Ajouter un jeu
           </Button>
@@ -104,7 +104,7 @@ export function LibraryPage({
       ) : null}
 
       {isAddOpen && games.length > 0 ? (
-        <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+        <section className="rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
           <div className="mb-5">
             <h2 className="text-lg font-semibold text-white">Nouveau chapitre</h2>
             <p className="mt-1 text-sm text-zinc-500">
@@ -119,7 +119,7 @@ export function LibraryPage({
         <EmptyLibrary onCreateGame={createGame} isSaving={isSaving} />
       ) : (
         <>
-          <section className="grid gap-3 rounded-lg border border-white/10 bg-[#181B23] p-4 xl:grid-cols-[1.2fr_0.8fr_0.8fr_auto]">
+          <section className="grid gap-3 rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] xl:grid-cols-[1.2fr_0.8fr_0.8fr_auto]">
             <label className="relative block">
               <span className="sr-only">Rechercher</span>
               <Search
@@ -211,7 +211,7 @@ export function LibraryPage({
               </p>
             </section>
           ) : viewMode === 'grid' ? (
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <section className="library-shelf grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {filteredGames.map((game) => (
                 <GameCard key={game.id} game={game} onOpen={onOpenGame} />
               ))}

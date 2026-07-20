@@ -27,6 +27,16 @@ Le projet suit des versions de developpement simples :
 - `v0.21.x` : synchronisation automatique et secrets masques.
 - `v0.22.x` : stabilisation du connecteur Steam.
 - `v0.23.x` : enrichissement des metadonnees via RAWG.
+- `v0.24.x` : experience immersive, navigation animee et habillage bibliotheque.
+
+## v0.24.0 - 2026-07-20
+
+- Passage a une fenetre Electron sans cadre Windows natif, avec barre de titre Ludux.
+- Ajout des controles reduire, agrandir/restaurer et fermer dans l'interface.
+- Navigation plus fluide avec transition animee entre les pages.
+- Sidebar responsive : rayonnage complet sur grand ecran, icones compactes sur fenetre reduite.
+- Premiere direction visuelle "bibliotheque ancienne" : pages, dos de livres, rayonnage et accents or sobres.
+- Reduction de la largeur minimale et adaptation des grands titres, compteurs et cadres sur les tailles compactes.
 
 ## v0.23.7 - 2026-07-20
 

@@ -13,7 +13,7 @@ export function GameListRow({ game, onOpen }: GameListRowProps) {
       <button
         type="button"
         onClick={() => onOpen?.(game.id)}
-        className="grid w-full gap-4 rounded-lg border border-white/10 bg-[#181B23] p-4 text-left transition hover:border-[#7C5CFF]/40 md:grid-cols-[1.4fr_0.8fr_0.6fr_0.6fr] md:items-center"
+        className="book-row grid w-full gap-4 rounded-lg border border-white/10 bg-[#181B23] p-4 text-left transition duration-200 hover:border-[#C9A646]/35 md:grid-cols-[1.4fr_0.8fr_0.6fr_0.6fr] md:items-center"
       >
       <div>
         <h3 className="font-medium text-white">{game.title}</h3>

@@ -1,23 +1,27 @@
 import 'dotenv/config'
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, Menu, shell } from 'electron'
 import { join } from 'node:path'
 import { prisma } from '../database/client'
 import { settingsService } from '../services/settings.service'
 import { logger } from '../utils/logger'
 import { registerLibraryHandlers } from './ipc/library.ipc'
 import { registerSettingsHandlers } from './ipc/settings.ipc'
+import { registerWindowHandlers } from './ipc/window.ipc'
 
 registerLibraryHandlers()
 registerSettingsHandlers()
+registerWindowHandlers()
 
 async function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 820,
-    minWidth: 980,
-    minHeight: 680,
+    minWidth: 760,
+    minHeight: 560,
     show: false,
-    title: 'Ludux',
+    title: 'Ludux - Memoire videoludique',
+    frame: false,
+    autoHideMenuBar: true,
     backgroundColor: '#0F1117',
     webPreferences: {
       preload: join(__dirname, '../preload/preload.cjs'),
@@ -46,6 +50,7 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  Menu.setApplicationMenu(null)
   settingsService.startAutoSync()
   await createWindow()
 }).catch((error: unknown) => {

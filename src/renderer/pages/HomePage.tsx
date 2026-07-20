@@ -28,22 +28,22 @@ export function HomePage({
 }: HomePageProps) {
   return (
     <div className="flex flex-1 flex-col gap-7">
-      <header className="flex items-start justify-between gap-6 border-b border-white/10 pb-7">
-        <div className="flex items-start gap-5">
+      <header className="flex flex-col items-start justify-between gap-5 border-b border-white/10 pb-7 xl:flex-row">
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:gap-5">
           <img
             src="/ludux-logo.png"
             alt=""
-            className="h-24 w-24 rounded-lg border border-white/10 object-cover"
+            className="h-20 w-20 rounded-lg border border-[#C9A646]/20 object-cover sm:h-24 sm:w-24"
           />
           <div>
           <p className="text-sm font-medium text-[#A797FF]">Ludux</p>
-          <h1 className="mt-2 text-4xl font-semibold text-white">Bienvenue dans Ludux</h1>
+          <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">Bienvenue dans Ludux</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
             La memoire de votre vie de joueur, en local et a votre rythme.
           </p>
           </div>
         </div>
-        <div className="rounded-lg border border-white/10 bg-[#181B23] px-4 py-3 text-right">
+        <div className="w-full rounded-lg border border-[#C9A646]/15 bg-[#181B23] px-4 py-3 text-left sm:w-auto sm:text-right">
           <p className="text-xs text-zinc-500">Etat</p>
           <p className="mt-1 text-sm font-medium text-zinc-100">
             {isLoading ? 'Chargement' : `${overview.gamesOwned} jeux`}
@@ -68,7 +68,7 @@ export function HomePage({
         <EmptyLibrary onCreateGame={createGame} isSaving={isSaving} />
       ) : (
         <section className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
-          <div className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+          <div className="rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-white">Bibliotheque</h2>
@@ -104,7 +104,7 @@ export function HomePage({
             </div>
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+          <div className="rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
             <h2 className="text-lg font-semibold text-white">Derniere aventure</h2>
             {overview.lastAdventure ? (
               <div className="mt-5">

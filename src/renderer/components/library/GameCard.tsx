@@ -10,11 +10,11 @@ interface GameCardProps {
 
 export function GameCard({ game, onOpen }: GameCardProps) {
   return (
-    <article className="overflow-hidden rounded-lg border border-white/10 bg-[#181B23]">
+    <article className="book-card group overflow-hidden rounded-lg border border-white/10 bg-[#181B23] transition duration-200 hover:-translate-y-0.5 hover:border-[#C9A646]/35">
       <button
         type="button"
         onClick={() => onOpen?.(game.id)}
-        className="block w-full text-left"
+        className="relative z-10 block w-full text-left"
       >
       <div className="relative aspect-[4/3] bg-[#121620]">
         <GameCover title={game.title} coverUrl={game.coverUrl} />

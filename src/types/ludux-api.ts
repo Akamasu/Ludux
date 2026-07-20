@@ -34,6 +34,11 @@ import type {
 } from './settings'
 
 export interface LuduxApi {
+  windowControls: {
+    minimize: () => Promise<void>
+    toggleMaximize: () => Promise<void>
+    close: () => Promise<void>
+  }
   library: {
     getOverview: () => Promise<LibraryOverview>
     getStatistics: () => Promise<LibraryStatistics>

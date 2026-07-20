@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { AppShell } from './components/layout/AppShell'
 import { useChronicles } from './hooks/useChronicles'
 import { useGameDetail } from './hooks/useGameDetail'
@@ -97,97 +97,113 @@ export default function App() {
     }
   }
 
+  let content: ReactNode = null
+
+  if (selectedGameId) {
+    content = (
+      <GameDetailPage
+        detail={gameDetailState.detail}
+        error={gameDetailState.error}
+        isLoading={gameDetailState.isLoading}
+        isSaving={gameDetailState.isSaving}
+        onBack={() => setSelectedGameId(null)}
+        onArchiveGame={archiveGame}
+        onCreateAchievement={gameDetailState.createAchievement}
+        onCreateChronicle={gameDetailState.createChronicle}
+        onCreateDlc={gameDetailState.createDlc}
+        onCreatePlaySession={gameDetailState.createPlaySession}
+        onCreateScreenshot={gameDetailState.createScreenshot}
+        onDeleteAchievement={gameDetailState.deleteAchievement}
+        onDeleteChronicle={gameDetailState.deleteChronicle}
+        onDeleteDlc={gameDetailState.deleteDlc}
+        onDeletePlaySession={gameDetailState.deletePlaySession}
+        onDeleteScreenshot={gameDetailState.deleteScreenshot}
+        onImportScreenshotFile={gameDetailState.importScreenshotFile}
+        onUpdateAchievement={gameDetailState.updateAchievement}
+        onUpdateChronicle={gameDetailState.updateChronicle}
+        onUpdateDlc={gameDetailState.updateDlc}
+        onUpdateGame={gameDetailState.updateGame}
+        onUpdatePlaySession={gameDetailState.updatePlaySession}
+        onUpdateReview={gameDetailState.updateReview}
+        onUpdateScreenshot={gameDetailState.updateScreenshot}
+      />
+    )
+  } else if (activeView === 'home') {
+    content = (
+      <HomePage
+        {...libraryState}
+        onOpenGame={openGame}
+        onOpenLibrary={() => navigate('library')}
+      />
+    )
+  } else if (activeView === 'library') {
+    content = <LibraryPage {...libraryState} onOpenGame={openGame} />
+  } else if (activeView === 'chronicles') {
+    content = (
+      <ChroniclesPage
+        chronicles={chroniclesState.chronicles}
+        isLoading={chroniclesState.isLoading}
+        error={chroniclesState.error}
+        onOpenGame={openGame}
+      />
+    )
+  } else if (activeView === 'museum') {
+    content = (
+      <MuseumPage
+        games={libraryState.games}
+        onOpenGame={openGame}
+        onOpenLibrary={() => navigate('library')}
+      />
+    )
+  } else if (activeView === 'lifeBook') {
+    content = (
+      <LifeBookPage
+        events={lifeBookState.events}
+        isLoading={lifeBookState.isLoading}
+        error={lifeBookState.error}
+        onOpenGame={openGame}
+      />
+    )
+  } else if (activeView === 'statistics') {
+    content = (
+      <StatisticsPage
+        statistics={statisticsState.statistics}
+        isLoading={statisticsState.isLoading}
+        error={statisticsState.error}
+      />
+    )
+  } else if (activeView === 'settings') {
+    content = (
+      <SettingsPage
+        overview={settingsState.overview}
+        isLoading={settingsState.isLoading}
+        isBusy={settingsState.isBusy || libraryState.isSaving}
+        error={settingsState.error ?? libraryState.error}
+        actionResult={settingsState.actionResult}
+        archivedGames={libraryState.archivedGames}
+        launchView={launchView}
+        onChangeLaunchView={changeLaunchView}
+        onCreateBackup={settingsState.createBackup}
+        onDeleteProviderConnection={settingsState.deleteProviderConnection}
+        onDeleteGame={libraryState.deleteGame}
+        onExportLibrary={settingsState.exportLibrary}
+        onOpenDataFolder={settingsState.openDataFolder}
+        onRefresh={refreshSettingsView}
+        onRestoreGame={libraryState.restoreGame}
+        onSyncProvider={syncProvider}
+        onUpsertProviderConnection={settingsState.upsertProviderConnection}
+      />
+    )
+  }
+
   return (
     <AppShell activeView={activeView} onNavigate={navigate}>
-      {selectedGameId ? (
-        <GameDetailPage
-          detail={gameDetailState.detail}
-          error={gameDetailState.error}
-          isLoading={gameDetailState.isLoading}
-          isSaving={gameDetailState.isSaving}
-          onBack={() => setSelectedGameId(null)}
-          onArchiveGame={archiveGame}
-          onCreateAchievement={gameDetailState.createAchievement}
-          onCreateChronicle={gameDetailState.createChronicle}
-          onCreateDlc={gameDetailState.createDlc}
-          onCreatePlaySession={gameDetailState.createPlaySession}
-          onCreateScreenshot={gameDetailState.createScreenshot}
-          onDeleteAchievement={gameDetailState.deleteAchievement}
-          onDeleteChronicle={gameDetailState.deleteChronicle}
-          onDeleteDlc={gameDetailState.deleteDlc}
-          onDeletePlaySession={gameDetailState.deletePlaySession}
-          onDeleteScreenshot={gameDetailState.deleteScreenshot}
-          onImportScreenshotFile={gameDetailState.importScreenshotFile}
-          onUpdateAchievement={gameDetailState.updateAchievement}
-          onUpdateChronicle={gameDetailState.updateChronicle}
-          onUpdateDlc={gameDetailState.updateDlc}
-          onUpdateGame={gameDetailState.updateGame}
-          onUpdatePlaySession={gameDetailState.updatePlaySession}
-          onUpdateReview={gameDetailState.updateReview}
-          onUpdateScreenshot={gameDetailState.updateScreenshot}
-        />
-      ) : null}
-      {!selectedGameId && activeView === 'home' ? (
-        <HomePage
-          {...libraryState}
-          onOpenGame={openGame}
-          onOpenLibrary={() => navigate('library')}
-        />
-      ) : null}
-      {!selectedGameId && activeView === 'library' ? (
-        <LibraryPage {...libraryState} onOpenGame={openGame} />
-      ) : null}
-      {!selectedGameId && activeView === 'chronicles' ? (
-        <ChroniclesPage
-          chronicles={chroniclesState.chronicles}
-          isLoading={chroniclesState.isLoading}
-          error={chroniclesState.error}
-          onOpenGame={openGame}
-        />
-      ) : null}
-      {!selectedGameId && activeView === 'museum' ? (
-        <MuseumPage
-          games={libraryState.games}
-          onOpenGame={openGame}
-          onOpenLibrary={() => navigate('library')}
-        />
-      ) : null}
-      {!selectedGameId && activeView === 'lifeBook' ? (
-        <LifeBookPage
-          events={lifeBookState.events}
-          isLoading={lifeBookState.isLoading}
-          error={lifeBookState.error}
-          onOpenGame={openGame}
-        />
-      ) : null}
-      {!selectedGameId && activeView === 'statistics' ? (
-        <StatisticsPage
-          statistics={statisticsState.statistics}
-          isLoading={statisticsState.isLoading}
-          error={statisticsState.error}
-        />
-      ) : null}
-      {!selectedGameId && activeView === 'settings' ? (
-        <SettingsPage
-          overview={settingsState.overview}
-          isLoading={settingsState.isLoading}
-          isBusy={settingsState.isBusy || libraryState.isSaving}
-          error={settingsState.error ?? libraryState.error}
-          actionResult={settingsState.actionResult}
-          archivedGames={libraryState.archivedGames}
-          launchView={launchView}
-          onChangeLaunchView={changeLaunchView}
-          onCreateBackup={settingsState.createBackup}
-          onDeleteProviderConnection={settingsState.deleteProviderConnection}
-          onDeleteGame={libraryState.deleteGame}
-          onExportLibrary={settingsState.exportLibrary}
-          onOpenDataFolder={settingsState.openDataFolder}
-          onRefresh={refreshSettingsView}
-          onRestoreGame={libraryState.restoreGame}
-          onSyncProvider={syncProvider}
-          onUpsertProviderConnection={settingsState.upsertProviderConnection}
-        />
-      ) : null}
+      <div
+        key={selectedGameId ? `game-${selectedGameId}` : activeView}
+        className="view-transition min-w-0"
+      >
+        {content}
+      </div>
     </AppShell>
   )
 }

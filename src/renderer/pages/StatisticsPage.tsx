@@ -214,16 +214,16 @@ export function StatisticsPage({ error, isLoading, statistics }: StatisticsPageP
 
   return (
     <div className="flex flex-1 flex-col gap-7">
-      <header className="flex items-start justify-between gap-6 border-b border-white/10 pb-7">
+      <header className="flex flex-col items-start justify-between gap-4 border-b border-white/10 pb-7 sm:flex-row">
         <div>
           <p className="text-sm font-medium text-[#A797FF]">Statistiques</p>
-          <h1 className="mt-2 text-4xl font-semibold text-white">Tableau de bord</h1>
+          <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">Tableau de bord</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
             Une lecture claire de votre bibliotheque, de votre temps de jeu et des
             souvenirs consignes.
           </p>
         </div>
-        <div className="rounded-lg border border-white/10 bg-[#181B23] px-4 py-3 text-right">
+        <div className="w-full rounded-lg border border-[#C9A646]/15 bg-[#181B23] px-4 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:w-auto sm:text-right">
           <p className="text-xs text-zinc-500">Completion</p>
           <p className="mt-1 text-sm font-medium text-zinc-100">
             {isLoading ? 'Chargement' : `${statistics.completionRate} %`}
