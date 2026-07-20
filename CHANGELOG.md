@@ -27,6 +27,12 @@ Le projet suit des versions de developpement simples :
 - `v0.21.x` : synchronisation automatique et secrets masques.
 - `v0.22.x` : stabilisation du connecteur Steam.
 
+## v0.22.1 - 2026-07-20
+
+- Ajout d'un retour visuel directement dans le panneau Steam apres enregistrement ou erreur.
+- Ajout d'une validation locale du SteamID64 avant l'appel IPC.
+- Ajout d'un libelle de bouton explicite pendant l'enregistrement ou la synchronisation.
+
 ## v0.1.0 - 2026-07-16
 
 - Initialisation du depot Ludux.

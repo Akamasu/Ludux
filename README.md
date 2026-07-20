@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.22.0`
+Version courante : `v0.22.1`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
@@ -238,6 +238,7 @@ Tags principaux :
 - `v0.20.0` : fichiers de configuration et guides plateformes.
 - `v0.21.0` : synchronisation automatique et secrets masqués.
 - `v0.22.0` : stabilisation du connecteur Steam.
+- `v0.22.1` : retour visuel de validation Steam dans les paramètres.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.

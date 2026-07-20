@@ -137,12 +137,16 @@ function providerTokenLabel(provider: ProviderConnection) {
 }
 
 function ProvidersPanel({
+  actionResult,
+  error,
   isBusy,
   overview,
   onDeleteProviderConnection,
   onSyncProvider,
   onUpsertProviderConnection,
 }: {
+  actionResult: SettingsActionResult | null
+  error: string | null
   isBusy: boolean
   overview: SettingsOverview
   onDeleteProviderConnection: (input: DeleteProviderConnectionInput) => Promise<void>
@@ -158,11 +162,15 @@ function ProvidersPanel({
   const [externalId, setExternalId] = useState('')
   const [username, setUsername] = useState('')
   const [tokenHint, setTokenHint] = useState('')
+  const [formError, setFormError] = useState<string | null>(null)
+  const trimmedExternalId = externalId.trim()
+  const isSteamProvider = selectedProvider?.provider === 'STEAM'
 
   useEffect(() => {
     setExternalId(selectedProvider?.account?.externalId ?? '')
     setUsername(selectedProvider?.account?.username ?? '')
     setTokenHint('')
+    setFormError(null)
   }, [selectedProvider])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -172,11 +180,23 @@ function ProvidersPanel({
       return
     }
 
+    if (trimmedExternalId.length === 0) {
+      setFormError('Identifiant externe obligatoire.')
+      return
+    }
+
+    if (selectedProvider.provider === 'STEAM' && !/^\d{17}$/.test(trimmedExternalId)) {
+      setFormError('SteamID64 invalide : il doit contenir exactement 17 chiffres.')
+      return
+    }
+
+    setFormError(null)
+
     await onUpsertProviderConnection({
       provider: selectedProvider.provider,
-      externalId,
-      username,
-      tokenHint,
+      externalId: trimmedExternalId,
+      username: username.trim(),
+      tokenHint: tokenHint.trim(),
     })
   }
 
@@ -306,12 +326,15 @@ function ProvidersPanel({
                 </span>
                 <input
                   value={externalId}
-                  onChange={(event) => setExternalId(event.target.value)}
-                  inputMode={selectedProvider.provider === 'STEAM' ? 'numeric' : 'text'}
+                  onChange={(event) => {
+                    setExternalId(event.target.value)
+                    setFormError(null)
+                  }}
+                  inputMode={isSteamProvider ? 'numeric' : 'text'}
                   placeholder={providerExternalIdPlaceholder(selectedProvider)}
                   className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
                 />
-                {selectedProvider.provider === 'STEAM' ? (
+                {isSteamProvider ? (
                   <span className="mt-2 block text-xs text-zinc-600">
                     SteamID64 attendu : 17 chiffres.
                   </span>
@@ -335,11 +358,14 @@ function ProvidersPanel({
                     {providerTokenLabel(selectedProvider)}
                   </span>
                   <input
-                    type={selectedProvider.provider === 'STEAM' ? 'password' : 'text'}
+                    type={isSteamProvider ? 'password' : 'text'}
                     value={tokenHint}
-                    onChange={(event) => setTokenHint(event.target.value)}
+                    onChange={(event) => {
+                      setTokenHint(event.target.value)
+                      setFormError(null)
+                    }}
                     placeholder={
-                      selectedProvider.provider === 'STEAM'
+                      isSteamProvider
                         ? selectedProvider.account?.hasToken
                           ? 'Laisser vide pour conserver la cle existante'
                           : 'Optionnel si STEAM_WEB_API_KEY est defini'
@@ -357,9 +383,9 @@ function ProvidersPanel({
             </div>
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
-              <Button type="submit" disabled={isBusy || externalId.trim().length === 0}>
+              <Button type="submit" disabled={isBusy || trimmedExternalId.length === 0}>
                 <Link2 size={17} aria-hidden="true" />
-                Enregistrer
+                {isBusy ? 'Enregistrement...' : 'Enregistrer'}
               </Button>
               {selectedProvider.account ? (
                 <Button
@@ -368,12 +394,12 @@ function ProvidersPanel({
                   onClick={handleSyncProvider}
                   disabled={
                     isBusy ||
-                    selectedProvider.provider !== 'STEAM' ||
+                    !isSteamProvider ||
                     !selectedProvider.account.hasToken
                   }
                 >
                   <RefreshCw size={17} aria-hidden="true" />
-                  Synchroniser
+                  {isBusy ? 'Synchronisation...' : 'Synchroniser'}
                 </Button>
               ) : null}
               {selectedProvider.account ? (
@@ -387,6 +413,16 @@ function ProvidersPanel({
                   <Trash2 size={17} aria-hidden="true" />
                   Retirer
                 </Button>
+              ) : null}
+            </div>
+
+            <div aria-live="polite" className="mt-4">
+              {formError || error ? (
+                <div className="rounded-lg border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+                  {formError ?? error}
+                </div>
+              ) : actionResult ? (
+                <ResultMessage result={actionResult} />
               ) : null}
             </div>
 
@@ -674,6 +710,8 @@ export function SettingsPage({
       </section>
 
       <ProvidersPanel
+        actionResult={actionResult}
+        error={error}
         overview={overview}
         isBusy={isBusy}
         onDeleteProviderConnection={onDeleteProviderConnection}
