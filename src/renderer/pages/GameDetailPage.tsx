@@ -733,7 +733,7 @@ function DlcPanel({
         <div>
           <h2 className="text-lg font-semibold text-white">DLC</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Extensions possedees et terminees pour ce jeu.
+            Extensions detectees via Steam ou suivies manuellement.
           </p>
         </div>
         <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#7C5CFF]/10 text-[#D8D0FF]">
@@ -816,7 +816,7 @@ function DlcPanel({
       <div className="mt-5 space-y-3">
         {detail.dlcs.length === 0 ? (
           <p className="rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
-            Aucun DLC renseigne pour ce jeu.
+            Aucun DLC detecte ou renseigne pour ce jeu.
           </p>
         ) : (
           detail.dlcs.map((dlc) => (
@@ -965,7 +965,7 @@ function AchievementPanel({
         <div>
           <h2 className="text-lg font-semibold text-white">Succes</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Objectifs, trophees et accomplissements a suivre manuellement.
+            Objectifs Steam synchronises ou accomplissements suivis manuellement.
           </p>
         </div>
         <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#4F7CFF]/10 text-[#C9D6FF]">
@@ -1058,7 +1058,7 @@ function AchievementPanel({
       <div className="mt-5 space-y-3">
         {detail.achievements.length === 0 ? (
           <p className="rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
-            Aucun succes renseigne pour ce jeu.
+            Aucun succes synchronise ou renseigne pour ce jeu.
           </p>
         ) : (
           detail.achievements.map((achievement) => (

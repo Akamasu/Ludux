@@ -29,6 +29,14 @@ Le projet suit des versions de developpement simples :
 - `v0.23.x` : enrichissement des metadonnees via RAWG.
 - `v0.24.x` : experience immersive, navigation animee et habillage bibliotheque.
 
+## v0.24.2 - 2026-07-20
+
+- Simplification du README pour presenter Ludux avant les details de developpement.
+- Ajout de la synchronisation des succes Steam publics via l'API Steam Web.
+- Ajout de la detection des DLC declares sur Steam Store pour les fiches de jeu.
+- Ajout d'identifiants externes sur les DLC et succes synchronises pour eviter les doublons.
+- Ajout d'une limite configurable pour les appels de succes Steam avec `LUDUX_STEAM_ACHIEVEMENT_SYNC_LIMIT`.
+
 ## v0.24.1 - 2026-07-20
 
 - Transformation du haut des fiches de jeu en volume d'archive avec couverture, page de lecture et registre.

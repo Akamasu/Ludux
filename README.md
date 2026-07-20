@@ -8,264 +8,55 @@
   <strong>Toute votre vie de joueur, au même endroit.</strong>
 </p>
 
-Ludux est une application desktop local-first pour conserver, organiser et relire
-la mémoire d'une vie de joueur : bibliothèque, sessions, chroniques,
-statistiques et jeux accomplis.
+Ludux est une application desktop qui rassemble votre bibliothèque de jeux, votre temps de jeu, vos succès, vos DLC, vos souvenirs et vos notes personnelles.
 
-Le projet est construit comme une application personnelle, locale et durable :
-les données utilisateur restent sur la machine, dans une base SQLite ignorée par
-Git.
+Version courante : `v0.24.2`
 
-## Origine
+## Pour les joueurs
 
-Le nom Ludux vient de deux idées :
+1. Lancez Ludux.
+2. Ouvrez `Paramètres`.
+3. Connectez vos plateformes.
+4. Lancez une synchronisation.
 
-- `Ludus`, le jeu ;
-- `Index`, le catalogue, le classement, la trace.
+Ludux construit ensuite une mémoire vidéoludique locale : bibliothèque, fiches de jeux, chroniques, musée des jeux terminés, livre de vie et statistiques.
 
-L'objectif est de créer une mémoire vidéoludique personnelle : un endroit unique
-pour retrouver les jeux possédés, les aventures terminées, les heures jouées et
-les souvenirs qui donnent du sens au parcours.
+## Synchronisation
 
-## État du projet
+Steam synchronise actuellement :
 
-Version courante : `v0.24.1`
+- bibliothèque PC ;
+- jaquettes et métadonnées disponibles ;
+- temps de jeu ;
+- dernier lancement fiable quand Steam le fournit ;
+- succès publics ;
+- DLC détectés depuis Steam Store.
 
-Ludux est en développement actif. Les fondations techniques et plusieurs écrans
-utilisables sont déjà en place :
+RAWG complète les fiches avec les descriptions, dates, studios, éditeurs et sites officiels quand les données manquent.
 
-- Accueil avec résumé de la bibliothèque.
-- Bibliothèque avec ajout de jeux, recherche, filtres, vues grille/liste et archivage.
-- Fiche détail d'un jeu avec statut, note personnelle, évaluation, DLC, succès, captures, sessions et chroniques.
-- Journal des chroniques avec recherche et filtres.
-- Musée des jeux terminés et terminés à 100 %.
-- Livre de Vie avec chronologie globale des sessions et chroniques.
-- Tableau de bord statistique.
-- Paramètres locaux avec sauvegarde SQLite, export JSON, préférences, synchronisation Steam automatique, fallback Steam local et enrichissement RAWG manuel.
-- Stockage local SQLite via Prisma.
-- IPC Electron sécurisé entre le renderer et le main process.
-- Identité visuelle Ludux avec palette sombre, violet et bleu électrique.
+## Données
 
-## Aperçu Fonctionnel
+Ludux est pensé local-first : les données restent sur votre machine dans une base SQLite locale.
 
-### Bibliothèque
-
-Ajoutez les jeux qui composent votre parcours, filtrez-les par statut ou
-plateforme, puis ouvrez chaque fiche pour enrichir son histoire.
-
-### Fiches de Jeux
-
-Chaque jeu peut recevoir :
-
-- un statut de progression ;
-- une note personnelle ;
-- une évaluation détaillée avec note, avis, points forts/faibles et souvenir principal ;
-- des métadonnées enrichies via RAWG quand elles sont manquantes : description, jaquette, date de sortie, développeur, éditeur et site officiel ;
-- des DLC avec possession et complétion ;
-- des succès avec suivi du déverrouillage ;
-- des captures et souvenirs visuels liés aux chroniques, importables dans le dossier local Ludux ;
-- des sessions de jeu avec durée, plateforme et commentaire ;
-- des chroniques avec émotion associée, édition et suppression.
-
-### Chroniques
-
-Le journal transversal regroupe les souvenirs écrits depuis les fiches de jeux.
-Il permet de chercher dans les titres, contenus et noms de jeux, puis de filtrer
-par jeu, émotion ou favori.
-
-### Musée
-
-Les jeux terminés deviennent des pièces exposées. Le musée propose une galerie,
-des statistiques dédiées, une recherche, un filtre d'accomplissement et un tri.
-
-### Livre de Vie
-
-Le Livre de Vie rassemble les sessions de jeu et les chroniques dans une
-chronologie globale, groupée par année et par mois, avec recherche et filtres par
-type de moment ou par jeu.
-
-### Statistiques
-
-Le tableau de bord calcule localement :
-
-- jeux possédés ;
-- jeux terminés ;
-- temps joué ;
-- nombre de sessions ;
-- nombre de chroniques ;
-- répartitions par statut, plateforme, émotion et activité mensuelle.
-
-### Paramètres
-
-Les paramètres donnent accès aux chemins locaux, à une sauvegarde de la base
-SQLite, à un export JSON complet, au choix de la page d'ouverture, à la
-synchronisation Steam automatique, à l'enrichissement RAWG manuel et aux jeux
-archivés, restaurables ou supprimables définitivement.
-
-## Stack Technique
-
-- Electron
-- React
-- TypeScript strict
-- Vite / electron-vite
-- Tailwind CSS
-- SQLite
-- Prisma 7
-- Vitest
-- oxlint
-
-## Démarrage Local
-
-### Prérequis
-
-- Node.js et npm installés.
-- Git pour cloner et versionner le projet.
-
-### Installation
+## Développement
 
 ```bash
 npm install
-```
-
-Copiez le fichier d'environnement si besoin :
-
-```bash
-cp .env.example .env
-```
-
-Sur Windows PowerShell :
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Préparez la base locale :
-
-```bash
 npm run prisma:migrate
-```
-
-Lancez l'application :
-
-```bash
 npm run dev
 ```
 
-Le mode développement lance l'application Electron avec son renderer Vite.
+Créez un fichier `.env` depuis `.env.example` pour activer les synchronisations pendant le développement local.
 
-## Scripts Utiles
+## Vérification
 
 ```bash
-npm run dev              # Lance l'application en développement
-npm run build            # Compile TypeScript et génère le build Electron/Vite
-npm run check            # Lance les validations principales du projet
-npm run preview          # Lance une preview du build
-npm run typecheck        # Vérifie les types TypeScript
-npm run lint             # Lance oxlint
-npm test                 # Lance les tests Vitest
-npm run prisma:generate  # Génère le client Prisma
-npm run prisma:migrate   # Applique/crée les migrations SQLite
-npm run rebuild:electron # Reconstruit les modules natifs pour Electron
-npm run smoke:electron-preload # Vérifie l'API window.ludux dans Electron
-npm run smoke:electron-sqlite # Vérifie SQLite dans le runtime Electron
+npm run check
 ```
 
-## Données Locales
+## Stack
 
-Par défaut, la base SQLite utilise :
-
-```text
-userdata/database/ludux.db
-```
-
-Les données locales, exports, sauvegardes et fichiers générés ne sont pas
-versionnés. Voir `.gitignore` pour le détail.
-
-## Configuration Plateformes
-
-Les variables attendues sont listées dans `.env.example`. Les vraies clés doivent
-rester dans `.env`, ignoré par Git, ou être saisies dans l'application quand un
-provider le permet.
-
-Guides disponibles :
-
-- `docs/providers/PLATFORM_REQUIREMENTS.md` : fichiers, clés et accès à récupérer.
-- `docs/providers/STEAM_SETUP.md` : configuration de la synchronisation Steam.
-- `docs/providers/RAWG_SETUP.md` : configuration de l'enrichissement RAWG.
-- `docs/providers/AUTO_SYNC_STRATEGY.md` : stratégie de synchronisation automatique.
-
-## Structure du Projet
-
-```text
-Ludux/
-|-- docs/                   # Vision produit, versioning et guides providers
-|-- public/                 # Assets publics, logo et favicon
-|-- prisma/                 # Schéma Prisma et migrations SQLite
-|-- src/
-|   |-- database/           # Client Prisma
-|   |-- main/               # Processus principal Electron, preload et IPC
-|   |-- providers/          # Adaptateurs Steam, RAWG et futurs providers
-|   |-- renderer/           # Interface React
-|   |   |-- components/     # Composants UI et layout
-|   |   |-- hooks/          # Hooks de chargement et mutations
-|   |   |-- pages/          # Écrans principaux de l'application
-|   |   `-- utils/          # Helpers renderer
-|   |-- services/           # Logique métier locale
-|   |-- types/              # Contrats partagés main/renderer
-|   `-- utils/              # Helpers transverses
-|-- tests/                  # Tests Vitest
-`-- userdata/               # Données locales ignorées par Git
-```
-
-## Versioning
-
-Le projet utilise des tags Git pour marquer les jalons utilisables.
-
-Tags principaux :
-
-- `v0.1.0` : fondation technique initiale.
-- `v0.2.0` : socle Electron/React, base locale et bibliothèque.
-- `v0.3.0` : fiches de jeux, sessions et chroniques.
-- `v0.4.0` : tableau de bord statistique.
-- `v0.5.0` : journal transversal des chroniques.
-- `v0.6.0` : identité visuelle, palette et logo.
-- `v0.7.0` : musée des jeux terminés.
-- `v0.8.0` : livre de vie et chronologie globale.
-- `v0.9.0` : paramètres, sauvegardes et exports locaux.
-- `v0.10.0` : notes et évaluations détaillées.
-- `v0.11.0` : archivage, restauration et suppression de jeux.
-- `v0.12.0` : gestion locale des DLC.
-- `v0.13.0` : gestion locale des succès.
-- `v0.14.0` : captures d'écran et souvenirs visuels.
-- `v0.15.0` : providers externes préparés sans synchronisation réseau.
-- `v0.16.0` : édition et suppression des chroniques.
-- `v0.17.0` : import et copie locale des captures.
-- `v0.18.0` : édition et suppression des sessions de jeu.
-- `v0.19.0` : synchronisation Steam manuelle.
-- `v0.20.0` : fichiers de configuration et guides plateformes.
-- `v0.21.0` : synchronisation automatique et secrets masqués.
-- `v0.22.0` : stabilisation du connecteur Steam.
-- `v0.22.1` : retour visuel de validation Steam dans les paramètres.
-- `v0.22.2` : rebuild Electron pour le module SQLite natif.
-- `v0.22.3` : correction du chargement du preload Electron.
-- `v0.22.4` : activation du preload ESM hors sandbox.
-- `v0.22.5` : cleanup du preload, des données locales et de la stratégie Steam publique.
-- `v0.22.6` : affichage de la vraie version applicative et simplification des paramètres.
-- `v0.23.0` : enrichissement manuel des métadonnées via RAWG.
-- `v0.23.1` : lecture locale des manifests Steam et fusion avec l'API.
-
-Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
-`docs/PRODUCT_VISION.md`.
-
-## Feuille de Route
-
-Prochaines pistes naturelles :
-
-- Résolution manuelle des correspondances quand plusieurs jeux externes ressemblent au même titre.
-- Enrichissement plus fin avec genres, screenshots, magasins et crédits.
-- Préparation du packaging et des releases installables.
-
-La vision produit détaillée est synthétisée dans `docs/PRODUCT_VISION.md`.
+Electron, React, TypeScript, Vite, Tailwind CSS, SQLite, Prisma et Vitest.
 
 ## Licence
 

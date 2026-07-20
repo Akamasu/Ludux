@@ -1,19 +1,25 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   createSteamAppDetailsUrl,
+  createSteamAchievementSchemaUrl,
   createSteamOwnedGamesUrl,
+  createSteamPlayerAchievementsUrl,
   fetchSteamAppDetails,
+  fetchSteamAchievements,
   fetchSteamOwnedGames,
   hasDatedSteamPlaytime,
+  mergeSteamAchievements,
   mergeSteamAppDetails,
   mergeSteamGames,
   normalizeSteamId,
   parseSteamAppDetails,
   parseSteamAppManifest,
+  parseSteamAchievementSchema,
   parseSteamKeyValues,
   parseSteamLibraryFolders,
   parseSteamLocalConfigApps,
   parseSteamOwnedGames,
+  parseSteamPlayerAchievements,
 } from '../../src/providers/steam'
 
 describe('steam provider', () => {
@@ -39,6 +45,24 @@ describe('steam provider', () => {
     expect(url).toContain('/api/appdetails')
     expect(url).toContain('appids=620')
     expect(url).toContain('filters=basic')
+    expect(url).toContain('release_date')
+    expect(url).toContain('dlc')
+  })
+
+  it('builds Steam achievements URLs with normalized credentials', () => {
+    const schemaUrl = createSteamAchievementSchemaUrl(' key ', 620)
+    const playerUrl = createSteamPlayerAchievementsUrl(
+      ' key ',
+      ' 76561198000000000 ',
+      620,
+    )
+
+    expect(schemaUrl).toContain('/ISteamUserStats/GetSchemaForGame/v2/')
+    expect(schemaUrl).toContain('key=key')
+    expect(schemaUrl).toContain('appid=620')
+    expect(schemaUrl).toContain('l=french')
+    expect(playerUrl).toContain('/ISteamUserStats/GetPlayerAchievements/v1/')
+    expect(playerUrl).toContain('steamid=76561198000000000')
   })
 
   it('normalizes owned games payloads', () => {
@@ -83,6 +107,10 @@ describe('steam provider', () => {
           data: {
             name: 'Portal 2',
             header_image: 'https://shared.akamai.steamstatic.com/header.jpg',
+            dlc: [1234, '5678'],
+            release_date: {
+              date: 'Apr 18, 2011',
+            },
           },
         },
         '10': {
@@ -94,6 +122,8 @@ describe('steam provider', () => {
         appid: 620,
         title: 'Portal 2',
         coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
+        dlcAppIds: [1234, 5678],
+        releaseDate: '2011-04-18T00:00:00.000Z',
       },
     ])
   })
@@ -116,6 +146,8 @@ describe('steam provider', () => {
             appid: 620,
             title: 'Portal 2',
             coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
+            dlcAppIds: [],
+            releaseDate: null,
           },
         ],
       ),
@@ -124,6 +156,46 @@ describe('steam provider', () => {
         appid: 620,
         coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
       }),
+    ])
+  })
+
+  it('normalizes and merges Steam achievements', () => {
+    const schemaAchievements = parseSteamAchievementSchema({
+      game: {
+        availableGameStats: {
+          achievements: [
+            {
+              name: 'ACH_WIN_ONE_GAME',
+              displayName: 'Gagner une partie',
+              description: 'Terminer une partie complete.',
+              icon: 'https://example.com/icon.jpg',
+            },
+          ],
+        },
+      },
+    })
+    const playerAchievements = parseSteamPlayerAchievements({
+      playerstats: {
+        success: true,
+        achievements: [
+          {
+            apiname: 'ACH_WIN_ONE_GAME',
+            achieved: 1,
+            unlocktime: 1_700_000_000,
+          },
+        ],
+      },
+    })
+
+    expect(mergeSteamAchievements(schemaAchievements, playerAchievements)).toEqual([
+      {
+        externalId: 'ACH_WIN_ONE_GAME',
+        name: 'Gagner une partie',
+        description: 'Terminer une partie complete.',
+        iconUrl: 'https://example.com/icon.jpg',
+        unlocked: true,
+        unlockDate: '2023-11-14T22:13:20.000Z',
+      },
     ])
   })
 
@@ -340,6 +412,7 @@ describe('steam provider', () => {
               data: {
                 name: 'Portal 2',
                 header_image: 'https://shared.akamai.steamstatic.com/header.jpg',
+                dlc: [],
               },
             },
           }),
@@ -356,7 +429,104 @@ describe('steam provider', () => {
         appid: 620,
         title: 'Portal 2',
         coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
+        dlcAppIds: [],
+        releaseDate: null,
       },
+    ])
+  })
+
+  it('fetches Steam achievements from schema and player endpoints', async () => {
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      const urlValue = String(url)
+
+      if (urlValue.includes('GetSchemaForGame')) {
+        return new Response(
+          JSON.stringify({
+            game: {
+              availableGameStats: {
+                achievements: [
+                  {
+                    name: 'ACH_WIN_ONE_GAME',
+                    displayName: 'Gagner une partie',
+                    description: 'Terminer une partie complete.',
+                    icon: 'https://example.com/icon.jpg',
+                  },
+                ],
+              },
+            },
+          }),
+        )
+      }
+
+      return new Response(
+        JSON.stringify({
+          playerstats: {
+            success: true,
+            achievements: [
+              {
+                apiname: 'ACH_WIN_ONE_GAME',
+                achieved: 1,
+                unlocktime: 1_700_000_000,
+              },
+            ],
+          },
+        }),
+      )
+    })
+
+    await expect(
+      fetchSteamAchievements({
+        apiKey: 'key',
+        appid: 620,
+        steamId: '76561198000000000',
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        externalId: 'ACH_WIN_ONE_GAME',
+        name: 'Gagner une partie',
+        unlocked: true,
+      }),
+    ])
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps Steam achievement schema when player achievements are unavailable', async () => {
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      const urlValue = String(url)
+
+      if (urlValue.includes('GetPlayerAchievements')) {
+        return new Response(null, { status: 403 })
+      }
+
+      return new Response(
+        JSON.stringify({
+          game: {
+            availableGameStats: {
+              achievements: [
+                {
+                  name: 'ACH_WIN_ONE_GAME',
+                  displayName: 'Gagner une partie',
+                },
+              ],
+            },
+          },
+        }),
+      )
+    })
+
+    await expect(
+      fetchSteamAchievements({
+        apiKey: 'key',
+        appid: 620,
+        steamId: '76561198000000000',
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        externalId: 'ACH_WIN_ONE_GAME',
+        unlocked: false,
+      }),
     ])
   })
 })

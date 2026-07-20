@@ -104,9 +104,12 @@ model Dlc {
   releaseDate DateTime?
   owned       Boolean   @default(false)
   completed   Boolean   @default(false)
+  provider    String?
+  externalId  String?
 
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
+  @@unique([gameId, provider, externalId])
   @@index([gameId])
 }
 
@@ -119,9 +122,11 @@ model Achievement {
   unlocked    Boolean   @default(false)
   unlockDate  DateTime?
   provider    String?
+  externalId  String?
 
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
+  @@unique([gameId, provider, externalId])
   @@index([gameId])
   @@index([name])
 }

@@ -4,12 +4,15 @@ import { dirname, join, resolve } from 'node:path'
 import { getDatabaseFilePath, prisma } from '../database/client'
 import {
   fetchSteamAppDetails,
+  fetchSteamAchievements,
   fetchSteamOwnedGames,
   hasDatedSteamPlaytime,
   mergeSteamAppDetails,
   mergeSteamGames,
   normalizeSteamId,
   readSteamLocalLibrary,
+  type SteamAchievement,
+  type SteamAppDetails,
   type SteamOwnedGame,
 } from '../providers/steam'
 import {
@@ -39,6 +42,7 @@ const steamTotalSessionNote = 'Temps total Steam synchronise.'
 const rawgProvider: ExternalProvider = 'RAWG'
 const rawgExternalId = 'catalogue'
 const defaultAutoSyncIntervalMinutes = 120
+const defaultSteamAchievementSyncLimit = 80
 const legacySteamCoverPattern =
   /^https:\/\/cdn\.akamai\.steamstatic\.com\/steam\/apps\/\d+\/header\.jpg$/
 
@@ -47,6 +51,9 @@ interface SteamImportStats {
   linkedGames: number
   updatedGames: number
   syncedSessions: number
+  syncedDlc: number
+  syncedAchievements: number
+  syncedAchievementGames: number
 }
 
 interface SteamSyncSources {
@@ -134,6 +141,14 @@ function readAutoSyncIntervalMinutes() {
   return Number.isFinite(rawValue) && rawValue >= 15
     ? rawValue
     : defaultAutoSyncIntervalMinutes
+}
+
+function readSteamAchievementSyncLimit() {
+  const rawValue = Number(process.env['LUDUX_STEAM_ACHIEVEMENT_SYNC_LIMIT'])
+
+  return Number.isFinite(rawValue) && rawValue > 0
+    ? Math.trunc(rawValue)
+    : defaultSteamAchievementSyncLimit
 }
 
 function encryptSecret(value: string | undefined) {
@@ -245,6 +260,11 @@ function createSteamSyncMessage(stats: SteamImportStats, sources: SteamSyncSourc
     `${stats.linkedGames} relies`,
     `${stats.updatedGames} deja connus`,
     `${stats.syncedSessions} temps de jeu synchronises`,
+    `${stats.syncedDlc} DLC Steam detectes`,
+    `${stats.syncedAchievements} succes Steam synchronises`,
+    stats.syncedAchievementGames > 0
+      ? `${stats.syncedAchievementGames} jeux avec succes`
+      : null,
     sources.apiWarning ? `API Steam ignoree : ${sources.apiWarning}` : null,
   ]
 
@@ -273,6 +293,16 @@ function parseRawgReleaseDate(value: string | null) {
   const date = new Date(`${value}T00:00:00.000Z`)
 
   return Number.isNaN(date.getTime()) ? undefined : date
+}
+
+function parseSteamReleaseDate(value: string | null) {
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(value)
+
+  return Number.isNaN(date.getTime()) ? null : date
 }
 
 function buildRawgUpdateData(
@@ -559,12 +589,286 @@ async function upsertSteamPlaySession({
   return session.id
 }
 
+async function findSteamLinkedGames(games: SteamOwnedGame[]) {
+  const externalIds = games.map((game) => String(game.appid))
+  const links = await prisma.externalGame.findMany({
+    where: {
+      provider: steamProvider,
+      externalId: {
+        in: externalIds,
+      },
+    },
+    select: {
+      externalId: true,
+      gameId: true,
+    },
+  })
+
+  return new Map(links.map((link) => [link.externalId, link.gameId]))
+}
+
+async function upsertSteamDlc({
+  detail,
+  gameId,
+}: {
+  detail: SteamAppDetails
+  gameId: string
+}) {
+  const externalId = String(detail.appid)
+  const releaseDate = parseSteamReleaseDate(detail.releaseDate)
+  const existingSyncedDlc = await prisma.dlc.findFirst({
+    where: {
+      gameId,
+      provider: steamProvider,
+      externalId,
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  if (existingSyncedDlc) {
+    await prisma.dlc.update({
+      where: {
+        id: existingSyncedDlc.id,
+      },
+      data: {
+        name: detail.title ?? `Steam DLC ${externalId}`,
+        releaseDate,
+      },
+    })
+    return
+  }
+
+  const existingManualDlc = detail.title
+    ? await prisma.dlc.findFirst({
+        where: {
+          gameId,
+          name: detail.title,
+          provider: null,
+          externalId: null,
+        },
+        select: {
+          id: true,
+        },
+      })
+    : null
+
+  if (existingManualDlc) {
+    await prisma.dlc.update({
+      where: {
+        id: existingManualDlc.id,
+      },
+      data: {
+        provider: steamProvider,
+        externalId,
+        releaseDate,
+      },
+    })
+    return
+  }
+
+  await prisma.dlc.create({
+    data: {
+      gameId,
+      name: detail.title ?? `Steam DLC ${externalId}`,
+      releaseDate,
+      provider: steamProvider,
+      externalId,
+    },
+  })
+}
+
+async function syncSteamDlcCatalog(
+  games: SteamOwnedGame[],
+  appDetails: SteamAppDetails[],
+) {
+  const detailsByAppId = new Map(appDetails.map((detail) => [detail.appid, detail]))
+  const gameIdsBySteamAppId = await findSteamLinkedGames(games)
+  const dlcAppIds = appDetails.flatMap((detail) => detail.dlcAppIds)
+
+  if (dlcAppIds.length === 0) {
+    return 0
+  }
+
+  const dlcDetails = await fetchSteamAppDetails({
+    appids: dlcAppIds,
+  })
+  const dlcDetailsByAppId = new Map(dlcDetails.map((detail) => [detail.appid, detail]))
+  let syncedDlc = 0
+
+  for (const game of games) {
+    const gameId = gameIdsBySteamAppId.get(String(game.appid))
+    const detail = detailsByAppId.get(game.appid)
+
+    if (!gameId || !detail || detail.dlcAppIds.length === 0) {
+      continue
+    }
+
+    for (const dlcAppId of detail.dlcAppIds) {
+      await upsertSteamDlc({
+        gameId,
+        detail: dlcDetailsByAppId.get(dlcAppId) ?? {
+          appid: dlcAppId,
+          title: `Steam DLC ${dlcAppId}`,
+          coverUrl: null,
+          dlcAppIds: [],
+          releaseDate: null,
+        },
+      })
+      syncedDlc += 1
+    }
+  }
+
+  return syncedDlc
+}
+
+async function upsertSteamAchievement({
+  achievement,
+  gameId,
+}: {
+  achievement: SteamAchievement
+  gameId: string
+}) {
+  const existingSyncedAchievement = await prisma.achievement.findFirst({
+    where: {
+      gameId,
+      provider: steamProvider,
+      externalId: achievement.externalId,
+    },
+    select: {
+      id: true,
+    },
+  })
+  const data = {
+    name: achievement.name,
+    description: achievement.description,
+    iconUrl: achievement.iconUrl,
+    unlocked: achievement.unlocked,
+    unlockDate: parseSteamReleaseDate(achievement.unlockDate),
+    provider: steamProvider,
+    externalId: achievement.externalId,
+  }
+
+  if (existingSyncedAchievement) {
+    await prisma.achievement.update({
+      where: {
+        id: existingSyncedAchievement.id,
+      },
+      data,
+    })
+    return
+  }
+
+  const existingManualAchievement = await prisma.achievement.findFirst({
+    where: {
+      gameId,
+      name: achievement.name,
+      provider: null,
+      externalId: null,
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  if (existingManualAchievement) {
+    await prisma.achievement.update({
+      where: {
+        id: existingManualAchievement.id,
+      },
+      data,
+    })
+    return
+  }
+
+  await prisma.achievement.create({
+    data: {
+      gameId,
+      ...data,
+    },
+  })
+}
+
+function shouldSyncSteamAchievements(game: SteamOwnedGame) {
+  return Boolean(game.installed) || game.playtimeForeverMinutes > 0
+}
+
+function sortSteamAchievementCandidates(left: SteamOwnedGame, right: SteamOwnedGame) {
+  const leftInstalled = left.installed ? 1 : 0
+  const rightInstalled = right.installed ? 1 : 0
+
+  if (leftInstalled !== rightInstalled) {
+    return rightInstalled - leftInstalled
+  }
+
+  return right.playtimeForeverMinutes - left.playtimeForeverMinutes
+}
+
+async function syncSteamAchievements({
+  apiKey,
+  games,
+  steamId,
+}: {
+  apiKey: string
+  games: SteamOwnedGame[]
+  steamId: string
+}) {
+  const gameIdsBySteamAppId = await findSteamLinkedGames(games)
+  const candidates = games
+    .filter(shouldSyncSteamAchievements)
+    .sort(sortSteamAchievementCandidates)
+    .slice(0, readSteamAchievementSyncLimit())
+  let syncedAchievements = 0
+  let syncedAchievementGames = 0
+
+  for (const game of candidates) {
+    const gameId = gameIdsBySteamAppId.get(String(game.appid))
+
+    if (!gameId) {
+      continue
+    }
+
+    try {
+      const achievements = await fetchSteamAchievements({
+        apiKey,
+        appid: game.appid,
+        steamId,
+      })
+
+      if (achievements.length === 0) {
+        continue
+      }
+
+      for (const achievement of achievements) {
+        await upsertSteamAchievement({
+          achievement,
+          gameId,
+        })
+      }
+
+      syncedAchievements += achievements.length
+      syncedAchievementGames += 1
+    } catch (caughtError) {
+      logger.error('[SteamAchievements]', caughtError)
+    }
+  }
+
+  return {
+    syncedAchievements,
+    syncedAchievementGames,
+  }
+}
+
 async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImportStats> {
   const stats: SteamImportStats = {
     importedGames: 0,
     linkedGames: 0,
     updatedGames: 0,
     syncedSessions: 0,
+    syncedDlc: 0,
+    syncedAchievements: 0,
+    syncedAchievementGames: 0,
   }
   const steamPlatform = await ensureSteamPlatform()
   const localGames = await prisma.game.findMany({
@@ -1023,20 +1327,41 @@ class SettingsService {
         localLibrary.activities,
       )
       let gamesToImport = mergedGames
+      let steamAppDetails: SteamAppDetails[] = []
       let steamStoreCovers = 0
 
       try {
-        const details = await fetchSteamAppDetails({
+        steamAppDetails = await fetchSteamAppDetails({
           appids: mergedGames.map((game) => game.appid),
         })
 
-        gamesToImport = mergeSteamAppDetails(mergedGames, details)
-        steamStoreCovers = details.filter((detail) => detail.coverUrl).length
+        gamesToImport = mergeSteamAppDetails(mergedGames, steamAppDetails)
+        steamStoreCovers = steamAppDetails.filter((detail) => detail.coverUrl).length
       } catch (caughtError) {
         logger.error('[SteamStoreDetails]', caughtError)
       }
 
       const stats = await importSteamOwnedGames(gamesToImport)
+
+      if (steamAppDetails.length > 0) {
+        try {
+          stats.syncedDlc = await syncSteamDlcCatalog(gamesToImport, steamAppDetails)
+        } catch (caughtError) {
+          logger.error('[SteamDlcCatalog]', caughtError)
+        }
+      }
+
+      if (apiKey) {
+        const achievementStats = await syncSteamAchievements({
+          apiKey,
+          games: gamesToImport,
+          steamId: account.externalId,
+        })
+
+        stats.syncedAchievements = achievementStats.syncedAchievements
+        stats.syncedAchievementGames = achievementStats.syncedAchievementGames
+      }
+
       const syncedAt = new Date()
       const message = createSteamSyncMessage(stats, {
         apiWarning,

@@ -32,6 +32,17 @@ export interface SteamAppDetails {
   appid: number
   title: string | null
   coverUrl: string | null
+  dlcAppIds: number[]
+  releaseDate: string | null
+}
+
+export interface SteamAchievement {
+  externalId: string
+  name: string
+  description: string | null
+  iconUrl: string | null
+  unlocked: boolean
+  unlockDate: string | null
 }
 
 export interface SteamLocalAppActivity {
@@ -57,6 +68,14 @@ interface FetchSteamOwnedGamesInput {
 
 interface FetchSteamAppDetailsInput {
   appids: number[]
+  fetchImpl?: typeof fetch
+  timeoutMs?: number
+}
+
+interface FetchSteamAchievementsInput {
+  apiKey: string
+  appid: number
+  steamId: string
   fetchImpl?: typeof fetch
   timeoutMs?: number
 }
@@ -474,10 +493,49 @@ export function createSteamAppDetailsUrl(appid: number) {
   }
 
   const params = new URLSearchParams({
-    filters: 'basic',
+    filters: 'basic,release_date,dlc',
   })
 
   return `https://store.steampowered.com/api/appdetails?appids=${normalizedAppId}&${params}`
+}
+
+export function createSteamAchievementSchemaUrl(apiKey: string, appid: number) {
+  const normalizedAppId = Math.trunc(appid)
+
+  if (!Number.isFinite(normalizedAppId) || normalizedAppId <= 0) {
+    throw new Error('Identifiant Steam invalide.')
+  }
+
+  const params = new URLSearchParams({
+    key: normalizeSteamApiKey(apiKey),
+    appid: String(normalizedAppId),
+    l: 'french',
+    format: 'json',
+  })
+
+  return `https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?${params}`
+}
+
+export function createSteamPlayerAchievementsUrl(
+  apiKey: string,
+  steamId: string,
+  appid: number,
+) {
+  const normalizedAppId = Math.trunc(appid)
+
+  if (!Number.isFinite(normalizedAppId) || normalizedAppId <= 0) {
+    throw new Error('Identifiant Steam invalide.')
+  }
+
+  const params = new URLSearchParams({
+    key: normalizeSteamApiKey(apiKey),
+    steamid: normalizeSteamId(steamId),
+    appid: String(normalizedAppId),
+    l: 'french',
+    format: 'json',
+  })
+
+  return `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?${params}`
 }
 
 export function mergeSteamGames(
@@ -542,6 +600,26 @@ function normalizeSteamAppIds(appids: number[]) {
   ]
 }
 
+function parseSteamStoreReleaseDate(value: unknown) {
+  const releaseDate = readString(isRecord(value) ? value['date'] : null)
+
+  if (!releaseDate) {
+    return null
+  }
+
+  const parsedDate = new Date(`${releaseDate} UTC`)
+
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate.toISOString()
+}
+
+function readSteamDlcAppIds(value: unknown) {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return normalizeSteamAppIds(value.map((appid) => readNumberLike(appid) ?? 0))
+}
+
 export function parseSteamAppDetails(payload: unknown): SteamAppDetails[] {
   if (!isRecord(payload)) {
     return []
@@ -567,6 +645,8 @@ export function parseSteamAppDetails(payload: unknown): SteamAppDetails[] {
         appid,
         title: readString(data['name']),
         coverUrl,
+        dlcAppIds: readSteamDlcAppIds(data['dlc']),
+        releaseDate: parseSteamStoreReleaseDate(data['release_date']),
       },
     ]
   })
@@ -589,6 +669,85 @@ export function mergeSteamAppDetails(
       ...game,
       coverUrl: detail.coverUrl ?? game.coverUrl,
       title: detail.title ?? game.title,
+    }
+  })
+}
+
+export function parseSteamAchievementSchema(payload: unknown) {
+  const achievements = isRecord(payload) &&
+    isRecord(payload['game']) &&
+    isRecord(payload['game']['availableGameStats']) &&
+    Array.isArray(payload['game']['availableGameStats']['achievements'])
+    ? payload['game']['availableGameStats']['achievements']
+    : []
+
+  return achievements.flatMap((achievement): Omit<SteamAchievement, 'unlocked' | 'unlockDate'>[] => {
+    if (!isRecord(achievement)) {
+      return []
+    }
+
+    const externalId = readString(achievement['name'])
+    const name = readString(achievement['displayName']) ?? externalId
+
+    if (!externalId || !name) {
+      return []
+    }
+
+    return [
+      {
+        externalId,
+        name,
+        description: readString(achievement['description']),
+        iconUrl: readString(achievement['icon']),
+      },
+    ]
+  })
+}
+
+export function parseSteamPlayerAchievements(payload: unknown) {
+  const achievements = isRecord(payload) &&
+    isRecord(payload['playerstats']) &&
+    payload['playerstats']['success'] !== false &&
+    Array.isArray(payload['playerstats']['achievements'])
+    ? payload['playerstats']['achievements']
+    : []
+
+  return achievements.flatMap((achievement): Pick<SteamAchievement, 'externalId' | 'unlocked' | 'unlockDate'>[] => {
+    if (!isRecord(achievement)) {
+      return []
+    }
+
+    const externalId = readString(achievement['apiname'])
+
+    if (!externalId) {
+      return []
+    }
+
+    return [
+      {
+        externalId,
+        unlocked: readNumberLike(achievement['achieved']) === 1,
+        unlockDate: unixTimestampToIso(achievement['unlocktime']),
+      },
+    ]
+  })
+}
+
+export function mergeSteamAchievements(
+  schemaAchievements: Omit<SteamAchievement, 'unlocked' | 'unlockDate'>[],
+  playerAchievements: Pick<SteamAchievement, 'externalId' | 'unlocked' | 'unlockDate'>[],
+) {
+  const playerAchievementsById = new Map(
+    playerAchievements.map((achievement) => [achievement.externalId, achievement]),
+  )
+
+  return schemaAchievements.map((achievement) => {
+    const playerAchievement = playerAchievementsById.get(achievement.externalId)
+
+    return {
+      ...achievement,
+      unlocked: playerAchievement?.unlocked ?? false,
+      unlockDate: playerAchievement?.unlockDate ?? null,
     }
   })
 }
@@ -682,6 +841,71 @@ export async function fetchSteamAppDetails({
   }
 
   return details
+}
+
+async function fetchSteamJson({
+  fetchImpl,
+  timeoutMs,
+  url,
+}: {
+  fetchImpl: typeof fetch
+  timeoutMs: number
+  url: string
+}) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  let response: Response
+
+  try {
+    response = await fetchImpl(url, {
+      signal: controller.signal,
+    })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Steam ne repond pas. Reessayez plus tard.')
+    }
+
+    throw new Error('Impossible de joindre Steam. Verifiez la connexion reseau.')
+  } finally {
+    clearTimeout(timeout)
+  }
+
+  if (!response.ok) {
+    throw new Error(createSteamErrorMessage(response.status))
+  }
+
+  return response.json()
+}
+
+export async function fetchSteamAchievements({
+  apiKey,
+  appid,
+  fetchImpl = fetch,
+  steamId,
+  timeoutMs = defaultSteamTimeoutMs,
+}: FetchSteamAchievementsInput) {
+  const schemaPayload = await fetchSteamJson({
+    fetchImpl,
+    timeoutMs,
+    url: createSteamAchievementSchemaUrl(apiKey, appid),
+  })
+  const schemaAchievements = parseSteamAchievementSchema(schemaPayload)
+
+  try {
+    const playerPayload = await fetchSteamJson({
+      fetchImpl,
+      timeoutMs,
+      url: createSteamPlayerAchievementsUrl(apiKey, steamId, appid),
+    })
+
+    return mergeSteamAchievements(
+      schemaAchievements,
+      parseSteamPlayerAchievements(playerPayload),
+    )
+  } catch {
+    return mergeSteamAchievements(schemaAchievements, [])
+  }
 }
 
 export async function readSteamLocalLibrary({
