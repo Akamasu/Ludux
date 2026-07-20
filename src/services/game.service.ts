@@ -147,6 +147,7 @@ function toGameDetail(game: GameDetailWithRelations): GameDetail {
   return {
     ...toGameListItem(game),
     description: game.description,
+    personalNote: game.personalNote,
     developer: game.developer,
     publisher: game.publisher,
     releaseDate: game.releaseDate?.toISOString() ?? null,
@@ -301,6 +302,7 @@ class GameService {
       data: {
         title,
         description: input.description?.trim(),
+        personalNote: input.personalNote?.trim(),
         coverUrl: input.coverUrl?.trim(),
         status: input.status ?? 'BACKLOG',
         platforms: platformName
@@ -357,6 +359,7 @@ class GameService {
         title,
         status: input.status,
         description: trimOptional(input.description),
+        personalNote: trimNullable(input.personalNote),
         coverUrl: trimOptional(input.coverUrl),
         developer: trimOptional(input.developer),
         publisher: trimOptional(input.publisher),

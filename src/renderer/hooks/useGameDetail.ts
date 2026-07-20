@@ -39,6 +39,7 @@ function detailFromListItem(game: GameListItem): GameDetail {
   return {
     ...game,
     description: null,
+    personalNote: null,
     developer: null,
     publisher: null,
     releaseDate: null,
@@ -103,6 +104,10 @@ export function useGameDetail(
                   title: input.title ?? current.title,
                   status: input.status ?? current.status,
                   description: input.description ?? current.description,
+                  personalNote:
+                    input.personalNote === undefined
+                      ? current.personalNote
+                      : input.personalNote,
                   coverUrl: input.coverUrl ?? current.coverUrl,
                   developer: input.developer ?? current.developer,
                   publisher: input.publisher ?? current.publisher,

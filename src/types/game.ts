@@ -142,6 +142,7 @@ export interface LifeBookEvent {
 
 export interface GameDetail extends GameListItem {
   description: string | null
+  personalNote: string | null
   developer: string | null
   publisher: string | null
   releaseDate: string | null
@@ -213,6 +214,7 @@ export interface CreateGameInput {
   status?: GameStatus
   platformName?: string
   description?: string
+  personalNote?: string
   coverUrl?: string
 }
 
@@ -221,6 +223,7 @@ export interface UpdateGameInput {
   title?: string
   status?: GameStatus
   description?: string
+  personalNote?: string | null
   coverUrl?: string
   developer?: string
   publisher?: string

@@ -27,18 +27,19 @@ enum Emotion {
 }
 
 model Game {
-  id          String     @id @default(uuid())
-  title       String
-  description String?
-  coverUrl    String?
-  releaseDate DateTime?
-  developer   String?
-  publisher   String?
-  website     String?
-  status      GameStatus @default(BACKLOG)
-  archived    Boolean    @default(false)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id           String     @id @default(uuid())
+  title        String
+  description  String?
+  personalNote String?
+  coverUrl     String?
+  releaseDate  DateTime?
+  developer    String?
+  publisher    String?
+  website      String?
+  status       GameStatus @default(BACKLOG)
+  archived     Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   platforms       GamePlatform[]
   versions        GameVersion[]
@@ -135,8 +136,8 @@ model PlaySession {
   note            String?
   createdAt       DateTime  @default(now())
 
-  game     Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  platform Platform? @relation(fields: [platformId], references: [id], onDelete: SetNull)
+  game          Game           @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  platform      Platform?      @relation(fields: [platformId], references: [id], onDelete: SetNull)
   externalGames ExternalGame[]
 
   @@index([gameId])
@@ -145,17 +146,17 @@ model PlaySession {
 }
 
 model Chronicle {
-  id        String    @id @default(uuid())
+  id        String   @id @default(uuid())
   gameId    String
   title     String
   content   String
-  date      DateTime  @default(now())
+  date      DateTime @default(now())
   emotion   Emotion?
-  favorite  Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  favorite  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  game        Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  game        Game           @relation(fields: [gameId], references: [id], onDelete: Cascade)
   screenshots Screenshot[]
   tags        ChronicleTag[]
 
@@ -265,17 +266,17 @@ model SyncData {
 }
 
 model ExternalGame {
-  id                      String    @id @default(uuid())
-  gameId                  String
-  playSessionId           String?
-  provider                String
-  externalId              String
-  sourceTitle             String?
-  sourceCoverUrl          String?
-  lastPlaytimeMinutes     Int       @default(0)
-  lastSyncedAt            DateTime?
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  id                  String    @id @default(uuid())
+  gameId              String
+  playSessionId       String?
+  provider            String
+  externalId          String
+  sourceTitle         String?
+  sourceCoverUrl      String?
+  lastPlaytimeMinutes Int       @default(0)
+  lastSyncedAt        DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   game        Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
   playSession PlaySession? @relation(fields: [playSessionId], references: [id], onDelete: SetNull)

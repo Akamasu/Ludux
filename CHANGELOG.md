@@ -28,6 +28,13 @@ Le projet suit des versions de developpement simples :
 - `v0.22.x` : stabilisation du connecteur Steam.
 - `v0.23.x` : enrichissement des metadonnees via RAWG.
 
+## v0.23.7 - 2026-07-20
+
+- Separation des descriptions catalogue RAWG et des notes personnelles.
+- Les notes personnelles ne sont plus pre-remplies avec la description publique du jeu.
+- Conservation des anciennes notes courtes pour les jeux non relies a RAWG.
+- Mise en forme des longues descriptions catalogue en sections et paragraphes plus lisibles.
+
 ## v0.23.6 - 2026-07-20
 
 - Les manifests Steam `.acf` ne sont plus utilises comme source de dernier lancement.

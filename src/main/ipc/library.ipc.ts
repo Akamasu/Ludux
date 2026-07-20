@@ -97,6 +97,7 @@ function parseCreateGameInput(value: unknown): CreateGameInput {
     status,
     platformName: readOptionalString(value['platformName']),
     description: readOptionalString(value['description']),
+    personalNote: readOptionalString(value['personalNote']),
     coverUrl: readOptionalString(value['coverUrl']),
   }
 }
@@ -117,6 +118,7 @@ function parseUpdateGameInput(value: unknown): UpdateGameInput {
     title: readOptionalString(value['title']),
     status,
     description: readOptionalString(value['description']),
+    personalNote: readNullableString(value['personalNote'], 'Note personnelle invalide.'),
     coverUrl: readOptionalString(value['coverUrl']),
     developer: readOptionalString(value['developer']),
     publisher: readOptionalString(value['publisher']),

@@ -50,6 +50,10 @@ import {
   type UpdateScreenshotInput,
 } from '../../types/game'
 import { Button } from '../components/ui/Button'
+import {
+  formatGameDescription,
+  isGameDescriptionHeading,
+} from '../utils/gameDescription'
 import { formatDate, formatHours } from '../utils/formatters'
 
 interface GameDetailPageProps {
@@ -115,6 +119,35 @@ function websiteLabel(value: string) {
   } catch {
     return 'Site officiel'
   }
+}
+
+function GameDescription({ description }: { description: string | null }) {
+  const blocks = formatGameDescription(description)
+
+  if (blocks.length === 0) {
+    return (
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-500">
+        Aucune description catalogue pour le moment.
+      </p>
+    )
+  }
+
+  return (
+    <div className="mt-3 max-w-3xl space-y-3 text-sm leading-6 text-zinc-400">
+      {blocks.map((block, index) =>
+        isGameDescriptionHeading(block) ? (
+          <p
+            key={`${block}-${index}`}
+            className="pt-1 text-xs font-semibold uppercase text-[#A797FF]"
+          >
+            {block.replace(/:$/, '')}
+          </p>
+        ) : (
+          <p key={`${block.slice(0, 24)}-${index}`}>{block}</p>
+        ),
+      )}
+    </div>
+  )
 }
 
 export function GameDetailPage({
@@ -202,9 +235,7 @@ export function GameDetailPage({
               {GAME_STATUS_LABELS[detail.status]}
             </p>
             <h1 className="mt-2 text-4xl font-semibold text-white">{detail.title}</h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-400">
-              {detail.description || 'Aucune note personnelle pour le moment.'}
-            </p>
+            <GameDescription description={detail.description} />
             {detail.metadataSources.length > 0 ? (
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 {detail.metadataSources.map((source) => (
@@ -376,12 +407,12 @@ function GameEditPanel({
 }) {
   const [title, setTitle] = useState(detail.title)
   const [status, setStatus] = useState<GameStatus>(detail.status)
-  const [description, setDescription] = useState(detail.description ?? '')
+  const [personalNote, setPersonalNote] = useState(detail.personalNote ?? '')
 
   useEffect(() => {
     setTitle(detail.title)
     setStatus(detail.status)
-    setDescription(detail.description ?? '')
+    setPersonalNote(detail.personalNote ?? '')
   }, [detail])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -391,7 +422,7 @@ function GameEditPanel({
       id: detail.id,
       title,
       status,
-      description,
+      personalNote,
     })
   }
 
@@ -424,8 +455,8 @@ function GameEditPanel({
         <label>
           <span className="mb-2 block text-xs font-medium text-zinc-500">Note personnelle</span>
           <textarea
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
+            value={personalNote}
+            onChange={(event) => setPersonalNote(event.target.value)}
             rows={4}
             className="w-full resize-none rounded-lg border border-white/10 bg-[#0F1117] px-3 py-3 text-sm leading-6 text-white outline-none transition focus:border-[#7C5CFF]"
           />

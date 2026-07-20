@@ -18,7 +18,7 @@ export function AddGameForm({ idPrefix, isSaving, onCreateGame }: AddGameFormPro
   const [platformName, setPlatformName] = useState('')
   const [status, setStatus] = useState<CreateGameInput['status']>('BACKLOG')
   const [coverUrl, setCoverUrl] = useState('')
-  const [description, setDescription] = useState('')
+  const [personalNote, setPersonalNote] = useState('')
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -32,14 +32,14 @@ export function AddGameForm({ idPrefix, isSaving, onCreateGame }: AddGameFormPro
       platformName,
       status,
       coverUrl,
-      description,
+      personalNote,
     })
 
     setTitle('')
     setPlatformName('')
     setStatus('BACKLOG')
     setCoverUrl('')
-    setDescription('')
+    setPersonalNote('')
   }
 
   return (
@@ -105,13 +105,13 @@ export function AddGameForm({ idPrefix, isSaving, onCreateGame }: AddGameFormPro
         </div>
 
         <div>
-          <label className="mb-2 block text-xs font-medium text-zinc-500" htmlFor={`${idPrefix}-description`}>
-            Note courte
+          <label className="mb-2 block text-xs font-medium text-zinc-500" htmlFor={`${idPrefix}-personal-note`}>
+            Note personnelle
           </label>
           <input
-            id={`${idPrefix}-description`}
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
+            id={`${idPrefix}-personal-note`}
+            value={personalNote}
+            onChange={(event) => setPersonalNote(event.target.value)}
             placeholder="Pourquoi ce jeu rejoint votre histoire ?"
             className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
           />
