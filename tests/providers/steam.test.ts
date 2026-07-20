@@ -19,6 +19,7 @@ import {
   parseSteamAchievementSchema,
   parseSteamDlcForApp,
   parseSteamKeyValues,
+  parseSteamCloudStorageCollections,
   parseSteamLocalAppCategories,
   parseSteamLibraryFolders,
   parseSteamLocalConfigApps,
@@ -441,6 +442,60 @@ describe('steam provider', () => {
       {
         appid: 730,
         categories: ['FPS', 'Soirees'],
+      },
+    ])
+  })
+
+  it('parses Steam library collections from cloud storage', () => {
+    expect(
+      parseSteamCloudStorageCollections(
+        JSON.stringify([
+          [
+            'user-collections.uc-souls',
+            {
+              key: 'user-collections.uc-souls',
+              value: JSON.stringify({
+                id: 'uc-souls',
+                name: '        SOULS',
+                added: [570940, '1245620'],
+                removed: ['1245620'],
+              }),
+            },
+          ],
+          [
+            'user-collections.uc-rpg',
+            {
+              key: 'user-collections.uc-rpg',
+              value: JSON.stringify({
+                id: 'uc-rpg',
+                name: '       RPG',
+                added: [570940, 1091500],
+                removed: [],
+              }),
+            },
+          ],
+          [
+            'user-collections.hidden',
+            {
+              key: 'user-collections.hidden',
+              value: JSON.stringify({
+                id: 'hidden',
+                name: 'Masqués',
+                added: [10],
+                removed: [],
+              }),
+            },
+          ],
+        ]),
+      ),
+    ).toEqual([
+      {
+        appid: 570940,
+        categories: ['RPG', 'SOULS'],
+      },
+      {
+        appid: 1091500,
+        categories: ['RPG'],
       },
     ])
   })

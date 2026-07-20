@@ -72,6 +72,7 @@ export interface SteamLocalLibraryResult {
   categories: SteamLocalAppCategories[]
   libraryPaths: string[]
   manifestCount: number
+  cloudStoragePath: string | null
   localConfigPath: string | null
   sharedConfigPath: string | null
 }
@@ -590,6 +591,40 @@ function readSteamAppCategories(app: SteamKeyValueObject) {
   ).sort((left, right) => left.localeCompare(right, 'fr-FR'))
 }
 
+function readSteamCollectionAppIds(value: unknown) {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .map((appid) => Math.trunc(readNumberLike(appid) ?? 0))
+    .filter((appid) => Number.isFinite(appid) && appid > 0)
+}
+
+function shouldSyncSteamCollection({
+  id,
+  key,
+  name,
+}: {
+  id: string | null
+  key: string
+  name: string
+}) {
+  const normalizedId = id?.toLocaleLowerCase('en-US') ?? ''
+  const normalizedKey = key.toLocaleLowerCase('en-US')
+  const normalizedName = name
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLocaleLowerCase('fr-FR')
+
+  return (
+    normalizedId !== 'hidden' &&
+    !normalizedKey.endsWith('.hidden') &&
+    normalizedName !== 'masques' &&
+    normalizedName !== 'hidden'
+  )
+}
+
 export function parseSteamLocalAppCategories(
   content: string,
 ): SteamLocalAppCategories[] {
@@ -618,6 +653,82 @@ export function parseSteamLocalAppCategories(
       }
 
       categoriesByAppId.set(appid, existingCategories)
+    }
+  }
+
+  return [...categoriesByAppId.entries()]
+    .map(([appid, categories]) => ({
+      appid,
+      categories: [...categories].sort((left, right) => left.localeCompare(right, 'fr-FR')),
+    }))
+    .sort((left, right) => left.appid - right.appid)
+}
+
+export function parseSteamCloudStorageCollections(
+  content: string,
+): SteamLocalAppCategories[] {
+  const payload = JSON.parse(content) as unknown
+
+  if (!Array.isArray(payload)) {
+    return []
+  }
+
+  const categoriesByAppId = new Map<number, Set<string>>()
+
+  for (const entry of payload) {
+    const record = Array.isArray(entry) ? entry[1] : entry
+
+    if (!isRecord(record) || record['is_deleted'] === true) {
+      continue
+    }
+
+    const key = readString(record['key'])
+
+    if (!key?.toLocaleLowerCase('en-US').startsWith('user-collections.')) {
+      continue
+    }
+
+    const value = readString(record['value'])
+
+    if (!value) {
+      continue
+    }
+
+    let collectionPayload: unknown
+
+    try {
+      collectionPayload = JSON.parse(value)
+    } catch {
+      continue
+    }
+
+    if (!isRecord(collectionPayload)) {
+      continue
+    }
+
+    const name = readString(collectionPayload['name'])
+
+    if (!name) {
+      continue
+    }
+
+    const id = readString(collectionPayload['id'])
+
+    if (!shouldSyncSteamCollection({ id, key, name })) {
+      continue
+    }
+
+    const removedAppIds = new Set(readSteamCollectionAppIds(collectionPayload['removed']))
+
+    for (const appid of readSteamCollectionAppIds(collectionPayload['added'])) {
+      if (removedAppIds.has(appid)) {
+        continue
+      }
+
+      const categories = categoriesByAppId.get(appid) ?? new Set<string>()
+
+      categories.add(name)
+      categoriesByAppId.set(appid, categories)
     }
   }
 
@@ -682,6 +793,14 @@ function tryParseSteamLocalConfigApps(content: string) {
 function tryParseSteamLocalAppCategories(content: string) {
   try {
     return parseSteamLocalAppCategories(content)
+  } catch {
+    return []
+  }
+}
+
+function tryParseSteamCloudStorageCollections(content: string) {
+  try {
+    return parseSteamCloudStorageCollections(content)
   } catch {
     return []
   }
@@ -1398,6 +1517,7 @@ export async function readSteamLocalLibrary({
   const accountId = ownerSteamId ? accountIdFromSteamId64(ownerSteamId) : null
   let activities: SteamLocalAppActivity[] = []
   let categories: SteamLocalAppCategories[] = []
+  let cloudStoragePath: string | null = null
   let localConfigPath: string | null = null
   let sharedConfigPath: string | null = null
 
@@ -1444,6 +1564,29 @@ export async function readSteamLocalLibrary({
         break
       }
     }
+
+    for (const rootPath of existingSteamRootPaths) {
+      const candidatePath = join(
+        rootPath,
+        'userdata',
+        accountId,
+        'config',
+        'cloudstorage',
+        'cloud-storage-namespace-1.json',
+      )
+      const content = await readTextFileIfExists(candidatePath)
+
+      if (!content) {
+        continue
+      }
+
+      categories = mergeSteamLocalCategories(
+        categories,
+        tryParseSteamCloudStorageCollections(content),
+      )
+      cloudStoragePath = candidatePath
+      break
+    }
   }
 
   const games = mergeSteamGames(
@@ -1457,6 +1600,7 @@ export async function readSteamLocalLibrary({
     games,
     activities,
     categories,
+    cloudStoragePath,
     libraryPaths: [...discoveredLibraryPaths],
     localConfigPath,
     manifestCount,

@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.7 - 2026-07-20
+
+- Lecture des collections Steam modernes depuis `cloud-storage-namespace-1.json`.
+- Synchronisation des collections visibles dans Steam comme rayons de l'armoire ancienne.
+- Nettoyage des espaces de tri Steam dans les noms de collections et exclusion de la collection `Masqués`.
+- Remplacement des anciennes liaisons de collections Steam synchronisées quand un jeu change de rayon.
+
 ## v0.24.6 - 2026-07-20
 
 - Synchronisation des catégories Steam locales depuis les fichiers de configuration Steam.

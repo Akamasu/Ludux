@@ -39,6 +39,7 @@ const exportDirectory = join(userDataDirectory, 'exports')
 const backupDirectory = join(userDataDirectory, 'backups')
 const steamProvider: ExternalProvider = 'STEAM'
 const steamPlatformName = 'Steam'
+const steamCollectionDescription = 'Catégorie Steam synchronisée.'
 const steamTotalSessionNote = 'Temps total Steam synchronisé.'
 const rawgProvider: ExternalProvider = 'RAWG'
 const rawgExternalId = 'catalogue'
@@ -587,7 +588,7 @@ async function ensureCollection(name: string) {
 
   return prisma.collection.create({
     data: {
-      description: 'Catégorie Steam synchronisée.',
+      description: steamCollectionDescription,
       name,
     },
     select: {
@@ -597,6 +598,10 @@ async function ensureCollection(name: string) {
 }
 
 async function syncSteamGameCollections(gameId: string, steamGame: SteamOwnedGame) {
+  if (!steamGame.categories) {
+    return 0
+  }
+
   const categories = normalizeSteamCategories(steamGame.categories)
 
   for (const category of categories) {
@@ -616,6 +621,18 @@ async function syncSteamGameCollections(gameId: string, steamGame: SteamOwnedGam
       },
     })
   }
+
+  await prisma.collectionGame.deleteMany({
+    where: {
+      gameId,
+      collection: {
+        description: steamCollectionDescription,
+        name: {
+          notIn: categories,
+        },
+      },
+    },
+  })
 
   return categories.length
 }
