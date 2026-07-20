@@ -3,7 +3,9 @@ import { copyFile, mkdir, readdir, stat, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { getDatabaseFilePath, prisma } from '../database/client'
 import {
+  fetchSteamAppDetails,
   fetchSteamOwnedGames,
+  mergeSteamAppDetails,
   mergeSteamGames,
   normalizeSteamId,
   readSteamLocalLibrary,
@@ -36,6 +38,8 @@ const steamTotalSessionNote = 'Temps total Steam synchronise.'
 const rawgProvider: ExternalProvider = 'RAWG'
 const rawgExternalId = 'catalogue'
 const defaultAutoSyncIntervalMinutes = 120
+const legacySteamCoverPattern =
+  /^https:\/\/cdn\.akamai\.steamstatic\.com\/steam\/apps\/\d+\/header\.jpg$/
 
 interface SteamImportStats {
   importedGames: number
@@ -49,6 +53,7 @@ interface SteamSyncSources {
   localActivityGames: number
   localManifestGames: number
   remoteGames: number
+  steamStoreCovers: number
 }
 
 interface RawgEnrichmentStats {
@@ -182,6 +187,21 @@ function normalizeTitle(value: string) {
   return value.trim().toLocaleLowerCase('fr-FR')
 }
 
+function isLegacySteamCoverUrl(value: string | null | undefined) {
+  return Boolean(value && legacySteamCoverPattern.test(value))
+}
+
+function shouldUpdateSteamCover(
+  currentCoverUrl: string | null,
+  previousSourceCoverUrl: string | null | undefined,
+) {
+  return (
+    !currentCoverUrl ||
+    currentCoverUrl === previousSourceCoverUrl ||
+    isLegacySteamCoverUrl(currentCoverUrl)
+  )
+}
+
 function resolveProviderExternalId(input: UpsertProviderConnectionInput) {
   if (input.provider === steamProvider) {
     return normalizeSteamId(input.externalId)
@@ -219,6 +239,7 @@ function createSteamSyncMessage(stats: SteamImportStats, sources: SteamSyncSourc
     sources.localActivityGames > 0
       ? `${sources.localActivityGames} activites locales`
       : null,
+    sources.steamStoreCovers > 0 ? `${sources.steamStoreCovers} jaquettes Steam Store` : null,
     `${stats.importedGames} ajoutes`,
     `${stats.linkedGames} relies`,
     `${stats.updatedGames} deja connus`,
@@ -610,7 +631,10 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
       await ensureSteamPlatformForGame(localGame.id, steamPlatform.id)
     }
 
-    if (!localGame.coverUrl) {
+    if (
+      steamGame.coverUrl &&
+      shouldUpdateSteamCover(localGame.coverUrl, existingLink?.sourceCoverUrl)
+    ) {
       await prisma.game.update({
         where: {
           id: localGame.id,
@@ -985,13 +1009,28 @@ class SettingsService {
         localLibrary.games,
         localLibrary.activities,
       )
-      const stats = await importSteamOwnedGames(mergedGames)
+      let gamesToImport = mergedGames
+      let steamStoreCovers = 0
+
+      try {
+        const details = await fetchSteamAppDetails({
+          appids: mergedGames.map((game) => game.appid),
+        })
+
+        gamesToImport = mergeSteamAppDetails(mergedGames, details)
+        steamStoreCovers = details.filter((detail) => detail.coverUrl).length
+      } catch (caughtError) {
+        logger.error('[SteamStoreDetails]', caughtError)
+      }
+
+      const stats = await importSteamOwnedGames(gamesToImport)
       const syncedAt = new Date()
       const message = createSteamSyncMessage(stats, {
         apiWarning,
         localActivityGames: localLibrary.activities.length,
         localManifestGames: localLibrary.games.length,
         remoteGames: remoteTotalCount,
+        steamStoreCovers,
       })
 
       await recordProviderSync(steamProvider, 'SYNCED', message, syncedAt)

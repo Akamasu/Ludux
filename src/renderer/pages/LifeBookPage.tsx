@@ -14,6 +14,7 @@ import {
   type LifeBookEventKind,
 } from '../../types/game'
 import { Button } from '../components/ui/Button'
+import { GameCover } from '../components/library/GameCover'
 import { cn } from '../../utils/cn'
 import { formatDate, formatHours } from '../utils/formatters'
 
@@ -77,20 +78,13 @@ function buildGroups(events: LifeBookEvent[]): EventGroup[] {
 }
 
 function LifeBookCover({ event }: { event: LifeBookEvent }) {
-  if (event.gameCoverUrl) {
-    return (
-      <img
-        src={event.gameCoverUrl}
-        alt=""
-        className="h-20 w-14 rounded-md object-cover"
-      />
-    )
-  }
-
   return (
-    <div className="grid h-20 w-14 place-items-center rounded-md bg-[#7C5CFF]/10 text-[#D8D0FF]">
-      <Gamepad2 size={22} aria-hidden="true" />
-    </div>
+    <GameCover
+      title={event.gameTitle}
+      coverUrl={event.gameCoverUrl}
+      className="h-20 w-14 rounded-md"
+      initialClassName="text-xl text-[#D8D0FF]"
+    />
   )
 }
 

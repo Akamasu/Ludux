@@ -28,6 +28,12 @@ export interface SteamOwnedGamesResult {
   games: SteamOwnedGame[]
 }
 
+export interface SteamAppDetails {
+  appid: number
+  title: string | null
+  coverUrl: string | null
+}
+
 export interface SteamLocalAppActivity {
   appid: number
   playtimeForeverMinutes: number
@@ -49,6 +55,12 @@ interface FetchSteamOwnedGamesInput {
   timeoutMs?: number
 }
 
+interface FetchSteamAppDetailsInput {
+  appids: number[]
+  fetchImpl?: typeof fetch
+  timeoutMs?: number
+}
+
 interface ReadSteamLocalLibraryInput {
   ownerSteamId?: string
   steamRootPath?: string
@@ -62,6 +74,7 @@ interface SteamKeyValueObject {
 }
 
 const defaultSteamTimeoutMs = 15_000
+const steamAppDetailsBatchSize = 50
 const steamId64Pattern = /^\d{17}$/
 const steamId64AccountIdOffset = 76_561_197_960_265_728n
 
@@ -455,6 +468,17 @@ export function createSteamOwnedGamesUrl(apiKey: string, steamId: string) {
   return `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?${params}`
 }
 
+export function createSteamAppDetailsUrl(appids: number[]) {
+  const normalizedAppIds = normalizeSteamAppIds(appids)
+  const params = new URLSearchParams({
+    appids: normalizedAppIds.join(','),
+    filters: 'basic',
+    l: 'french',
+  })
+
+  return `https://store.steampowered.com/api/appdetails?${params}`
+}
+
 export function mergeSteamGames(
   ownedGames: SteamOwnedGame[],
   installedGames: SteamInstalledGame[],
@@ -507,6 +531,78 @@ export function mergeSteamGames(
   )
 }
 
+function normalizeSteamAppIds(appids: number[]) {
+  return [
+    ...new Set(
+      appids
+        .map((appid) => Math.trunc(appid))
+        .filter((appid) => Number.isFinite(appid) && appid > 0),
+    ),
+  ]
+}
+
+function chunkSteamAppIds(appids: number[]) {
+  const normalizedAppIds = normalizeSteamAppIds(appids)
+  const chunks: number[][] = []
+
+  for (let index = 0; index < normalizedAppIds.length; index += steamAppDetailsBatchSize) {
+    chunks.push(normalizedAppIds.slice(index, index + steamAppDetailsBatchSize))
+  }
+
+  return chunks
+}
+
+export function parseSteamAppDetails(payload: unknown): SteamAppDetails[] {
+  if (!isRecord(payload)) {
+    return []
+  }
+
+  return Object.entries(payload).flatMap(([appidValue, value]): SteamAppDetails[] => {
+    const appid = Math.trunc(readNumberLike(appidValue) ?? 0)
+
+    if (appid <= 0 || !isRecord(value) || value['success'] !== true) {
+      return []
+    }
+
+    const data = isRecord(value['data']) ? value['data'] : null
+
+    if (!data) {
+      return []
+    }
+
+    const coverUrl = readString(data['header_image']) ?? readString(data['capsule_image'])
+
+    return [
+      {
+        appid,
+        title: readString(data['name']),
+        coverUrl,
+      },
+    ]
+  })
+}
+
+export function mergeSteamAppDetails(
+  games: SteamOwnedGame[],
+  details: SteamAppDetails[],
+) {
+  const detailsByAppId = new Map(details.map((detail) => [detail.appid, detail]))
+
+  return games.map((game) => {
+    const detail = detailsByAppId.get(game.appid)
+
+    if (!detail) {
+      return game
+    }
+
+    return {
+      ...game,
+      coverUrl: detail.coverUrl ?? game.coverUrl,
+      title: detail.title ?? game.title,
+    }
+  })
+}
+
 export function parseSteamOwnedGames(payload: unknown): SteamOwnedGamesResult {
   if (!isRecord(payload) || !isRecord(payload['response'])) {
     throw new Error('Reponse Steam invalide.')
@@ -553,6 +649,43 @@ export function parseSteamOwnedGames(payload: unknown): SteamOwnedGamesResult {
     totalCount: readNumber(response['game_count']) ?? games.length,
     games,
   }
+}
+
+export async function fetchSteamAppDetails({
+  appids,
+  fetchImpl = fetch,
+  timeoutMs = defaultSteamTimeoutMs,
+}: FetchSteamAppDetailsInput): Promise<SteamAppDetails[]> {
+  const details: SteamAppDetails[] = []
+
+  for (const appidBatch of chunkSteamAppIds(appids)) {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+    let response: Response
+
+    try {
+      response = await fetchImpl(createSteamAppDetailsUrl(appidBatch), {
+        signal: controller.signal,
+      })
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new Error('Steam Store ne repond pas. Reessayez plus tard.')
+      }
+
+      throw new Error('Impossible de joindre Steam Store. Verifiez la connexion reseau.')
+    } finally {
+      clearTimeout(timeout)
+    }
+
+    if (!response.ok) {
+      throw new Error(`Steam Store a refuse les jaquettes (${response.status}).`)
+    }
+
+    details.push(...parseSteamAppDetails(await response.json()))
+  }
+
+  return details
 }
 
 export async function readSteamLocalLibrary({

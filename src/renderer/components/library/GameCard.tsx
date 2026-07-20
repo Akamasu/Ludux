@@ -1,6 +1,7 @@
 import { Clock3, Star } from 'lucide-react'
 import { GAME_STATUS_LABELS, type GameListItem } from '../../../types/game'
 import { formatHours } from '../../utils/formatters'
+import { GameCover } from './GameCover'
 
 interface GameCardProps {
   game: GameListItem
@@ -8,8 +9,6 @@ interface GameCardProps {
 }
 
 export function GameCard({ game, onOpen }: GameCardProps) {
-  const initial = game.title.trim().charAt(0).toUpperCase()
-
   return (
     <article className="overflow-hidden rounded-lg border border-white/10 bg-[#181B23]">
       <button
@@ -18,13 +17,7 @@ export function GameCard({ game, onOpen }: GameCardProps) {
         className="block w-full text-left"
       >
       <div className="relative aspect-[4/3] bg-[#121620]">
-        {game.coverUrl ? (
-          <img className="h-full w-full object-cover" src={game.coverUrl} alt="" />
-        ) : (
-          <div className="grid h-full place-items-center bg-[radial-gradient(circle_at_top_left,#4F7CFF33,transparent_42%),linear-gradient(135deg,#181B23,#0F1117)]">
-            <span className="text-5xl font-semibold text-zinc-600">{initial}</span>
-          </div>
-        )}
+        <GameCover title={game.title} coverUrl={game.coverUrl} />
         <span className="absolute left-3 top-3 rounded-lg bg-black/55 px-3 py-1 text-xs font-medium text-white backdrop-blur">
           {GAME_STATUS_LABELS[game.status]}
         </span>

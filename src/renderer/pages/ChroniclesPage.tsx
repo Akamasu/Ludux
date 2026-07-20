@@ -1,4 +1,4 @@
-import { BookOpen, BookText, Gamepad2, Search, Star } from 'lucide-react'
+import { BookOpen, Gamepad2, Search, Star } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import {
   EMOTION_LABELS,
@@ -8,6 +8,7 @@ import {
   type Emotion,
 } from '../../types/game'
 import { cn } from '../../utils/cn'
+import { GameCover } from '../components/library/GameCover'
 import { Button } from '../components/ui/Button'
 import { formatDate } from '../utils/formatters'
 
@@ -26,20 +27,13 @@ function normalizeSearch(value: string) {
 }
 
 function ChronicleCover({ chronicle }: { chronicle: ChronicleTimelineItem }) {
-  if (chronicle.gameCoverUrl) {
-    return (
-      <img
-        src={chronicle.gameCoverUrl}
-        alt=""
-        className="h-16 w-12 rounded-md object-cover"
-      />
-    )
-  }
-
   return (
-    <div className="grid h-16 w-12 place-items-center rounded-md bg-[#7C5CFF]/10 text-[#D8D0FF]">
-      <BookText size={20} aria-hidden="true" />
-    </div>
+    <GameCover
+      title={chronicle.gameTitle}
+      coverUrl={chronicle.gameCoverUrl}
+      className="h-16 w-12 rounded-md"
+      initialClassName="text-lg text-[#D8D0FF]"
+    />
   )
 }
 

@@ -28,6 +28,14 @@ Le projet suit des versions de developpement simples :
 - `v0.22.x` : stabilisation du connecteur Steam.
 - `v0.23.x` : enrichissement des metadonnees via RAWG.
 
+## v0.23.3 - 2026-07-20
+
+- Ajout d'un fallback visuel robuste quand une jaquette distante ne charge pas.
+- Utilisation des metadonnees publiques Steam Store pour recuperer des jaquettes officielles plus fiables.
+- Remplacement prudent des anciennes URLs Steam generees automatiquement sans ecraser les jaquettes personnalisees.
+- Application du fallback aux cartes Bibliotheque, Musee, Chroniques et Livre de Vie.
+- Ajout de tests Vitest pour les metadonnees Steam Store.
+
 ## v0.23.2 - 2026-07-20
 
 - Correction du parsing des fichiers Steam locaux contenant des valeurs vides.

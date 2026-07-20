@@ -1,9 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  createSteamAppDetailsUrl,
   createSteamOwnedGamesUrl,
+  fetchSteamAppDetails,
   fetchSteamOwnedGames,
+  mergeSteamAppDetails,
   mergeSteamGames,
   normalizeSteamId,
+  parseSteamAppDetails,
   parseSteamAppManifest,
   parseSteamKeyValues,
   parseSteamLibraryFolders,
@@ -26,6 +30,15 @@ describe('steam provider', () => {
     expect(url).toContain('steamid=76561198000000000')
     expect(url).toContain('include_appinfo=1')
     expect(url).toContain('include_played_free_games=1')
+  })
+
+  it('builds a Steam Store appdetails URL', () => {
+    const url = createSteamAppDetailsUrl([620, 620, 10])
+
+    expect(url).toContain('/api/appdetails')
+    expect(url).toContain('appids=620%2C10')
+    expect(url).toContain('filters=basic')
+    expect(url).toContain('l=french')
   })
 
   it('normalizes owned games payloads', () => {
@@ -59,6 +72,58 @@ describe('steam provider', () => {
         playtimeForeverMinutes: 123,
         lastPlayedAt: '2023-11-14T22:13:20.000Z',
       },
+    ])
+  })
+
+  it('normalizes Steam Store appdetails payloads', () => {
+    expect(
+      parseSteamAppDetails({
+        '620': {
+          success: true,
+          data: {
+            name: 'Portal 2',
+            header_image: 'https://shared.akamai.steamstatic.com/header.jpg',
+          },
+        },
+        '10': {
+          success: false,
+        },
+      }),
+    ).toEqual([
+      {
+        appid: 620,
+        title: 'Portal 2',
+        coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
+      },
+    ])
+  })
+
+  it('replaces legacy Steam cover URLs with Steam Store details', () => {
+    expect(
+      mergeSteamAppDetails(
+        [
+          {
+            appid: 620,
+            title: 'Portal 2',
+            coverUrl: 'https://cdn.akamai.steamstatic.com/steam/apps/620/header.jpg',
+            iconUrl: null,
+            playtimeForeverMinutes: 0,
+            lastPlayedAt: null,
+          },
+        ],
+        [
+          {
+            appid: 620,
+            title: 'Portal 2',
+            coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
+          },
+        ],
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        appid: 620,
+        coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
+      }),
     ])
   })
 
@@ -240,5 +305,35 @@ describe('steam provider', () => {
         fetchImpl: fetchImpl as unknown as typeof fetch,
       }),
     ).rejects.toThrow('Verifiez la cle API Steam')
+  })
+
+  it('fetches Steam Store appdetails', async () => {
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            '620': {
+              success: true,
+              data: {
+                name: 'Portal 2',
+                header_image: 'https://shared.akamai.steamstatic.com/header.jpg',
+              },
+            },
+          }),
+        ),
+    )
+
+    await expect(
+      fetchSteamAppDetails({
+        appids: [620],
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+      }),
+    ).resolves.toEqual([
+      {
+        appid: 620,
+        title: 'Portal 2',
+        coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
+      },
+    ])
   })
 })

@@ -6,6 +6,7 @@ import {
   type GameStatus,
 } from '../../types/game'
 import { Button } from '../components/ui/Button'
+import { GameCover } from '../components/library/GameCover'
 import { formatHours } from '../utils/formatters'
 
 type MuseumFilter = 'ALL' | Extract<GameStatus, 'COMPLETED' | 'COMPLETED_100'>
@@ -46,19 +47,11 @@ function MuseumCard({
   game: GameListItem
   onOpenGame: (gameId: string) => void
 }) {
-  const initial = game.title.trim().charAt(0).toUpperCase()
-
   return (
     <article className="overflow-hidden rounded-lg border border-white/10 bg-[#181B23]">
       <button type="button" onClick={() => onOpenGame(game.id)} className="block w-full text-left">
         <div className="relative aspect-[4/3] bg-[#121620]">
-          {game.coverUrl ? (
-            <img src={game.coverUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div className="grid h-full place-items-center bg-[radial-gradient(circle_at_top_left,#7C5CFF33,transparent_42%),linear-gradient(135deg,#181B23,#0F1117)]">
-              <span className="text-5xl font-semibold text-zinc-600">{initial}</span>
-            </div>
-          )}
+          <GameCover title={game.title} coverUrl={game.coverUrl} />
           <span className="absolute left-3 top-3 rounded-lg bg-black/55 px-3 py-1 text-xs font-medium text-white backdrop-blur">
             {GAME_STATUS_LABELS[game.status]}
           </span>
