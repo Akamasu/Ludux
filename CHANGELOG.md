@@ -29,6 +29,13 @@ Le projet suit des versions de developpement simples :
 - `v0.23.x` : enrichissement des metadonnees via RAWG.
 - `v0.24.x` : experience immersive, navigation animee et habillage bibliotheque.
 
+## v0.24.1 - 2026-07-20
+
+- Transformation du haut des fiches de jeu en volume d'archive avec couverture, page de lecture et registre.
+- Ajout d'un index de volume pour les metadonnees, sessions, chroniques, DLC, succes et captures.
+- Habillage des panneaux de fiche en pages d'archive coherentes avec le theme bibliotheque ancienne.
+- Conservation des controles existants avec une mise en page plus lisible sur fenetre compacte.
+
 ## v0.24.0 - 2026-07-20
 
 - Passage a une fenetre Electron sans cadre Windows natif, avec barre de titre Ludux.

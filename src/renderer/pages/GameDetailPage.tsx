@@ -1,7 +1,9 @@
 import {
   Archive,
   ArrowLeft,
+  BookOpen,
   BookText,
+  Bookmark,
   CalendarDays,
   CheckCircle2,
   Clock3,
@@ -49,6 +51,7 @@ import {
   type UpdateReviewInput,
   type UpdateScreenshotInput,
 } from '../../types/game'
+import { GameCover } from '../components/library/GameCover'
 import { Button } from '../components/ui/Button'
 import {
   formatGameDescription,
@@ -150,6 +153,189 @@ function GameDescription({ description }: { description: string | null }) {
   )
 }
 
+function ArchiveInfoRow({
+  label,
+  value,
+  title,
+}: {
+  label: string
+  value: string
+  title?: string
+}) {
+  return (
+    <div className="grid gap-1 border-b border-white/10 py-3 last:border-b-0">
+      <dt className="text-xs font-medium uppercase text-zinc-600">{label}</dt>
+      <dd className="truncate text-sm font-medium text-zinc-100" title={title ?? value}>
+        {value}
+      </dd>
+    </div>
+  )
+}
+
+function GameArchiveHero({
+  detail,
+  isSaving,
+  onArchiveGame,
+  onBack,
+}: {
+  detail: GameDetail
+  isSaving: boolean
+  onArchiveGame: () => void
+  onBack: () => void
+}) {
+  return (
+    <header className="game-book-spread overflow-hidden rounded-lg border border-[#C9A646]/20 bg-[#181B23]">
+      <div className="flex flex-col gap-3 border-b border-[#C9A646]/15 bg-[#0F1117]/45 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <Button className="w-full sm:w-auto" type="button" variant="secondary" onClick={onBack}>
+          <ArrowLeft size={17} aria-hidden="true" />
+          Bibliotheque
+        </Button>
+        <div className="flex items-center justify-between gap-3 sm:justify-end">
+          <span className="inline-flex items-center gap-2 rounded-lg border border-[#C9A646]/20 bg-[#C9A646]/10 px-3 py-2 text-xs font-medium text-[#E9DFA8]">
+            <BookOpen size={15} aria-hidden="true" />
+            Volume Ludux
+          </span>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onArchiveGame}
+            disabled={isSaving}
+          >
+            <Archive size={17} aria-hidden="true" />
+            Archiver
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-[270px_minmax(0,1fr)]">
+        <aside className="book-cover-panel p-5">
+          <div className="volume-cover relative mx-auto aspect-[3/4] w-full max-w-[230px] overflow-hidden rounded-lg border border-[#C9A646]/25 bg-[#11141B]">
+            <GameCover
+              title={detail.title}
+              coverUrl={detail.coverUrl}
+              className="rounded-lg"
+              initialClassName="text-6xl text-[#D8D0FF]"
+            />
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-4 pb-4 pt-12">
+              <p className="line-clamp-2 text-sm font-semibold text-white">{detail.title}</p>
+              <p className="mt-1 text-xs text-[#E9DFA8]">
+                {GAME_STATUS_LABELS[detail.status]}
+              </p>
+            </div>
+          </div>
+
+          <div className="mx-auto mt-4 grid w-full max-w-[230px] grid-cols-2 gap-2 text-xs text-zinc-400">
+            <div className="rounded-lg border border-white/10 bg-[#0F1117]/80 px-3 py-2">
+              <p className="text-zinc-600">Temps</p>
+              <p className="mt-1 font-medium text-white">{formatHours(detail.totalMinutes)}</p>
+            </div>
+            <div className="rounded-lg border border-white/10 bg-[#0F1117]/80 px-3 py-2">
+              <p className="text-zinc-600">Note</p>
+              <p className="mt-1 font-medium text-white">
+                {detail.review ? `${detail.review.rating}/10` : 'Non note'}
+              </p>
+            </div>
+          </div>
+        </aside>
+
+        <div className="archive-page p-5 sm:p-6">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+            <div className="min-w-0">
+              <p className="inline-flex items-center gap-2 rounded-full border border-[#7C5CFF]/30 bg-[#7C5CFF]/10 px-3 py-1 text-xs font-medium text-[#D8D0FF]">
+                <Bookmark size={14} aria-hidden="true" />
+                {GAME_STATUS_LABELS[detail.status]}
+              </p>
+              <h1 className="mt-4 break-words text-3xl font-semibold text-white sm:text-4xl">
+                {detail.title}
+              </h1>
+              <GameDescription description={detail.description} />
+
+              {detail.metadataSources.length > 0 ? (
+                <div className="mt-5 flex flex-wrap items-center gap-2">
+                  {detail.metadataSources.map((source) => (
+                    <a
+                      key={source.provider}
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#0F1117]/80 px-2.5 py-1 text-xs text-zinc-300 transition hover:border-[#7C5CFF]/50 hover:text-white"
+                      title={
+                        source.lastSyncedAt
+                          ? `Synchronise le ${formatDate(source.lastSyncedAt)}`
+                          : undefined
+                      }
+                    >
+                      <ExternalLink size={13} aria-hidden="true" />
+                      Source {source.label}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <aside className="chapter-index rounded-lg border border-[#C9A646]/15 bg-[#0F1117]/70 p-4">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase text-[#E9DFA8]">
+                    Registre
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-500">Index du volume</p>
+                </div>
+                <BookText size={18} className="text-[#C9A646]" aria-hidden="true" />
+              </div>
+              <dl>
+                {detail.releaseDate ? (
+                  <ArchiveInfoRow label="Sortie" value={formatDate(detail.releaseDate)} />
+                ) : null}
+                {detail.developer ? (
+                  <ArchiveInfoRow
+                    label="Developpeur"
+                    value={detail.developer}
+                    title={detail.developer}
+                  />
+                ) : null}
+                {detail.publisher ? (
+                  <ArchiveInfoRow
+                    label="Editeur"
+                    value={detail.publisher}
+                    title={detail.publisher}
+                  />
+                ) : null}
+                {detail.website ? (
+                  <div className="grid gap-1 border-b border-white/10 py-3 last:border-b-0">
+                    <dt className="text-xs font-medium uppercase text-zinc-600">Site</dt>
+                    <dd>
+                      <a
+                        href={externalHref(detail.website)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex max-w-full items-center gap-1.5 text-sm font-medium text-[#C9D6FF] transition hover:text-white"
+                        title={detail.website}
+                      >
+                        <span className="truncate">{websiteLabel(detail.website)}</span>
+                        <ExternalLink size={13} aria-hidden="true" />
+                      </a>
+                    </dd>
+                  </div>
+                ) : null}
+                <ArchiveInfoRow label="Chroniques" value={String(detail.chronicles.length)} />
+                <ArchiveInfoRow label="Sessions" value={String(detail.sessions.length)} />
+                <ArchiveInfoRow label="DLC" value={String(detail.dlcs.length)} />
+                <ArchiveInfoRow label="Succes" value={String(detail.achievements.length)} />
+                <ArchiveInfoRow label="Captures" value={String(detail.screenshots.length)} />
+                <ArchiveInfoRow
+                  label="Note perso"
+                  value={detail.personalNote ? 'Redigee' : 'Vide'}
+                />
+              </dl>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}
+
 export function GameDetailPage({
   detail,
   error,
@@ -213,130 +399,12 @@ export function GameDetailPage({
 
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <header className="border-b border-white/10 pb-7">
-        <div className="flex items-center justify-between gap-4">
-          <Button type="button" variant="secondary" onClick={onBack}>
-            <ArrowLeft size={17} aria-hidden="true" />
-            Bibliotheque
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleArchiveGame}
-            disabled={isSaving}
-          >
-            <Archive size={17} aria-hidden="true" />
-            Archiver
-          </Button>
-        </div>
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_280px]">
-          <div>
-            <p className="text-sm font-medium text-[#A797FF]">
-              {GAME_STATUS_LABELS[detail.status]}
-            </p>
-            <h1 className="mt-2 break-words text-3xl font-semibold text-white sm:text-4xl">{detail.title}</h1>
-            <GameDescription description={detail.description} />
-            {detail.metadataSources.length > 0 ? (
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                {detail.metadataSources.map((source) => (
-                  <a
-                    key={source.provider}
-                    href={source.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#181B23] px-2.5 py-1 text-xs text-zinc-300 transition hover:border-[#7C5CFF]/50 hover:text-white"
-                    title={
-                      source.lastSyncedAt
-                        ? `Synchronise le ${formatDate(source.lastSyncedAt)}`
-                        : undefined
-                    }
-                  >
-                    <ExternalLink size={13} aria-hidden="true" />
-                    Source {source.label}
-                  </a>
-                ))}
-              </div>
-            ) : null}
-          </div>
-          <div className="grid gap-3 rounded-lg border border-white/10 bg-[#181B23] p-4">
-            {detail.releaseDate ? (
-              <div className="flex items-center justify-between gap-4 text-sm">
-                <span className="text-zinc-500">Sortie</span>
-                <span className="truncate font-medium text-white">
-                  {formatDate(detail.releaseDate)}
-                </span>
-              </div>
-            ) : null}
-            {detail.developer ? (
-              <div className="flex items-center justify-between gap-4 text-sm">
-                <span className="text-zinc-500">Developpeur</span>
-                <span className="truncate font-medium text-white" title={detail.developer}>
-                  {detail.developer}
-                </span>
-              </div>
-            ) : null}
-            {detail.publisher ? (
-              <div className="flex items-center justify-between gap-4 text-sm">
-                <span className="text-zinc-500">Editeur</span>
-                <span className="truncate font-medium text-white" title={detail.publisher}>
-                  {detail.publisher}
-                </span>
-              </div>
-            ) : null}
-            {detail.website ? (
-              <div className="flex items-center justify-between gap-4 text-sm">
-                <span className="text-zinc-500">Site</span>
-                <a
-                  href={externalHref(detail.website)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex min-w-0 items-center gap-1.5 truncate font-medium text-[#C9D6FF] transition hover:text-white"
-                  title={detail.website}
-                >
-                  <span className="truncate">{websiteLabel(detail.website)}</span>
-                  <ExternalLink size={13} aria-hidden="true" />
-                </a>
-              </div>
-            ) : null}
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-zinc-500">Temps joue</span>
-              <span className="font-medium text-white">{formatHours(detail.totalMinutes)}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-zinc-500">Chroniques</span>
-              <span className="font-medium text-white">{detail.chronicles.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-zinc-500">Sessions</span>
-              <span className="font-medium text-white">{detail.sessions.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-zinc-500">DLC</span>
-              <span className="font-medium text-white">{detail.dlcs.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-zinc-500">Succes</span>
-              <span className="font-medium text-white">{detail.achievements.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-zinc-500">Captures</span>
-              <span className="font-medium text-white">{detail.screenshots.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-zinc-500">Note</span>
-              <span className="font-medium text-white">
-                {detail.review ? `${detail.review.rating}/10` : 'Non note'}
-              </span>
-            </div>
-            {detail.review?.favorite ? (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-500">Coup de coeur</span>
-                <Star size={16} className="text-[#C9A646]" aria-hidden="true" />
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </header>
+      <GameArchiveHero
+        detail={detail}
+        isSaving={isSaving}
+        onArchiveGame={handleArchiveGame}
+        onBack={onBack}
+      />
 
       {error ? (
         <div className="rounded-lg border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
@@ -427,7 +495,7 @@ function GameEditPanel({
   }
 
   return (
-    <form className="rounded-lg border border-white/10 bg-[#181B23] p-5" onSubmit={handleSubmit}>
+    <form className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5" onSubmit={handleSubmit}>
       <h2 className="text-lg font-semibold text-white">Informations personnelles</h2>
       <div className="mt-5 grid gap-3">
         <label>
@@ -508,7 +576,7 @@ function ReviewPanel({
   }
 
   return (
-    <form className="rounded-lg border border-white/10 bg-[#181B23] p-5" onSubmit={handleSubmit}>
+    <form className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5" onSubmit={handleSubmit}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Evaluation personnelle</h2>
@@ -660,7 +728,7 @@ function DlcPanel({
   }
 
   return (
-    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+    <section className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">DLC</h2>
@@ -892,7 +960,7 @@ function AchievementPanel({
   }
 
   return (
-    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+    <section className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Succes</h2>
@@ -1127,7 +1195,7 @@ function ScreenshotPanel({
   }
 
   return (
-    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+    <section className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Souvenirs visuels</h2>
@@ -1354,7 +1422,7 @@ function SessionForm({
   }
 
   return (
-    <form className="rounded-lg border border-white/10 bg-[#181B23] p-5" onSubmit={handleSubmit}>
+    <form className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5" onSubmit={handleSubmit}>
       <h2 className="text-lg font-semibold text-white">Ajouter une session</h2>
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         <label>
@@ -1440,7 +1508,7 @@ function ChronicleForm({
   }
 
   return (
-    <form className="rounded-lg border border-white/10 bg-[#181B23] p-5" onSubmit={handleSubmit}>
+    <form className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5" onSubmit={handleSubmit}>
       <h2 className="text-lg font-semibold text-white">Ecrire une chronique</h2>
       <div className="mt-5 grid gap-3">
         <label>
@@ -1882,7 +1950,7 @@ function Timeline({
   onUpdatePlaySession: (input: UpdatePlaySessionInput) => Promise<void>
 }) {
   return (
-    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+    <section className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
       <h2 className="text-lg font-semibold text-white">Mon histoire</h2>
       <div className="mt-5 space-y-4">
         {detail.chronicles.length === 0 && detail.sessions.length === 0 ? (
