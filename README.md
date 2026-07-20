@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.19.0`
+Version courante : `v0.20.0`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
@@ -176,10 +176,22 @@ userdata/database/ludux.db
 Les données locales, exports, sauvegardes et fichiers générés ne sont pas
 versionnés. Voir `.gitignore` pour le détail.
 
+## Configuration Plateformes
+
+Les variables attendues sont listées dans `.env.example`. Les vraies clés doivent
+rester dans `.env`, ignoré par Git, ou être saisies dans l'application quand un
+provider le permet.
+
+Guides disponibles :
+
+- `docs/providers/PLATFORM_REQUIREMENTS.md` : fichiers, clés et accès à récupérer.
+- `docs/providers/STEAM_SETUP.md` : configuration de la synchronisation Steam.
+
 ## Structure du Projet
 
 ```text
 Ludux/
+|-- docs/                   # Vision produit, versioning et guides providers
 |-- public/                 # Assets publics, logo et favicon
 |-- prisma/                 # Schéma Prisma et migrations SQLite
 |-- src/
@@ -222,6 +234,7 @@ Tags principaux :
 - `v0.17.0` : import et copie locale des captures.
 - `v0.18.0` : édition et suppression des sessions de jeu.
 - `v0.19.0` : synchronisation Steam manuelle.
+- `v0.20.0` : fichiers de configuration et guides plateformes.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.

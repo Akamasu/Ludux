@@ -131,7 +131,9 @@ function providerExternalIdPlaceholder(provider: ProviderConnection) {
 }
 
 function providerTokenLabel(provider: ProviderConnection) {
-  return provider.provider === 'STEAM' ? 'Cle API Steam' : 'Indice token'
+  return provider.provider === 'STEAM'
+    ? 'Cle API Steam ou variable .env'
+    : 'Indice token'
 }
 
 function ProvidersPanel({
@@ -330,7 +332,11 @@ function ProvidersPanel({
                     type={selectedProvider.provider === 'STEAM' ? 'password' : 'text'}
                     value={tokenHint}
                     onChange={(event) => setTokenHint(event.target.value)}
-                    placeholder="Optionnel"
+                    placeholder={
+                      selectedProvider.provider === 'STEAM'
+                        ? 'Optionnel si STEAM_WEB_API_KEY est defini'
+                        : 'Optionnel'
+                    }
                     className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
                   />
                 </label>
@@ -348,9 +354,7 @@ function ProvidersPanel({
                   variant="secondary"
                   onClick={handleSyncProvider}
                   disabled={
-                    isBusy ||
-                    selectedProvider.provider !== 'STEAM' ||
-                    (selectedProvider.account.tokenHint?.trim().length ?? 0) === 0
+                    isBusy || selectedProvider.provider !== 'STEAM'
                   }
                 >
                   <RefreshCw size={17} aria-hidden="true" />

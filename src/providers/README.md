@@ -26,3 +26,8 @@ La v0.19.0 ajoute la premiere integration reseau reelle avec Steam :
 - liens persistants dans `ExternalGame` pour eviter les doublons.
 
 Les prochaines integrations reseau devront rester optionnelles et passer par un adaptateur dedie avant de proposer une importation dans la base locale.
+
+Guides de preparation :
+
+- `docs/providers/PLATFORM_REQUIREMENTS.md`
+- `docs/providers/STEAM_SETUP.md`

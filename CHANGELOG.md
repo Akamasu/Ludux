@@ -23,6 +23,7 @@ Le projet suit des versions de developpement simples :
 - `v0.17.x` : import et copie locale des captures.
 - `v0.18.x` : edition et suppression des sessions de jeu.
 - `v0.19.x` : synchronisation Steam manuelle.
+- `v0.20.x` : fichiers de configuration et guides plateformes.
 
 ## v0.1.0 - 2026-07-16
 
@@ -189,3 +190,12 @@ Le projet suit des versions de developpement simples :
 - Ajout du modele `ExternalGame` pour eviter les doublons lors des prochaines synchronisations.
 - Ajout des etats de synchronisation `SYNCING`, `SYNCED` et `ERROR`.
 - Rafraichissement de la bibliotheque, des statistiques et du Livre de Vie apres synchronisation.
+
+## v0.20.0 - 2026-07-20
+
+- Ajout de `.env.example` avec les variables attendues pour Steam, RAWG, IGDB et les plateformes partenaires.
+- Ajout du guide `docs/providers/PLATFORM_REQUIREMENTS.md`.
+- Ajout du guide `docs/providers/STEAM_SETUP.md`.
+- Ajout des liens officiels utiles pour recuperer les cles, comptes developpeur et acces.
+- Ajout du fallback `STEAM_WEB_API_KEY` pour eviter de stocker la cle Steam dans la base locale.
+- Mise a jour du panneau Steam pour indiquer l'usage possible de `.env`.

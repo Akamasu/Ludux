@@ -69,6 +69,10 @@ function trimOptional(value: string | undefined) {
   return trimmed ? trimmed : undefined
 }
 
+function readEnvValue(name: string) {
+  return trimOptional(process.env[name])
+}
+
 function isExternalProvider(value: string): value is ExternalProvider {
   return EXTERNAL_PROVIDER_VALUES.includes(value as ExternalProvider)
 }
@@ -569,7 +573,8 @@ class SettingsService {
       throw new Error('Connexion Steam introuvable.')
     }
 
-    const apiKey = trimOptional(account.tokenHint ?? undefined)
+    const apiKey =
+      trimOptional(account.tokenHint ?? undefined) ?? readEnvValue('STEAM_WEB_API_KEY')
 
     if (!apiKey) {
       throw new Error('Cle API Steam obligatoire pour synchroniser.')
