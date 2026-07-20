@@ -8,10 +8,12 @@
     "dev": "electron-vite dev",
     "build": "tsc -b && electron-vite build",
     "lint": "oxlint .",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && npm run rebuild:electron",
     "preview": "electron-vite preview",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "rebuild:electron": "electron-rebuild -f -w better-sqlite3",
+    "smoke:electron-sqlite": "electron scripts/verify-electron-sqlite.cjs",
     "test": "vitest run",
     "typecheck": "tsc -b"
   },
@@ -28,6 +30,7 @@
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",

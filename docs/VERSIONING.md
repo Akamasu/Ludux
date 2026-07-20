@@ -47,3 +47,4 @@ Le tag `v0.1.0` correspond au bootstrap initial de Ludux : socle Electron/React,
 - `v0.21.0` : synchronisation automatique et secrets masques.
 - `v0.22.0` : stabilisation du connecteur Steam.
 - `v0.22.1` : retour visuel de validation Steam dans les parametres.
+- `v0.22.2` : rebuild Electron pour le module SQLite natif.

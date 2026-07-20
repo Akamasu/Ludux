@@ -30,6 +30,9 @@ const BROWSER_OVERVIEW: SettingsOverview = {
   providerOverview: BROWSER_PROVIDER_OVERVIEW,
 }
 
+const ELECTRON_ONLY_ACTION_MESSAGE =
+  "Cette action est disponible dans la fenetre Electron de Ludux. Lance npm run dev et utilise la fenetre qui s'ouvre, pas l'URL du navigateur."
+
 export function useSettings() {
   const [overview, setOverview] = useState<SettingsOverview>(BROWSER_OVERVIEW)
   const [isLoading, setIsLoading] = useState(true)
@@ -85,7 +88,7 @@ export function useSettings() {
       setActionResult({
         canceled: true,
         path: null,
-        message: 'Export disponible dans la version Electron.',
+        message: ELECTRON_ONLY_ACTION_MESSAGE,
       })
       return
     }
@@ -100,7 +103,7 @@ export function useSettings() {
       setActionResult({
         canceled: true,
         path: null,
-        message: 'Sauvegarde disponible dans la version Electron.',
+        message: ELECTRON_ONLY_ACTION_MESSAGE,
       })
       return
     }
@@ -115,7 +118,7 @@ export function useSettings() {
       setActionResult({
         canceled: true,
         path: null,
-        message: 'Dossier local disponible dans la version Electron.',
+        message: ELECTRON_ONLY_ACTION_MESSAGE,
       })
       return
     }
@@ -146,7 +149,7 @@ export function useSettings() {
         setActionResult({
           canceled: true,
           path: null,
-          message: 'Providers disponibles dans la version Electron.',
+          message: ELECTRON_ONLY_ACTION_MESSAGE,
         })
         return
       }
@@ -179,7 +182,7 @@ export function useSettings() {
         setActionResult({
           canceled: true,
           path: null,
-          message: 'Providers disponibles dans la version Electron.',
+          message: ELECTRON_ONLY_ACTION_MESSAGE,
         })
         return
       }
@@ -212,7 +215,7 @@ export function useSettings() {
         setActionResult({
           canceled: true,
           path: null,
-          message: 'Synchronisation disponible dans la version Electron.',
+          message: ELECTRON_ONLY_ACTION_MESSAGE,
         })
         return
       }

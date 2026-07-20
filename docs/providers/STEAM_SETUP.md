@@ -77,6 +77,8 @@ La valeur minimale acceptee est 15 minutes.
 - `Verifiez la cle API Steam` : la cle est absente, incorrecte ou refusee.
 - `Steam limite temporairement les requetes` : attendre avant de relancer.
 - `Aucun jeu Steam recu` : verifier le SteamID64 et la visibilite des details de jeux.
+- `Providers disponibles dans la version Electron` : utiliser la fenetre Electron ouverte par `npm run dev`, pas l'URL Vite dans le navigateur.
+- `NODE_MODULE_VERSION` ou `better_sqlite3.node` : lancer `npm run rebuild:electron`, puis redemarrer Ludux.
 
 ## Liens
 

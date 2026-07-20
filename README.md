@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.22.1`
+Version courante : `v0.22.2`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
@@ -163,6 +163,8 @@ npm run lint             # Lance oxlint
 npm test                 # Lance les tests Vitest
 npm run prisma:generate  # Génère le client Prisma
 npm run prisma:migrate   # Applique/crée les migrations SQLite
+npm run rebuild:electron # Reconstruit les modules natifs pour Electron
+npm run smoke:electron-sqlite # Vérifie SQLite dans le runtime Electron
 ```
 
 ## Données Locales
@@ -239,6 +241,7 @@ Tags principaux :
 - `v0.21.0` : synchronisation automatique et secrets masqués.
 - `v0.22.0` : stabilisation du connecteur Steam.
 - `v0.22.1` : retour visuel de validation Steam dans les paramètres.
+- `v0.22.2` : rebuild Electron pour le module SQLite natif.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.

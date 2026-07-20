@@ -27,6 +27,14 @@ Le projet suit des versions de developpement simples :
 - `v0.21.x` : synchronisation automatique et secrets masques.
 - `v0.22.x` : stabilisation du connecteur Steam.
 
+## v0.22.2 - 2026-07-20
+
+- Ajout de `@electron/rebuild` pour reconstruire `better-sqlite3` avec l'ABI Electron.
+- Ajout du script `npm run rebuild:electron` dans le `postinstall`.
+- Ajout du smoke test `npm run smoke:electron-sqlite`.
+- Clarification du message affiche quand l'interface est ouverte dans le navigateur au lieu de la fenetre Electron.
+- Ajout du diagnostic `NODE_MODULE_VERSION` dans le guide Steam.
+
 ## v0.22.1 - 2026-07-20
 
 - Ajout d'un retour visuel directement dans le panneau Steam apres enregistrement ou erreur.
