@@ -39,7 +39,7 @@ export function HomePage({
           <p className="text-sm font-medium text-[#A797FF]">Ludux</p>
           <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">Bienvenue dans Ludux</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-            La memoire de votre vie de joueur, en local et a votre rythme.
+            La mémoire de votre vie de joueur, en local et à votre rythme.
           </p>
           </div>
         </div>
@@ -71,8 +71,8 @@ export function HomePage({
           <div className="rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold text-white">Bibliotheque</h2>
-                <p className="mt-1 text-sm text-zinc-500">Derniers chapitres ajoutes</p>
+                <h2 className="text-lg font-semibold text-white">Bibliothèque</h2>
+                <p className="mt-1 text-sm text-zinc-500">Derniers chapitres ajoutés</p>
               </div>
               <Button type="button" variant="secondary" onClick={onOpenLibrary}>
                 <Library size={17} aria-hidden="true" />
@@ -92,7 +92,7 @@ export function HomePage({
                   <div>
                     <h3 className="font-medium text-white">{game.title}</h3>
                     <p className="mt-1 text-sm text-zinc-500">
-                      {game.platforms.join(', ') || 'Plateforme non renseignee'}
+                      {game.platforms.join(', ') || 'Plateforme non renseignée'}
                     </p>
                   </div>
                   <span className="rounded-lg bg-white/5 px-3 py-1 text-xs text-zinc-300">
@@ -105,7 +105,7 @@ export function HomePage({
           </div>
 
           <div className="rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-            <h2 className="text-lg font-semibold text-white">Derniere aventure</h2>
+            <h2 className="text-lg font-semibold text-white">Dernière aventure</h2>
             {overview.lastAdventure ? (
               <div className="mt-5">
                 <p className="text-2xl font-semibold text-white">{overview.lastAdventure.title}</p>
@@ -115,7 +115,7 @@ export function HomePage({
               </div>
             ) : (
               <p className="mt-5 text-sm leading-6 text-zinc-500">
-                Aucun chapitre n'a encore ete ajoute.
+                Aucun chapitre n'a encore été ajouté.
               </p>
             )}
           </div>

@@ -18,7 +18,7 @@ export function GameListRow({ game, onOpen }: GameListRowProps) {
       <div>
         <h3 className="font-medium text-white">{game.title}</h3>
         <p className="mt-1 text-sm text-zinc-500">
-          {game.platforms.join(', ') || 'Plateforme non renseignee'}
+          {game.platforms.join(', ') || 'Plateforme non renseignée'}
         </p>
       </div>
       <span className="w-fit rounded-lg bg-white/5 px-3 py-1 text-xs text-zinc-300">

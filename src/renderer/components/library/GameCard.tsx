@@ -28,7 +28,7 @@ export function GameCard({ game, onOpen }: GameCardProps) {
           {game.title}
         </h3>
         <p className="mt-2 truncate text-sm text-zinc-500">
-          {game.platforms.join(', ') || 'Plateforme non renseignee'}
+          {game.platforms.join(', ') || 'Plateforme non renseignée'}
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-zinc-400">

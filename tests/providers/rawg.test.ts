@@ -115,6 +115,6 @@ describe('rawg provider', () => {
         title: 'Portal 2',
         fetchImpl: fetchImpl as unknown as typeof fetch,
       }),
-    ).rejects.toThrow('Verifiez la cle API RAWG')
+    ).rejects.toThrow('Vérifiez la clé API RAWG')
   })
 })

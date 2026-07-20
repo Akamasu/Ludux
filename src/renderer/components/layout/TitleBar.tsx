@@ -30,7 +30,7 @@ export function TitleBar() {
           <button
             type="button"
             title="Reduire"
-            aria-label="Reduire la fenetre"
+            aria-label="Réduire la fenêtre"
             onClick={() => void windowControls.minimize()}
             className="grid h-11 w-11 place-items-center text-zinc-400 transition hover:bg-white/10 hover:text-white"
           >
@@ -39,7 +39,7 @@ export function TitleBar() {
           <button
             type="button"
             title="Agrandir"
-            aria-label="Agrandir ou restaurer la fenetre"
+            aria-label="Agrandir ou restaurer la fenêtre"
             onClick={() => void windowControls.toggleMaximize()}
             className="grid h-11 w-11 place-items-center text-zinc-400 transition hover:bg-white/10 hover:text-white"
           >
@@ -48,7 +48,7 @@ export function TitleBar() {
           <button
             type="button"
             title="Fermer"
-            aria-label="Fermer la fenetre"
+            aria-label="Fermer la fenêtre"
             onClick={() => void windowControls.close()}
             className="grid h-11 w-11 place-items-center text-zinc-400 transition hover:bg-rose-500 hover:text-white"
           >

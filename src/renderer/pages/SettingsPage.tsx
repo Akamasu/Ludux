@@ -43,6 +43,7 @@ interface SettingsPageProps {
   onOpenDataFolder: () => Promise<void>
   onRefresh: () => Promise<void>
   onRestoreGame: (gameId: string) => Promise<void>
+  onSyncAllProviders: () => Promise<void>
   onSyncProvider: (input: SyncProviderInput) => Promise<void>
   onUpsertProviderConnection: (input: UpsertProviderConnectionInput) => Promise<void>
 }
@@ -52,9 +53,9 @@ const launchViewOptions: {
   label: string
 }[] = [
   { value: 'home', label: 'Accueil' },
-  { value: 'library', label: 'Bibliotheque' },
+  { value: 'library', label: 'Bibliothèque' },
   { value: 'chronicles', label: 'Chroniques' },
-  { value: 'museum', label: 'Musee' },
+  { value: 'museum', label: 'Musée' },
   { value: 'lifeBook', label: 'Livre de Vie' },
   { value: 'statistics', label: 'Statistiques' },
 ]
@@ -101,11 +102,11 @@ function ResultMessage({ result }: { result: SettingsActionResult }) {
 
 function providerStatusLabel(connection: ProviderConnection) {
   if (!connection.configured) {
-    return 'Non configure'
+    return 'Non configuré'
   }
 
   if (connection.sync?.status === 'SYNCED') {
-    return 'Synchronise'
+    return 'Synchronisé'
   }
 
   if (connection.sync?.status === 'SYNCING') {
@@ -117,7 +118,7 @@ function providerStatusLabel(connection: ProviderConnection) {
   }
 
   if (connection.sync?.status === 'READY') {
-    return 'Pret'
+    return 'Prêt'
   }
 
   return connection.sync?.status ?? 'Local'
@@ -144,16 +145,16 @@ function providerExternalIdPlaceholder(provider: ProviderConnection) {
     return 'catalogue'
   }
 
-  return 'SteamID, gamertag, pseudo, cle publique...'
+  return 'SteamID, gamertag, pseudo, clé publique...'
 }
 
 function providerTokenLabel(provider: ProviderConnection) {
   if (provider.provider === 'STEAM') {
-    return 'Cle API Steam ou variable .env'
+    return 'Clé API Steam ou variable .env'
   }
 
   if (provider.provider === 'RAWG') {
-    return 'Cle API RAWG ou variable .env'
+    return 'Clé API RAWG ou variable .env'
   }
 
   return 'Indice token'
@@ -178,13 +179,13 @@ function canSyncProvider(provider: ProviderConnection | undefined) {
 function providerTokenPlaceholder(provider: ProviderConnection) {
   if (provider.provider === 'STEAM') {
     return provider.account?.hasToken
-      ? 'Laisser vide pour conserver la cle existante'
+      ? 'Laisser vide pour conserver la clé existante'
       : 'Optionnel : manifests locaux ou STEAM_WEB_API_KEY'
   }
 
   if (provider.provider === 'RAWG') {
     return provider.account?.hasToken
-      ? 'Laisser vide pour conserver la cle existante'
+      ? 'Laisser vide pour conserver la clé existante'
       : 'Optionnel si RAWG_API_KEY est defini'
   }
 
@@ -197,6 +198,7 @@ function ProvidersPanel({
   isBusy,
   overview,
   onDeleteProviderConnection,
+  onSyncAllProviders,
   onSyncProvider,
   onUpsertProviderConnection,
 }: {
@@ -205,6 +207,7 @@ function ProvidersPanel({
   isBusy: boolean
   overview: SettingsOverview
   onDeleteProviderConnection: (input: DeleteProviderConnectionInput) => Promise<void>
+  onSyncAllProviders: () => Promise<void>
   onSyncProvider: (input: SyncProviderInput) => Promise<void>
   onUpsertProviderConnection: (input: UpsertProviderConnectionInput) => Promise<void>
 }) {
@@ -296,10 +299,26 @@ function ProvidersPanel({
         <div>
           <h2 className="text-lg font-semibold text-white">Providers externes</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Comptes connectes et synchronisations automatiques selon les acces disponibles.
+            Comptes connectés et synchronisations automatiques selon les accès disponibles.
           </p>
         </div>
-        <Cloud className="text-[#8CA7FF]" size={20} aria-hidden="true" />
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onSyncAllProviders}
+            disabled={isBusy}
+            className="h-10 px-3"
+          >
+            <RefreshCw
+              size={16}
+              aria-hidden="true"
+              className={isBusy ? 'animate-spin' : undefined}
+            />
+            {isBusy ? 'Synchronisation...' : 'Synchroniser tout'}
+          </Button>
+          <Cloud className="text-[#8CA7FF]" size={20} aria-hidden="true" />
+        </div>
       </div>
 
       <div className="mb-5 grid gap-3 md:grid-cols-3">
@@ -310,13 +329,13 @@ function ProvidersPanel({
           </p>
         </div>
         <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
-          <p className="text-xs text-zinc-500">Configures</p>
+          <p className="text-xs text-zinc-500">Configurés</p>
           <p className="mt-1 text-xl font-semibold text-white">
             {overview.providerOverview.configuredCount}
           </p>
         </div>
         <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
-          <p className="text-xs text-zinc-500">Dernier etat</p>
+          <p className="text-xs text-zinc-500">Dernier état</p>
           <p className="mt-1 truncate text-xl font-semibold text-white">
             {overview.providerOverview.lastSyncAt
               ? formatDate(overview.providerOverview.lastSyncAt)
@@ -439,7 +458,7 @@ function ProvidersPanel({
                   />
                   {selectedProvider.account?.hasToken ? (
                     <span className="mt-2 block text-xs text-[#C9D6FF]">
-                      Cle configuree. Sa valeur n'est pas affichee.
+                      Clé configurée. Sa valeur n'est pas affichée.
                     </span>
                   ) : null}
                 </label>
@@ -547,7 +566,7 @@ function ArchivedGamesPanel({
         <div>
           <h2 className="text-lg font-semibold text-white">Jeux archives</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Les jeux archives quittent la bibliotheque active sans perdre leurs donnees.
+            Les jeux archivés quittent la bibliothèque active sans perdre leurs données.
           </p>
         </div>
         <Archive className="text-[#A797FF]" size={20} aria-hidden="true" />
@@ -567,7 +586,7 @@ function ArchivedGamesPanel({
               <div className="min-w-0">
                 <h3 className="truncate font-medium text-white">{game.title}</h3>
                 <p className="mt-1 truncate text-sm text-zinc-500">
-                  {game.platforms.join(', ') || 'Plateforme non renseignee'}
+                  {game.platforms.join(', ') || 'Plateforme non renseignée'}
                 </p>
                 <p className="mt-2 text-xs text-zinc-600">
                   Archive le {formatDate(game.updatedAt)} / {game.rating ? `${game.rating}/10` : 'Non note'}
@@ -617,6 +636,7 @@ export function SettingsPage({
   onOpenDataFolder,
   onRefresh,
   onRestoreGame,
+  onSyncAllProviders,
   onSyncProvider,
   onUpsertProviderConnection,
   overview,
@@ -625,12 +645,12 @@ export function SettingsPage({
     <div className="flex flex-1 flex-col gap-7">
       <header className="flex flex-col items-start justify-between gap-4 border-b border-white/10 pb-7 sm:flex-row">
         <div>
-          <p className="text-sm font-medium text-[#A797FF]">Parametres</p>
+          <p className="text-sm font-medium text-[#A797FF]">Paramètres</p>
           <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
-            Controle local des donnees
+            Contrôle local des données
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-            Sauvegardez la base locale, exportez un instantane JSON et gardez les
+            Sauvegardez la base locale, exportez un instantané JSON et gardez les
             chemins essentiels sous les yeux.
           </p>
         </div>
@@ -673,7 +693,7 @@ export function SettingsPage({
         </article>
         <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">
           <div className="mb-5 flex items-center justify-between gap-4">
-            <p className="text-sm text-zinc-500">Derniere sauvegarde</p>
+            <p className="text-sm text-zinc-500">Dernière sauvegarde</p>
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-[#A33D69] text-white">
               <Archive size={18} aria-hidden="true" />
             </div>
@@ -725,9 +745,9 @@ export function SettingsPage({
         <article className="rounded-lg border border-white/10 bg-[#181B23] p-5">
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-white">Preferences</h2>
+              <h2 className="text-lg font-semibold text-white">Préférences</h2>
               <p className="mt-1 text-sm text-zinc-500">
-                Reglages enregistres sur cette machine.
+                Réglages enregistrés sur cette machine.
               </p>
             </div>
             <ExternalLink className="text-[#8CA7FF]" size={20} aria-hidden="true" />
@@ -755,7 +775,7 @@ export function SettingsPage({
           <div>
             <h2 className="text-lg font-semibold text-white">Emplacements</h2>
             <p className="mt-1 text-sm text-zinc-500">
-              Chemins utilises par Ludux pour les donnees locales.
+              Chemins utilisés par Ludux pour les données locales.
             </p>
           </div>
           <Database className="text-[#A797FF]" size={20} aria-hidden="true" />
@@ -773,6 +793,7 @@ export function SettingsPage({
         overview={overview}
         isBusy={isBusy}
         onDeleteProviderConnection={onDeleteProviderConnection}
+        onSyncAllProviders={onSyncAllProviders}
         onSyncProvider={onSyncProvider}
         onUpsertProviderConnection={onUpsertProviderConnection}
       />

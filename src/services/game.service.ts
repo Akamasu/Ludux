@@ -463,7 +463,7 @@ class GameService {
 
   async updateReview(input: UpdateReviewInput): Promise<GameDetail> {
     if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 10) {
-      throw new Error('La note doit etre comprise entre 1 et 10.')
+      throw new Error('La note doit être comprise entre 1 et 10.')
     }
 
     await prisma.review.upsert({
@@ -672,7 +672,7 @@ class GameService {
     const name = input.name.trim()
 
     if (name.length === 0) {
-      throw new Error('Le nom du succes est obligatoire.')
+      throw new Error('Le nom du succès est obligatoire.')
     }
 
     const unlocked = input.unlocked ?? false
@@ -725,7 +725,7 @@ class GameService {
     })
 
     if (result.count === 0) {
-      throw new Error('Succes introuvable.')
+      throw new Error('Succès introuvable.')
     }
 
     return toGameDetail(await requireGameDetail(input.gameId))
@@ -740,7 +740,7 @@ class GameService {
     })
 
     if (result.count === 0) {
-      throw new Error('Succes introuvable.')
+      throw new Error('Succès introuvable.')
     }
 
     return toGameDetail(await requireGameDetail(input.gameId))
@@ -937,7 +937,7 @@ class GameService {
 
   async createPlaySession(input: CreatePlaySessionInput): Promise<GameDetail> {
     if (!Number.isFinite(input.durationMinutes) || input.durationMinutes <= 0) {
-      throw new Error('La duree de session doit etre positive.')
+      throw new Error('La durée de session doit être positive.')
     }
 
     const platformName = trimOptional(input.platformName)
@@ -976,7 +976,7 @@ class GameService {
       input.durationMinutes !== undefined &&
       (!Number.isFinite(input.durationMinutes) || input.durationMinutes <= 0)
     ) {
-      throw new Error('La duree de session doit etre positive.')
+      throw new Error('La durée de session doit être positive.')
     }
 
     const session = await prisma.playSession.findFirst({

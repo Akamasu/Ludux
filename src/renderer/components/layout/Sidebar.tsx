@@ -19,12 +19,12 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { id: 'home', label: 'Accueil', icon: Home },
-  { id: 'library', label: 'Bibliotheque', icon: Library },
+  { id: 'library', label: 'Bibliothèque', icon: Library },
   { id: 'chronicles', label: 'Chroniques', icon: BookText },
-  { id: 'museum', label: 'Musee', icon: Gamepad2 },
+  { id: 'museum', label: 'Musée', icon: Gamepad2 },
   { id: 'lifeBook', label: 'Livre de Vie', icon: BookOpen },
   { id: 'statistics', label: 'Statistiques', icon: BarChart3 },
-  { id: 'settings', label: 'Parametres', icon: Settings },
+  { id: 'settings', label: 'Paramètres', icon: Settings },
 ]
 
 interface SidebarProps {

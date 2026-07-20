@@ -1,64 +1,72 @@
 # Changelog
 
-Toutes les versions notables de Ludux seront documentees ici.
+Toutes les versions notables de Ludux seront documentées ici.
 
-Le projet suit des versions de developpement simples :
+Le projet suit des versions de développement simples :
 
 - `v0.1.x` : fondation technique.
-- `v0.2.x` : bibliotheque personnelle.
+- `v0.2.x` : bibliothèque personnelle.
 - `v0.3.x` : chroniques, sessions et souvenirs.
 - `v0.4.x` : statistiques et lecture du parcours.
 - `v0.5.x` : journal transversal des chroniques.
-- `v0.6.x` : identite visuelle et logo.
-- `v0.7.x` : musee des jeux accomplis.
+- `v0.6.x` : identité visuelle et logo.
+- `v0.7.x` : musée des jeux accomplis.
 - `v0.8.x` : livre de vie et chronologie globale.
-- `v0.9.x` : parametres, sauvegardes et exports locaux.
-- `v0.10.x` : notes et evaluations detaillees.
+- `v0.9.x` : paramètres, sauvegardes et exports locaux.
+- `v0.10.x` : notes et évaluations détaillées.
 - `v0.11.x` : archivage, restauration et suppression de jeux.
 - `v0.12.x` : gestion locale des DLC.
-- `v0.13.x` : gestion locale des succes.
-- `v0.14.x` : captures d'ecran et souvenirs visuels.
-- `v0.15.x` : providers externes prepares.
-- `v0.16.x` : edition et suppression des chroniques.
+- `v0.13.x` : gestion locale des succès.
+- `v0.14.x` : captures d'écran et souvenirs visuels.
+- `v0.15.x` : providers externes préparés.
+- `v0.16.x` : édition et suppression des chroniques.
 - `v0.17.x` : import et copie locale des captures.
-- `v0.18.x` : edition et suppression des sessions de jeu.
+- `v0.18.x` : édition et suppression des sessions de jeu.
 - `v0.19.x` : synchronisation Steam manuelle.
 - `v0.20.x` : fichiers de configuration et guides plateformes.
 - `v0.21.x` : synchronisation automatique et secrets masques.
 - `v0.22.x` : stabilisation du connecteur Steam.
-- `v0.23.x` : enrichissement des metadonnees via RAWG.
-- `v0.24.x` : experience immersive, navigation animee et habillage bibliotheque.
+- `v0.23.x` : enrichissement des métadonnées via RAWG.
+- `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
+
+## v0.24.4 - 2026-07-20
+
+- Ajout du bouton `Synchroniser tout` pour lancer tous les providers configurés en une action.
+- Synchronisation automatique des providers configurés au lancement de Ludux.
+- Préférence donnée aux descriptions et métadonnées françaises quand Steam Store les fournit.
+- Correction du catalogue DLC Steam : Ludux utilise désormais l'endpoint `dlcforapp` avant le fallback `appdetails`, ce qui évite le refus `403` rencontré sur certains jeux.
+- Passe de nettoyage sur les libellés et messages français affichés dans l'application.
 
 ## v0.24.3 - 2026-07-20
 
 - Ajout d'une liste de DLC disponibles depuis Steam Store directement dans les fiches de jeu.
-- Ajout manuel en un clic des DLC Steam detectes, marques comme possedes dans Ludux.
-- Synchronisation DLC Steam plus robuste : les erreurs partielles de Steam Store ne vident plus toute la detection.
-- Requetes Steam Store localisees en francais quand les donnees existent.
+- Ajout manuel en un clic des DLC Steam détectés, marqués comme possédés dans Ludux.
+- Synchronisation DLC Steam plus robuste : les erreurs partielles de Steam Store ne vident plus toute la détection.
+- Requêtes Steam Store localisées en français quand les données existent.
 
 ## v0.24.2 - 2026-07-20
 
-- Simplification du README pour presenter Ludux avant les details de developpement.
-- Ajout de la synchronisation des succes Steam publics via l'API Steam Web.
-- Ajout de la detection des DLC declares sur Steam Store pour les fiches de jeu.
-- Ajout d'identifiants externes sur les DLC et succes synchronises pour eviter les doublons.
-- Ajout d'une limite configurable pour les appels de succes Steam avec `LUDUX_STEAM_ACHIEVEMENT_SYNC_LIMIT`.
+- Simplification du README pour présenter Ludux avant les détails de développement.
+- Ajout de la synchronisation des succès Steam publics via l'API Steam Web.
+- Ajout de la détection des DLC déclarés sur Steam Store pour les fiches de jeu.
+- Ajout d'identifiants externes sur les DLC et succès synchronisés pour éviter les doublons.
+- Ajout d'une limite configurable pour les appels de succès Steam avec `LUDUX_STEAM_ACHIEVEMENT_SYNC_LIMIT`.
 
 ## v0.24.1 - 2026-07-20
 
 - Transformation du haut des fiches de jeu en volume d'archive avec couverture, page de lecture et registre.
-- Ajout d'un index de volume pour les metadonnees, sessions, chroniques, DLC, succes et captures.
-- Habillage des panneaux de fiche en pages d'archive coherentes avec le theme bibliotheque ancienne.
-- Conservation des controles existants avec une mise en page plus lisible sur fenetre compacte.
+- Ajout d'un index de volume pour les métadonnées, sessions, chroniques, DLC, succès et captures.
+- Habillage des panneaux de fiche en pages d'archive cohérentes avec le thème bibliothèque ancienne.
+- Conservation des contrôles existants avec une mise en page plus lisible sur fenêtre compacte.
 
 ## v0.24.0 - 2026-07-20
 
-- Passage a une fenetre Electron sans cadre Windows natif, avec barre de titre Ludux.
-- Ajout des controles reduire, agrandir/restaurer et fermer dans l'interface.
-- Navigation plus fluide avec transition animee entre les pages.
-- Sidebar responsive : rayonnage complet sur grand ecran, icones compactes sur fenetre reduite.
-- Premiere direction visuelle "bibliotheque ancienne" : pages, dos de livres, rayonnage et accents or sobres.
-- Reduction de la largeur minimale et adaptation des grands titres, compteurs et cadres sur les tailles compactes.
+- Passage à une fenêtre Electron sans cadre Windows natif, avec barre de titre Ludux.
+- Ajout des contrôles réduire, agrandir/restaurer et fermer dans l'interface.
+- Navigation plus fluide avec transition animée entre les pages.
+- Sidebar responsive : rayonnage complet sur grand écran, icônes compactes sur fenêtre réduite.
+- Première direction visuelle "bibliothèque ancienne" : pages, dos de livres, rayonnage et accents or sobres.
+- Réduction de la largeur minimale et adaptation des grands titres, compteurs et cadres sur les tailles compactes.
 
 ## v0.23.7 - 2026-07-20
 

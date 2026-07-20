@@ -83,7 +83,7 @@ export function LibraryPage({
     <div className="flex flex-1 flex-col gap-6">
       <header className="flex flex-col items-start justify-between gap-4 border-b border-white/10 pb-7 sm:flex-row">
         <div>
-          <p className="text-sm font-medium text-[#A797FF]">Bibliotheque</p>
+          <p className="text-sm font-medium text-[#A797FF]">Bibliothèque</p>
           <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">Vos jeux</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
             Cherchez, filtrez et ajoutez les jeux qui composent votre histoire.
@@ -108,7 +108,7 @@ export function LibraryPage({
           <div className="mb-5">
             <h2 className="text-lg font-semibold text-white">Nouveau chapitre</h2>
             <p className="mt-1 text-sm text-zinc-500">
-              Les informations personnelles pourront etre enrichies ensuite avec les chroniques.
+              Les informations personnelles pourront être enrichies ensuite avec les chroniques.
             </p>
           </div>
           <AddGameForm idPrefix="library-game" isSaving={isSaving} onCreateGame={handleCreateGame} />

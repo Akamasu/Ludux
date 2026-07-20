@@ -36,7 +36,7 @@ function parseUpsertProviderConnectionInput(
   value: unknown,
 ): UpsertProviderConnectionInput {
   if (!isRecord(value) || !isExternalProvider(value['provider'])) {
-    throw new Error('Les donnees du provider sont invalides.')
+    throw new Error('Les données du provider sont invalides.')
   }
 
   return {
@@ -54,7 +54,7 @@ function parseDeleteProviderConnectionInput(
   value: unknown,
 ): DeleteProviderConnectionInput {
   if (!isRecord(value) || !isExternalProvider(value['provider'])) {
-    throw new Error('Les donnees du provider sont invalides.')
+    throw new Error('Les données du provider sont invalides.')
   }
 
   return {
@@ -65,7 +65,7 @@ function parseDeleteProviderConnectionInput(
 
 function parseSyncProviderInput(value: unknown): SyncProviderInput {
   if (!isRecord(value) || !isExternalProvider(value['provider'])) {
-    throw new Error('Les donnees du provider sont invalides.')
+    throw new Error('Les données du provider sont invalides.')
   }
 
   return {
@@ -135,6 +135,15 @@ export function registerSettingsHandlers() {
   ipcMain.handle('settings:syncProvider', async (_event, input: unknown) => {
     try {
       return await settingsService.syncProvider(parseSyncProviderInput(input))
+    } catch (error) {
+      logger.error('[SettingsIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('settings:syncAllProviders', async () => {
+    try {
+      return await settingsService.syncAllProviders()
     } catch (error) {
       logger.error('[SettingsIPC]', error)
       throw error

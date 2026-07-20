@@ -27,7 +27,7 @@ function buildBrowserLifeEvents(games: GameListItem[]): LifeBookEvent[] {
       events.push({
         id: `browser-session-${game.id}`,
         kind: 'SESSION',
-        title: 'Temps de jeu renseigne',
+        title: 'Temps de jeu renseigné',
         description: null,
         date: game.updatedAt,
         gameId: game.id,

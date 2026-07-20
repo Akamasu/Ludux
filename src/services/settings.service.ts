@@ -32,13 +32,14 @@ import type {
 import { EXTERNAL_PROVIDER_DEFINITIONS } from '../providers/registry'
 import { libraryService } from './library.service'
 import { logger } from '../utils/logger'
+import { shouldPreferFrenchText } from '../utils/frenchText'
 
 const userDataDirectory = resolve('userdata')
 const exportDirectory = join(userDataDirectory, 'exports')
 const backupDirectory = join(userDataDirectory, 'backups')
 const steamProvider: ExternalProvider = 'STEAM'
 const steamPlatformName = 'Steam'
-const steamTotalSessionNote = 'Temps total Steam synchronise.'
+const steamTotalSessionNote = 'Temps total Steam synchronisé.'
 const rawgProvider: ExternalProvider = 'RAWG'
 const rawgExternalId = 'catalogue'
 const defaultAutoSyncIntervalMinutes = 120
@@ -232,19 +233,19 @@ function resolveProviderExternalId(input: UpsertProviderConnectionInput) {
 
 function createProviderReadyMessage(provider: ExternalProvider) {
   if (provider === steamProvider) {
-    return 'Compte Steam pret pour la synchronisation automatique.'
+    return 'Compte Steam prêt pour la synchronisation automatique.'
   }
 
   if (provider === rawgProvider) {
-    return 'Catalogue RAWG pret pour enrichir les metadonnees.'
+    return 'Catalogue RAWG prêt pour enrichir les métadonnées.'
   }
 
-  return 'Compte reference localement. Synchronisation reseau non active.'
+  return 'Compte référencé localement. Synchronisation réseau non active.'
 }
 
 function createSteamSyncMessage(stats: SteamImportStats, sources: SteamSyncSources) {
   if (sources.remoteGames === 0 && sources.localManifestGames === 0) {
-    return 'Aucun jeu Steam recu. Verifiez le SteamID64, la cle API, les details de jeux et le dossier Steam local.'
+    return 'Aucun jeu Steam reçu. Vérifiez le SteamID64, la clé API, les détails de jeux et le dossier Steam local.'
   }
 
   const sourceParts = [
@@ -253,19 +254,19 @@ function createSteamSyncMessage(stats: SteamImportStats, sources: SteamSyncSourc
       ? `${sources.localManifestGames} manifests locaux`
       : null,
     sources.localActivityGames > 0
-      ? `${sources.localActivityGames} activites locales`
+      ? `${sources.localActivityGames} activités locales`
       : null,
     sources.steamStoreCovers > 0 ? `${sources.steamStoreCovers} jaquettes Steam Store` : null,
-    `${stats.importedGames} ajoutes`,
-    `${stats.linkedGames} relies`,
-    `${stats.updatedGames} deja connus`,
-    `${stats.syncedSessions} temps de jeu synchronises`,
-    `${stats.syncedDlc} DLC Steam detectes`,
-    `${stats.syncedAchievements} succes Steam synchronises`,
+    `${stats.importedGames} ajoutés`,
+    `${stats.linkedGames} reliés`,
+    `${stats.updatedGames} déjà connus`,
+    `${stats.syncedSessions} temps de jeu synchronisés`,
+    `${stats.syncedDlc} DLC Steam détectés`,
+    `${stats.syncedAchievements} succès Steam synchronisés`,
     stats.syncedAchievementGames > 0
-      ? `${stats.syncedAchievementGames} jeux avec succes`
+      ? `${stats.syncedAchievementGames} jeux avec succès`
       : null,
-    sources.apiWarning ? `API Steam ignoree : ${sources.apiWarning}` : null,
+    sources.apiWarning ? `API Steam ignorée : ${sources.apiWarning}` : null,
   ]
 
   return sourceParts.filter((part): part is string => part !== null).join(' / ')
@@ -273,15 +274,15 @@ function createSteamSyncMessage(stats: SteamImportStats, sources: SteamSyncSourc
 
 function createRawgSyncMessage(stats: RawgEnrichmentStats) {
   if (stats.scannedGames === 0) {
-    return 'Aucun jeu actif a enrichir avec RAWG.'
+    return 'Aucun jeu actif à enrichir avec RAWG.'
   }
 
   return [
-    `${stats.scannedGames} jeux analyses`,
+    `${stats.scannedGames} jeux analysés`,
     `${stats.enrichedGames} enrichis`,
-    `${stats.linkedGames} relies a RAWG`,
+    `${stats.linkedGames} reliés à RAWG`,
     `${stats.notFoundGames} introuvables`,
-    `${stats.fieldsUpdated} champs ajoutes`,
+    `${stats.fieldsUpdated} champs ajoutés`,
   ].join(' / ')
 }
 
@@ -334,6 +335,36 @@ function buildRawgUpdateData(
 
   if (!game.website && metadata.website) {
     data.website = metadata.website
+  }
+
+  return data
+}
+
+function buildSteamUpdateData(
+  game: LocalGameMetadata,
+  steamGame: SteamOwnedGame,
+): GameMetadataUpdateData {
+  const releaseDate = parseSteamReleaseDate(steamGame.releaseDate ?? null)
+  const data: GameMetadataUpdateData = {}
+
+  if (shouldPreferFrenchText(game.description, steamGame.description)) {
+    data.description = steamGame.description?.trim()
+  }
+
+  if (!game.releaseDate && releaseDate) {
+    data.releaseDate = releaseDate
+  }
+
+  if (!game.developer && steamGame.developer) {
+    data.developer = steamGame.developer
+  }
+
+  if (!game.publisher && steamGame.publisher) {
+    data.publisher = steamGame.publisher
+  }
+
+  if (!game.website && steamGame.website) {
+    data.website = steamGame.website
   }
 
   return data
@@ -713,8 +744,12 @@ async function syncSteamDlcCatalog(
           appid: dlcAppId,
           title: `Steam DLC ${dlcAppId}`,
           coverUrl: null,
+          description: null,
+          developer: null,
           dlcAppIds: [],
+          publisher: null,
           releaseDate: null,
+          website: null,
         },
       })
       syncedDlc += 1
@@ -879,7 +914,12 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
     select: {
       id: true,
       title: true,
+      description: true,
       coverUrl: true,
+      releaseDate: true,
+      developer: true,
+      publisher: true,
+      website: true,
     },
   })
   const gamesByTitle = new Map(
@@ -904,7 +944,12 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
           select: {
             id: true,
             title: true,
+            description: true,
             coverUrl: true,
+            releaseDate: true,
+            developer: true,
+            publisher: true,
+            website: true,
           },
         })
       : (gamesByTitle.get(normalizeTitle(steamGame.title)) ?? null)
@@ -915,8 +960,13 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
       (await prisma.game.create({
         data: {
           title: steamGame.title,
+          description: steamGame.description,
           coverUrl: steamGame.coverUrl,
+          releaseDate: parseSteamReleaseDate(steamGame.releaseDate ?? null),
+          developer: steamGame.developer,
+          publisher: steamGame.publisher,
           status: hasSteamPlayActivity ? 'PLAYING' : 'BACKLOG',
+          website: steamGame.website,
           platforms: {
             create: {
               platform: {
@@ -932,7 +982,12 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
         select: {
           id: true,
           title: true,
+          description: true,
           coverUrl: true,
+          releaseDate: true,
+          developer: true,
+          publisher: true,
+          website: true,
         },
       }))
 
@@ -960,6 +1015,17 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
         data: {
           coverUrl: steamGame.coverUrl,
         },
+      })
+    }
+
+    const steamUpdateData = buildSteamUpdateData(localGame, steamGame)
+
+    if (Object.keys(steamUpdateData).length > 0) {
+      await prisma.game.update({
+        where: {
+          id: localGame.id,
+        },
+        data: steamUpdateData,
       })
     }
 
@@ -1132,7 +1198,7 @@ class SettingsService {
     }
 
     this.autoSyncTimer = setInterval(runSync, intervalMs)
-    setTimeout(runSync, 15_000)
+    setTimeout(runSync, 3_000)
   }
 
   stopAutoSync() {
@@ -1152,24 +1218,99 @@ class SettingsService {
     this.isAutoSyncRunning = true
 
     try {
-      const steamAccount = await prisma.externalAccount.findFirst({
-        where: {
-          provider: steamProvider,
-        },
-        orderBy: {
-          updatedAt: 'desc',
-        },
-      })
-      const steamApiKey =
-        decryptSecret(steamAccount?.tokenHint) ?? readEnvValue('STEAM_WEB_API_KEY')
-
-      if (steamAccount && steamApiKey) {
-        await this.syncProvider({
-          provider: steamProvider,
-        })
-      }
+      await this.runConfiguredProviderSyncs()
     } catch (error) {
       logger.error('[SettingsAutoSync]', error)
+    } finally {
+      this.isAutoSyncRunning = false
+    }
+  }
+
+  private async getConfiguredSyncProviders() {
+    const accounts = await prisma.externalAccount.findMany({
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    })
+    const providers: ExternalProvider[] = []
+    const hasAccount = (provider: ExternalProvider) =>
+      accounts.some((account) => account.provider === provider)
+
+    if (hasAccount(steamProvider)) {
+      providers.push(steamProvider)
+    }
+
+    if (hasAccount(rawgProvider) || readEnvValue('RAWG_API_KEY')) {
+      providers.push(rawgProvider)
+    }
+
+    return providers
+  }
+
+  private async runConfiguredProviderSyncs() {
+    const providers = await this.getConfiguredSyncProviders()
+    const results: string[] = []
+    const errors: string[] = []
+
+    for (const provider of providers) {
+      try {
+        const result = await this.syncProvider({
+          provider,
+        })
+        results.push(`${provider} : ${result.message}`)
+      } catch (caughtError) {
+        const message =
+          caughtError instanceof Error ? caughtError.message : 'Erreur inconnue.'
+        errors.push(`${provider} : ${message}`)
+      }
+    }
+
+    return {
+      providers,
+      results,
+      errors,
+    }
+  }
+
+  async syncAllProviders(): Promise<SettingsActionResult> {
+    if (this.isAutoSyncRunning) {
+      return {
+        canceled: true,
+        path: null,
+        message: 'Une synchronisation est déjà en cours.',
+      }
+    }
+
+    this.isAutoSyncRunning = true
+
+    try {
+      const syncedAt = new Date()
+      const summary = await this.runConfiguredProviderSyncs()
+
+      if (summary.providers.length === 0) {
+        return {
+          canceled: true,
+          path: null,
+          message: 'Aucun provider configuré à synchroniser.',
+          createdAt: syncedAt.toISOString(),
+        }
+      }
+
+      const successCount = summary.results.length
+      const errorCount = summary.errors.length
+      const messageParts = [
+        `${successCount} provider(s) synchronisé(s)`,
+        errorCount > 0 ? `${errorCount} erreur(s)` : null,
+        ...summary.results,
+        ...summary.errors,
+      ].filter((part): part is string => part !== null)
+
+      return {
+        canceled: false,
+        path: null,
+        message: messageParts.join(' / '),
+        createdAt: syncedAt.toISOString(),
+      }
     } finally {
       this.isAutoSyncRunning = false
     }
@@ -1261,7 +1402,7 @@ class SettingsService {
       data: {
         provider: input.provider,
         status: 'NOT_CONFIGURED',
-        message: 'Connexion locale retiree.',
+          message: 'Connexion locale retirée.',
       },
     })
 
@@ -1318,7 +1459,7 @@ class SettingsService {
         }
       } else if (localLibrary.games.length === 0) {
         throw new Error(
-          'Cle API Steam obligatoire ou bibliotheque Steam locale introuvable.',
+          'Clé API Steam obligatoire ou bibliothèque Steam locale introuvable.',
         )
       }
 
@@ -1406,7 +1547,7 @@ class SettingsService {
     }
 
     if (!apiKey) {
-      throw new Error('Cle API RAWG obligatoire pour enrichir les metadonnees.')
+      throw new Error('Clé API RAWG obligatoire pour enrichir les métadonnées.')
     }
 
     await recordProviderSync(
@@ -1496,7 +1637,7 @@ class SettingsService {
     const databasePath = getDatabaseFilePath()
 
     if (!databasePath) {
-      throw new Error('La base en memoire ne peut pas etre sauvegardee.')
+      throw new Error('La base en mémoire ne peut pas être sauvegardée.')
     }
 
     await mkdir(backupDirectory, { recursive: true })

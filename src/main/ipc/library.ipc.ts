@@ -84,7 +84,7 @@ function readOptionalBoolean(value: unknown, message: string) {
 
 function parseCreateGameInput(value: unknown): CreateGameInput {
   if (!isRecord(value) || typeof value['title'] !== 'string') {
-    throw new Error('Les donnees du jeu sont invalides.')
+    throw new Error('Les données du jeu sont invalides.')
   }
 
   const status = value['status']
@@ -105,7 +105,7 @@ function parseCreateGameInput(value: unknown): CreateGameInput {
 
 function parseUpdateGameInput(value: unknown): UpdateGameInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees du jeu sont invalides.')
+    throw new Error('Les données du jeu sont invalides.')
   }
 
   const status = value['status']
@@ -129,7 +129,7 @@ function parseUpdateGameInput(value: unknown): UpdateGameInput {
 
 function parseCreateChronicleInput(value: unknown): CreateChronicleInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees de chronique sont invalides.')
+    throw new Error('Les données de chronique sont invalides.')
   }
 
   const emotion = value['emotion']
@@ -149,7 +149,7 @@ function parseCreateChronicleInput(value: unknown): CreateChronicleInput {
 
 function parseUpdateChronicleInput(value: unknown): UpdateChronicleInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees de chronique sont invalides.')
+    throw new Error('Les données de chronique sont invalides.')
   }
 
   const emotion = value['emotion']
@@ -173,7 +173,7 @@ function parseUpdateChronicleInput(value: unknown): UpdateChronicleInput {
 
 function parseDeleteChronicleInput(value: unknown): DeleteChronicleInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees de chronique sont invalides.')
+    throw new Error('Les données de chronique sont invalides.')
   }
 
   return {
@@ -184,7 +184,7 @@ function parseDeleteChronicleInput(value: unknown): DeleteChronicleInput {
 
 function parseCreatePlaySessionInput(value: unknown): CreatePlaySessionInput {
   if (!isRecord(value) || typeof value['durationMinutes'] !== 'number') {
-    throw new Error('Les donnees de session sont invalides.')
+    throw new Error('Les données de session sont invalides.')
   }
 
   return {
@@ -198,13 +198,13 @@ function parseCreatePlaySessionInput(value: unknown): CreatePlaySessionInput {
 
 function parseUpdatePlaySessionInput(value: unknown): UpdatePlaySessionInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees de session sont invalides.')
+    throw new Error('Les données de session sont invalides.')
   }
 
   const durationMinutes = value['durationMinutes']
 
   if (durationMinutes !== undefined && typeof durationMinutes !== 'number') {
-    throw new Error('Les donnees de session sont invalides.')
+    throw new Error('Les données de session sont invalides.')
   }
 
   return {
@@ -219,7 +219,7 @@ function parseUpdatePlaySessionInput(value: unknown): UpdatePlaySessionInput {
 
 function parseDeletePlaySessionInput(value: unknown): DeletePlaySessionInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees de session sont invalides.')
+    throw new Error('Les données de session sont invalides.')
   }
 
   return {
@@ -230,7 +230,7 @@ function parseDeletePlaySessionInput(value: unknown): DeletePlaySessionInput {
 
 function parseCreateDlcInput(value: unknown): CreateDlcInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees du DLC sont invalides.')
+    throw new Error('Les données du DLC sont invalides.')
   }
 
   return {
@@ -238,13 +238,13 @@ function parseCreateDlcInput(value: unknown): CreateDlcInput {
     name: readRequiredString(value['name'], 'Le nom du DLC est obligatoire.'),
     releaseDate: readOptionalString(value['releaseDate']),
     owned: readOptionalBoolean(value['owned'], 'Etat de possession invalide.'),
-    completed: readOptionalBoolean(value['completed'], 'Etat de completion invalide.'),
+    completed: readOptionalBoolean(value['completed'], 'État de complétion invalide.'),
   }
 }
 
 function parseUpdateDlcInput(value: unknown): UpdateDlcInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees du DLC sont invalides.')
+    throw new Error('Les données du DLC sont invalides.')
   }
 
   return {
@@ -253,13 +253,13 @@ function parseUpdateDlcInput(value: unknown): UpdateDlcInput {
     name: readOptionalString(value['name']),
     releaseDate: readNullableString(value['releaseDate'], 'Date de sortie invalide.'),
     owned: readOptionalBoolean(value['owned'], 'Etat de possession invalide.'),
-    completed: readOptionalBoolean(value['completed'], 'Etat de completion invalide.'),
+    completed: readOptionalBoolean(value['completed'], 'État de complétion invalide.'),
   }
 }
 
 function parseDeleteDlcInput(value: unknown): DeleteDlcInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees du DLC sont invalides.')
+    throw new Error('Les données du DLC sont invalides.')
   }
 
   return {
@@ -270,7 +270,7 @@ function parseDeleteDlcInput(value: unknown): DeleteDlcInput {
 
 function parseAddAvailableDlcInput(value: unknown): AddAvailableDlcInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees du DLC sont invalides.')
+    throw new Error('Les données du DLC sont invalides.')
   }
 
   return {
@@ -282,51 +282,51 @@ function parseAddAvailableDlcInput(value: unknown): AddAvailableDlcInput {
 
 function parseCreateAchievementInput(value: unknown): CreateAchievementInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees du succes sont invalides.')
+    throw new Error('Les données du succès sont invalides.')
   }
 
   return {
     gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
-    name: readRequiredString(value['name'], 'Le nom du succes est obligatoire.'),
+    name: readRequiredString(value['name'], 'Le nom du succès est obligatoire.'),
     description: readOptionalString(value['description']),
     iconUrl: readOptionalString(value['iconUrl']),
     provider: readOptionalString(value['provider']),
-    unlocked: readOptionalBoolean(value['unlocked'], 'Etat de deblocage invalide.'),
+    unlocked: readOptionalBoolean(value['unlocked'], 'État de déblocage invalide.'),
     unlockDate: readOptionalString(value['unlockDate']),
   }
 }
 
 function parseUpdateAchievementInput(value: unknown): UpdateAchievementInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees du succes sont invalides.')
+    throw new Error('Les données du succès sont invalides.')
   }
 
   return {
     gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
-    id: readRequiredString(value['id'], 'Identifiant de succes invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de succès invalide.'),
     name: readOptionalString(value['name']),
     description: readNullableString(value['description'], 'Description invalide.'),
-    iconUrl: readNullableString(value['iconUrl'], 'Icone invalide.'),
+    iconUrl: readNullableString(value['iconUrl'], 'Icône invalide.'),
     provider: readNullableString(value['provider'], 'Fournisseur invalide.'),
-    unlocked: readOptionalBoolean(value['unlocked'], 'Etat de deblocage invalide.'),
-    unlockDate: readNullableString(value['unlockDate'], 'Date de deblocage invalide.'),
+    unlocked: readOptionalBoolean(value['unlocked'], 'État de déblocage invalide.'),
+    unlockDate: readNullableString(value['unlockDate'], 'Date de déblocage invalide.'),
   }
 }
 
 function parseDeleteAchievementInput(value: unknown): DeleteAchievementInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees du succes sont invalides.')
+    throw new Error('Les données du succès sont invalides.')
   }
 
   return {
     gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
-    id: readRequiredString(value['id'], 'Identifiant de succes invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de succès invalide.'),
   }
 }
 
 function parseCreateScreenshotInput(value: unknown): CreateScreenshotInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees de la capture sont invalides.')
+    throw new Error('Les données de la capture sont invalides.')
   }
 
   return {
@@ -339,7 +339,7 @@ function parseCreateScreenshotInput(value: unknown): CreateScreenshotInput {
 
 function parseImportScreenshotFileInput(value: unknown): ImportScreenshotFileInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees de la capture sont invalides.')
+    throw new Error('Les données de la capture sont invalides.')
   }
 
   return {
@@ -351,7 +351,7 @@ function parseImportScreenshotFileInput(value: unknown): ImportScreenshotFileInp
 
 function parseUpdateScreenshotInput(value: unknown): UpdateScreenshotInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees de la capture sont invalides.')
+    throw new Error('Les données de la capture sont invalides.')
   }
 
   return {
@@ -359,13 +359,13 @@ function parseUpdateScreenshotInput(value: unknown): UpdateScreenshotInput {
     id: readRequiredString(value['id'], 'Identifiant de capture invalide.'),
     path: readOptionalString(value['path']),
     description: readNullableString(value['description'], 'Description invalide.'),
-    chronicleId: readNullableString(value['chronicleId'], 'Chronique liee invalide.'),
+    chronicleId: readNullableString(value['chronicleId'], 'Chronique liée invalide.'),
   }
 }
 
 function parseDeleteScreenshotInput(value: unknown): DeleteScreenshotInput {
   if (!isRecord(value)) {
-    throw new Error('Les donnees de la capture sont invalides.')
+    throw new Error('Les données de la capture sont invalides.')
   }
 
   return {
@@ -376,13 +376,13 @@ function parseDeleteScreenshotInput(value: unknown): DeleteScreenshotInput {
 
 function parseUpdateReviewInput(value: unknown): UpdateReviewInput {
   if (!isRecord(value) || typeof value['rating'] !== 'number') {
-    throw new Error('Les donnees de l evaluation sont invalides.')
+    throw new Error("Les données de l'évaluation sont invalides.")
   }
 
   const rating = Math.round(value['rating'])
 
   if (rating < 1 || rating > 10) {
-    throw new Error('La note doit etre comprise entre 1 et 10.')
+    throw new Error('La note doit être comprise entre 1 et 10.')
   }
 
   return {

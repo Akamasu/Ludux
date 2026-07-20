@@ -55,7 +55,7 @@ function normalizeRawgApiKey(value: string) {
   const apiKey = value.trim()
 
   if (apiKey.length === 0) {
-    throw new Error('Cle API RAWG obligatoire pour enrichir les metadonnees.')
+    throw new Error('Clé API RAWG obligatoire pour enrichir les métadonnées.')
   }
 
   return apiKey
@@ -73,7 +73,7 @@ function normalizeRawgSearchTitle(value: string) {
 
 function createRawgErrorMessage(status: number) {
   if (status === 401 || status === 403) {
-    return 'RAWG a refuse la synchronisation. Verifiez la cle API RAWG.'
+    return 'RAWG a refusé la synchronisation. Vérifiez la clé API RAWG.'
   }
 
   if (status === 404) {
@@ -81,14 +81,14 @@ function createRawgErrorMessage(status: number) {
   }
 
   if (status === 429) {
-    return 'RAWG limite temporairement les requetes. Reessayez plus tard.'
+    return 'RAWG limite temporairement les requêtes. Réessayez plus tard.'
   }
 
   if (status >= 500) {
-    return 'RAWG est temporairement indisponible. Reessayez plus tard.'
+    return 'RAWG est temporairement indisponible. Réessayez plus tard.'
   }
 
-  return `RAWG a refuse la synchronisation (${status}).`
+  return `RAWG a refusé la synchronisation (${status}).`
 }
 
 function isAbortError(error: unknown) {
@@ -152,7 +152,7 @@ export function parseRawgGameMetadata(payload: unknown): RawgGameMetadata {
   const title = readString(payload['name'])
 
   if (!rawgId || !title) {
-    throw new Error('Metadonnees RAWG invalides.')
+    throw new Error('Métadonnées RAWG invalides.')
   }
 
   return {
@@ -188,10 +188,10 @@ async function fetchRawgJson({
     })
   } catch (error) {
     if (isAbortError(error)) {
-      throw new Error('RAWG ne repond pas. Reessayez plus tard.')
+      throw new Error('RAWG ne répond pas. Réessayez plus tard.')
     }
 
-    throw new Error('Impossible de joindre RAWG. Verifiez la connexion reseau.')
+    throw new Error('Impossible de joindre RAWG. Vérifiez la connexion réseau.')
   } finally {
     clearTimeout(timeout)
   }

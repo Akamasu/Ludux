@@ -194,6 +194,7 @@ export default function App() {
         onOpenDataFolder={settingsState.openDataFolder}
         onRefresh={refreshSettingsView}
         onRestoreGame={libraryState.restoreGame}
+        onSyncAllProviders={settingsState.syncAllProviders}
         onSyncProvider={syncProvider}
         onUpsertProviderConnection={settingsState.upsertProviderConnection}
       />

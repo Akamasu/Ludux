@@ -98,13 +98,13 @@ function PlatformBreakdown({ stats }: { stats: PlatformStat[] }) {
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Plateformes</h2>
-          <p className="mt-1 text-sm text-zinc-500">Jeux possedes et temps rattache</p>
+          <p className="mt-1 text-sm text-zinc-500">Jeux possédés et temps rattaché</p>
         </div>
         <Gamepad2 className="text-[#8CA7FF]" size={20} aria-hidden="true" />
       </div>
 
       {visibleStats.length === 0 ? (
-        <p className="text-sm leading-6 text-zinc-500">Aucune plateforme renseignee.</p>
+        <p className="text-sm leading-6 text-zinc-500">Aucune plateforme renseignée.</p>
       ) : (
         <div className="space-y-4">
           {visibleStats.map((stat, index) => (
@@ -169,7 +169,7 @@ function MonthlyActivity({ stats }: { stats: MonthlyPlayStat[] }) {
     <section className="rounded-lg border border-white/10 bg-[#181B23] p-5 xl:col-span-2">
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-white">Activite mensuelle</h2>
+          <h2 className="text-lg font-semibold text-white">Activité mensuelle</h2>
           <p className="mt-1 text-sm text-zinc-500">Sessions sur les douze derniers mois joues</p>
         </div>
         <Clock3 className="text-[#DBC46E]" size={20} aria-hidden="true" />
@@ -219,12 +219,12 @@ export function StatisticsPage({ error, isLoading, statistics }: StatisticsPageP
           <p className="text-sm font-medium text-[#A797FF]">Statistiques</p>
           <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">Tableau de bord</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-            Une lecture claire de votre bibliotheque, de votre temps de jeu et des
+            Une lecture claire de votre bibliothèque, de votre temps de jeu et des
             souvenirs consignes.
           </p>
         </div>
         <div className="w-full rounded-lg border border-[#C9A646]/15 bg-[#181B23] px-4 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:w-auto sm:text-right">
-          <p className="text-xs text-zinc-500">Completion</p>
+          <p className="text-xs text-zinc-500">Complétion</p>
           <p className="mt-1 text-sm font-medium text-zinc-100">
             {isLoading ? 'Chargement' : `${statistics.completionRate} %`}
           </p>

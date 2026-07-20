@@ -87,6 +87,7 @@ export interface LuduxApi {
     deleteProviderConnection: (
       input: DeleteProviderConnectionInput,
     ) => Promise<SettingsOverview>
+    syncAllProviders: () => Promise<SettingsActionResult>
     syncProvider: (input: SyncProviderInput) => Promise<SettingsActionResult>
   }
 }

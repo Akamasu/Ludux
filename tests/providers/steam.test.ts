@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createSteamAppDetailsUrl,
   createSteamAchievementSchemaUrl,
+  createSteamDlcForAppUrl,
   createSteamOwnedGamesUrl,
   createSteamPlayerAchievementsUrl,
   fetchSteamAppDetails,
@@ -16,6 +17,7 @@ import {
   parseSteamAppDetails,
   parseSteamAppManifest,
   parseSteamAchievementSchema,
+  parseSteamDlcForApp,
   parseSteamKeyValues,
   parseSteamLibraryFolders,
   parseSteamLocalConfigApps,
@@ -46,9 +48,19 @@ describe('steam provider', () => {
     expect(url).toContain('/api/appdetails')
     expect(url).toContain('appids=620')
     expect(url).toContain('filters=basic')
+    expect(url).toContain('short_description')
     expect(url).toContain('release_date')
     expect(url).toContain('dlc')
     expect(url).toContain('l=french')
+  })
+
+  it('builds a Steam Store DLC catalog URL', () => {
+    const url = createSteamDlcForAppUrl(620)
+
+    expect(url).toContain('/api/dlcforapp/')
+    expect(url).toContain('appid=620')
+    expect(url).toContain('l=french')
+    expect(url).toContain('cc=FR')
   })
 
   it('builds Steam achievements URLs with normalized credentials', () => {
@@ -109,6 +121,10 @@ describe('steam provider', () => {
           data: {
             name: 'Portal 2',
             header_image: 'https://shared.akamai.steamstatic.com/header.jpg',
+            short_description: 'Un jeu de puzzle en cooperation.',
+            developers: ['Valve Software'],
+            publishers: ['Valve'],
+            website: 'https://www.thinkwithportals.com/',
             dlc: [1234, '5678'],
             release_date: {
               date: 'Apr 18, 2011',
@@ -124,8 +140,41 @@ describe('steam provider', () => {
         appid: 620,
         title: 'Portal 2',
         coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
+        description: 'Un jeu de puzzle en cooperation.',
+        developer: 'Valve Software',
         dlcAppIds: [1234, 5678],
+        publisher: 'Valve',
         releaseDate: '2011-04-18T00:00:00.000Z',
+        website: 'https://www.thinkwithportals.com/',
+      },
+    ])
+  })
+
+  it('normalizes Steam Store DLC catalog payloads', () => {
+    expect(
+      parseSteamDlcForApp({
+        status: 1,
+        dlc: [
+          {
+            id: 1234,
+            name: 'Portal 2 - Test Chambers',
+            header_image: 'https://shared.akamai.steamstatic.com/dlc.jpg',
+            description: '<p>Nouvelles salles de test.</p>',
+            release_date: 'May 1, 2011',
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        appid: 1234,
+        title: 'Portal 2 - Test Chambers',
+        coverUrl: 'https://shared.akamai.steamstatic.com/dlc.jpg',
+        description: 'Nouvelles salles de test.',
+        developer: null,
+        dlcAppIds: [],
+        publisher: null,
+        releaseDate: '2011-05-01T00:00:00.000Z',
+        website: null,
       },
     ])
   })
@@ -148,8 +197,12 @@ describe('steam provider', () => {
             appid: 620,
             title: 'Portal 2',
             coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
+            description: null,
+            developer: null,
             dlcAppIds: [],
+            publisher: null,
             releaseDate: null,
+            website: null,
           },
         ],
       ),
@@ -401,7 +454,7 @@ describe('steam provider', () => {
         steamId: '76561198000000000',
         fetchImpl: fetchImpl as unknown as typeof fetch,
       }),
-    ).rejects.toThrow('Verifiez la cle API Steam')
+    ).rejects.toThrow('Vérifiez la clé API Steam')
   })
 
   it('fetches Steam Store appdetails', async () => {
@@ -431,10 +484,55 @@ describe('steam provider', () => {
         appid: 620,
         title: 'Portal 2',
         coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
+        description: null,
+        developer: null,
         dlcAppIds: [],
+        publisher: null,
         releaseDate: null,
+        website: null,
       },
     ])
+  })
+
+  it('prefers the Steam DLC catalog endpoint before Store fallback', async () => {
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      expect(String(url)).toContain('/api/dlcforapp/')
+
+      return new Response(
+        JSON.stringify({
+          status: 1,
+          dlc: [
+            {
+              id: 1234,
+              name: 'Portal 2 - Test Chambers',
+              header_image: 'https://shared.akamai.steamstatic.com/dlc.jpg',
+              description: '<p>Nouvelles salles de test.</p>',
+              release_date: 'May 1, 2011',
+            },
+          ],
+        }),
+      )
+    })
+
+    await expect(
+      fetchSteamDlcCatalog({
+        appid: 620,
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+      }),
+    ).resolves.toEqual([
+      {
+        appid: 1234,
+        title: 'Portal 2 - Test Chambers',
+        coverUrl: 'https://shared.akamai.steamstatic.com/dlc.jpg',
+        description: 'Nouvelles salles de test.',
+        developer: null,
+        dlcAppIds: [],
+        publisher: null,
+        releaseDate: '2011-05-01T00:00:00.000Z',
+        website: null,
+      },
+    ])
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
   })
 
   it('fetches a Steam DLC catalog with partial detail fallback', async () => {
@@ -485,15 +583,23 @@ describe('steam provider', () => {
         appid: 1234,
         title: 'Portal 2 - Test Chambers',
         coverUrl: 'https://shared.akamai.steamstatic.com/dlc.jpg',
+        description: null,
+        developer: null,
         dlcAppIds: [],
+        publisher: null,
         releaseDate: '2011-05-01T00:00:00.000Z',
+        website: null,
       },
       {
         appid: 5678,
         title: 'Steam DLC 5678',
         coverUrl: null,
+        description: null,
+        developer: null,
         dlcAppIds: [],
+        publisher: null,
         releaseDate: null,
+        website: null,
       },
     ])
   })

@@ -62,7 +62,7 @@ function MuseumCard({
             {game.title}
           </h2>
           <p className="mt-2 truncate text-sm text-zinc-500">
-            {game.platforms.join(', ') || 'Plateforme non renseignee'}
+            {game.platforms.join(', ') || 'Plateforme non renseignée'}
           </p>
 
           <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-zinc-400">
@@ -129,7 +129,7 @@ export function MuseumPage({ games, onOpenGame, onOpenLibrary }: MuseumPageProps
     <div className="flex flex-1 flex-col gap-7">
       <header className="flex flex-col items-start justify-between gap-4 border-b border-white/10 pb-7 sm:flex-row">
         <div>
-          <p className="text-sm font-medium text-[#A797FF]">Musee</p>
+          <p className="text-sm font-medium text-[#A797FF]">Musée</p>
           <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
             Galerie des aventures accomplies
           </h1>
@@ -189,7 +189,7 @@ export function MuseumPage({ games, onOpenGame, onOpenLibrary }: MuseumPageProps
 
       <section className="grid gap-3 rounded-lg border border-white/10 bg-[#181B23] p-4 xl:grid-cols-[1fr_220px_220px]">
         <label className="relative block">
-          <span className="sr-only">Rechercher dans le musee</span>
+          <span className="sr-only">Rechercher dans le musée</span>
           <Search
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600"
             size={17}
@@ -217,7 +217,7 @@ export function MuseumPage({ games, onOpenGame, onOpenLibrary }: MuseumPageProps
         </label>
 
         <label>
-          <span className="sr-only">Trier le musee</span>
+          <span className="sr-only">Trier le musée</span>
           <select
             value={sortBy}
             onChange={(event) => setSortBy(event.target.value as MuseumSort)}
@@ -237,14 +237,14 @@ export function MuseumPage({ games, onOpenGame, onOpenLibrary }: MuseumPageProps
               <Trophy size={22} aria-hidden="true" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Le musee attend sa premiere piece.</h2>
+              <h2 className="text-lg font-semibold text-white">Le musée attend sa première pièce.</h2>
               <p className="mt-2 text-sm leading-6 text-zinc-500">
-                Passez un jeu en statut termine depuis sa fiche pour l'ajouter a cette galerie.
+                Passez un jeu en statut terminé depuis sa fiche pour l'ajouter à cette galerie.
               </p>
             </div>
             <Button type="button" onClick={onOpenLibrary}>
               <Gamepad2 size={17} aria-hidden="true" />
-              Ouvrir la bibliotheque
+              Ouvrir la bibliothèque
             </Button>
           </div>
         </section>

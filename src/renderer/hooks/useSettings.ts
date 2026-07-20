@@ -31,7 +31,7 @@ const BROWSER_OVERVIEW: SettingsOverview = {
 }
 
 const ELECTRON_ONLY_ACTION_MESSAGE =
-  "Cette action est disponible dans la fenetre Electron de Ludux. Lance npm run dev et utilise la fenetre qui s'ouvre, pas l'URL du navigateur."
+  "Cette action est disponible dans la fenêtre Electron de Ludux. Lance npm run dev et utilise la fenêtre qui s'ouvre, pas l'URL du navigateur."
 
 export function useSettings() {
   const [overview, setOverview] = useState<SettingsOverview>(BROWSER_OVERVIEW)
@@ -163,7 +163,7 @@ export function useSettings() {
         setActionResult({
           canceled: false,
           path: null,
-          message: 'Connexion provider enregistree localement.',
+          message: 'Connexion provider enregistrée localement.',
         })
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
@@ -196,7 +196,7 @@ export function useSettings() {
         setActionResult({
           canceled: false,
           path: null,
-          message: 'Connexion provider retiree.',
+          message: 'Connexion provider retirée.',
         })
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
@@ -225,6 +225,21 @@ export function useSettings() {
     [runAction],
   )
 
+  const syncAllProviders = useCallback(async () => {
+    const api = window.ludux
+
+    if (!api) {
+      setActionResult({
+        canceled: true,
+        path: null,
+        message: ELECTRON_ONLY_ACTION_MESSAGE,
+      })
+      return
+    }
+
+    await runAction(api.settings.syncAllProviders)
+  }, [runAction])
+
   useEffect(() => {
     void refresh()
   }, [refresh])
@@ -241,6 +256,7 @@ export function useSettings() {
     openDataFolder,
     upsertProviderConnection,
     deleteProviderConnection,
+    syncAllProviders,
     syncProvider,
   }
 }

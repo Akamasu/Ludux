@@ -196,7 +196,7 @@ function GameArchiveHero({
       <div className="flex flex-col gap-3 border-b border-[#C9A646]/15 bg-[#0F1117]/45 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <Button className="w-full sm:w-auto" type="button" variant="secondary" onClick={onBack}>
           <ArrowLeft size={17} aria-hidden="true" />
-          Bibliotheque
+          Bibliothèque
         </Button>
         <div className="flex items-center justify-between gap-3 sm:justify-end">
           <span className="inline-flex items-center gap-2 rounded-lg border border-[#C9A646]/20 bg-[#C9A646]/10 px-3 py-2 text-xs font-medium text-[#E9DFA8]">
@@ -269,7 +269,7 @@ function GameArchiveHero({
                       className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#0F1117]/80 px-2.5 py-1 text-xs text-zinc-300 transition hover:border-[#7C5CFF]/50 hover:text-white"
                       title={
                         source.lastSyncedAt
-                          ? `Synchronise le ${formatDate(source.lastSyncedAt)}`
+                          ? `Synchronisé le ${formatDate(source.lastSyncedAt)}`
                           : undefined
                       }
                     >
@@ -297,14 +297,14 @@ function GameArchiveHero({
                 ) : null}
                 {detail.developer ? (
                   <ArchiveInfoRow
-                    label="Developpeur"
+                    label="Développeur"
                     value={detail.developer}
                     title={detail.developer}
                   />
                 ) : null}
                 {detail.publisher ? (
                   <ArchiveInfoRow
-                    label="Editeur"
+                    label="Éditeur"
                     value={detail.publisher}
                     title={detail.publisher}
                   />
@@ -329,7 +329,7 @@ function GameArchiveHero({
                 <ArchiveInfoRow label="Chroniques" value={String(detail.chronicles.length)} />
                 <ArchiveInfoRow label="Sessions" value={String(detail.sessions.length)} />
                 <ArchiveInfoRow label="DLC" value={String(detail.dlcs.length)} />
-                <ArchiveInfoRow label="Succes" value={String(detail.achievements.length)} />
+                <ArchiveInfoRow label="Succès" value={String(detail.achievements.length)} />
                 <ArchiveInfoRow label="Captures" value={String(detail.screenshots.length)} />
                 <ArchiveInfoRow
                   label="Note perso"
@@ -387,7 +387,7 @@ export function GameDetailPage({
       <div className="flex flex-1 items-center">
         <section className="rounded-lg border border-dashed border-white/15 bg-[#181B23] p-8">
           <h1 className="text-2xl font-semibold text-white">Jeu introuvable</h1>
-          <p className="mt-2 text-sm text-zinc-500">Ce chapitre n'existe plus dans la bibliotheque.</p>
+          <p className="mt-2 text-sm text-zinc-500">Ce chapitre n'existe plus dans la bibliothèque.</p>
           <Button className="mt-5" type="button" onClick={onBack}>
             <ArrowLeft size={17} aria-hidden="true" />
             Retour
@@ -401,7 +401,7 @@ export function GameDetailPage({
 
   async function handleArchiveGame() {
     const confirmed = window.confirm(
-      `Archiver "${currentDetail.title}" ? Vous pourrez le restaurer depuis les parametres.`,
+      `Archiver "${currentDetail.title}" ? Vous pourrez le restaurer depuis les paramètres.`,
     )
 
     if (confirmed) {
@@ -595,7 +595,7 @@ function ReviewPanel({
     <form className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5" onSubmit={handleSubmit}>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-white">Evaluation personnelle</h2>
+          <h2 className="text-lg font-semibold text-white">Évaluation personnelle</h2>
           <p className="mt-1 text-sm text-zinc-500">
             Note, avis et souvenir principal pour garder une vraie trace.
           </p>
@@ -766,7 +766,7 @@ function DlcPanel({
         <div>
           <h2 className="text-lg font-semibold text-white">DLC</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Extensions detectees via Steam ou suivies manuellement.
+            Extensions détectées via Steam ou suivies manuellement.
           </p>
         </div>
         <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#7C5CFF]/10 text-[#D8D0FF]">
@@ -780,7 +780,7 @@ function DlcPanel({
           <p className="mt-1 text-xl font-semibold text-white">{detail.dlcs.length}</p>
         </div>
         <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
-          <p className="text-xs text-zinc-500">Possedes</p>
+          <p className="text-xs text-zinc-500">Possédés</p>
           <p className="mt-1 text-xl font-semibold text-white">{ownedCount}</p>
         </div>
         <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
@@ -804,8 +804,8 @@ function DlcPanel({
             variant="secondary"
             onClick={onRefreshAvailableDlc}
             disabled={isSaving || isLoadingAvailableDlc}
-            aria-label="Rafraichir les DLC disponibles"
-            title="Rafraichir"
+            aria-label="Rafraîchir les DLC disponibles"
+            title="Rafraîchir"
             className="h-10 px-3"
           >
             <RefreshCw
@@ -857,7 +857,7 @@ function DlcPanel({
                   ) : (
                     <Plus size={16} aria-hidden="true" />
                   )}
-                  {dlc.added ? 'Ajoute' : 'Ajouter'}
+                  {dlc.added ? 'Ajouté' : 'Ajouter'}
                 </Button>
               </article>
             ))}
@@ -898,7 +898,7 @@ function DlcPanel({
               }}
               className="accent-[#7C5CFF]"
             />
-            Possede
+            Possédé
           </label>
           <label className="flex h-11 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
             <input
@@ -913,7 +913,7 @@ function DlcPanel({
               }}
               className="accent-[#7C5CFF]"
             />
-            Termine
+            Terminé
           </label>
           <Button type="submit" disabled={isSaving || name.trim().length === 0}>
             <Download size={17} aria-hidden="true" />
@@ -925,7 +925,7 @@ function DlcPanel({
       <div className="mt-5 space-y-3">
         {detail.dlcs.length === 0 ? (
           <p className="rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
-            Aucun DLC detecte ou renseigne pour ce jeu.
+            Aucun DLC détecté ou renseigné pour ce jeu.
           </p>
         ) : (
           detail.dlcs.map((dlc) => (
@@ -945,13 +945,13 @@ function DlcPanel({
                   {dlc.owned ? (
                     <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#4F7CFF]/10 px-2.5 py-1 text-[#C9D6FF]">
                       <Download size={14} aria-hidden="true" />
-                      Possede
+                      Possédé
                     </span>
                   ) : null}
                   {dlc.completed ? (
                     <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#7C5CFF]/10 px-2.5 py-1 text-[#D8D0FF]">
                       <CheckCircle2 size={14} aria-hidden="true" />
-                      Termine
+                      Terminé
                     </span>
                   ) : null}
                 </div>
@@ -969,7 +969,7 @@ function DlcPanel({
                     disabled={isSaving}
                     className="accent-[#7C5CFF]"
                   />
-                  Possede
+                  Possédé
                 </label>
                 <label className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
                   <input
@@ -983,7 +983,7 @@ function DlcPanel({
                     disabled={isSaving}
                     className="accent-[#7C5CFF]"
                   />
-                  Termine
+                  Terminé
                 </label>
                 <Button
                   type="button"
@@ -1058,7 +1058,7 @@ function AchievementPanel({
   }
 
   async function handleDeleteAchievement(achievement: AchievementListItem) {
-    const confirmed = window.confirm(`Supprimer le succes "${achievement.name}" ?`)
+    const confirmed = window.confirm(`Supprimer le succès "${achievement.name}" ?`)
 
     if (confirmed) {
       await onDeleteAchievement({
@@ -1072,7 +1072,7 @@ function AchievementPanel({
     <section className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-white">Succes</h2>
+          <h2 className="text-lg font-semibold text-white">Succès</h2>
           <p className="mt-1 text-sm text-zinc-500">
             Objectifs Steam synchronises ou accomplissements suivis manuellement.
           </p>
@@ -1084,7 +1084,7 @@ function AchievementPanel({
 
       <div className="mb-5 grid gap-3 md:grid-cols-3">
         <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
-          <p className="text-xs text-zinc-500">Succes</p>
+          <p className="text-xs text-zinc-500">Succès</p>
           <p className="mt-1 text-xl font-semibold text-white">{detail.achievements.length}</p>
         </div>
         <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
@@ -1100,16 +1100,16 @@ function AchievementPanel({
       <form className="grid gap-3" onSubmit={handleSubmit}>
         <div className="grid gap-3 xl:grid-cols-[1fr_180px_180px]">
           <label>
-            <span className="sr-only">Nom du succes</span>
+            <span className="sr-only">Nom du succès</span>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Nom du succes"
+              placeholder="Nom du succès"
               className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
             />
           </label>
           <label>
-            <span className="sr-only">Fournisseur du succes</span>
+            <span className="sr-only">Fournisseur du succès</span>
             <input
               value={provider}
               onChange={(event) => setProvider(event.target.value)}
@@ -1118,7 +1118,7 @@ function AchievementPanel({
             />
           </label>
           <label>
-            <span className="sr-only">Date de deblocage</span>
+            <span className="sr-only">Date de déblocage</span>
             <input
               type="date"
               value={unlockDate}
@@ -1131,7 +1131,7 @@ function AchievementPanel({
 
         <div className="grid gap-3 xl:grid-cols-[1fr_auto]">
           <label>
-            <span className="sr-only">Description du succes</span>
+            <span className="sr-only">Description du succès</span>
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
@@ -1154,7 +1154,7 @@ function AchievementPanel({
                 }}
                 className="accent-[#7C5CFF]"
               />
-              Debloque
+              Débloqué
             </label>
             <Button type="submit" disabled={isSaving || name.trim().length === 0}>
               <Trophy size={17} aria-hidden="true" />
@@ -1167,7 +1167,7 @@ function AchievementPanel({
       <div className="mt-5 space-y-3">
         {detail.achievements.length === 0 ? (
           <p className="rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
-            Aucun succes synchronise ou renseigne pour ce jeu.
+            Aucun succès synchronisé ou renseigné pour ce jeu.
           </p>
         ) : (
           detail.achievements.map((achievement) => (
@@ -1191,7 +1191,7 @@ function AchievementPanel({
                   {achievement.unlocked ? (
                     <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#7C5CFF]/10 px-2.5 py-1 text-[#D8D0FF]">
                       <CheckCircle2 size={14} aria-hidden="true" />
-                      Debloque
+                      Débloqué
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/7 px-2.5 py-1 text-zinc-400">
@@ -1217,7 +1217,7 @@ function AchievementPanel({
                     disabled={isSaving}
                     className="accent-[#7C5CFF]"
                   />
-                  Debloque
+                  Débloqué
                 </label>
                 <Button
                   type="button"
@@ -1327,7 +1327,7 @@ function ScreenshotPanel({
           <p className="mt-1 text-xl font-semibold text-white">{linkedCount}</p>
         </div>
         <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
-          <p className="text-xs text-zinc-500">Derniere</p>
+          <p className="text-xs text-zinc-500">Dernière</p>
           <p className="mt-1 truncate text-xl font-semibold text-white">
             {lastScreenshot ? formatDate(lastScreenshot.createdAt) : '-'}
           </p>
@@ -1346,7 +1346,7 @@ function ScreenshotPanel({
             />
           </label>
           <label>
-            <span className="sr-only">Chronique liee</span>
+            <span className="sr-only">Chronique liée</span>
             <select
               value={chronicleId}
               onChange={(event) => setChronicleId(event.target.value)}
@@ -1385,7 +1385,7 @@ function ScreenshotPanel({
       <div className="mt-5">
         {detail.screenshots.length === 0 ? (
           <p className="rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
-            Aucune capture renseignee pour ce jeu.
+            Aucune capture renseignée pour ce jeu.
           </p>
         ) : (
           <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
@@ -1421,7 +1421,7 @@ function ScreenshotPanel({
 
                   <div className="flex flex-wrap items-center gap-3">
                     <label className="min-w-[200px] flex-1">
-                      <span className="sr-only">Changer la chronique liee</span>
+                      <span className="sr-only">Changer la chronique liée</span>
                       <select
                         value={screenshot.chronicleId ?? ''}
                         onChange={(event) =>
@@ -2008,7 +2008,7 @@ function SessionTimelineArticle({
             <span>{formatHours(session.durationMinutes)}</span>
           </div>
           <p className="mt-2 text-sm text-zinc-500">
-            {session.platformName ?? 'Plateforme non renseignee'}
+            {session.platformName ?? 'Plateforme non renseignée'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

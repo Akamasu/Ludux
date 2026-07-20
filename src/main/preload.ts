@@ -121,6 +121,8 @@ const api: LuduxApi = {
       ipcRenderer.invoke('settings:upsertProviderConnection', input) as Promise<SettingsOverview>,
     deleteProviderConnection: (input: DeleteProviderConnectionInput) =>
       ipcRenderer.invoke('settings:deleteProviderConnection', input) as Promise<SettingsOverview>,
+    syncAllProviders: () =>
+      ipcRenderer.invoke('settings:syncAllProviders') as Promise<SettingsActionResult>,
     syncProvider: (input: SyncProviderInput) =>
       ipcRenderer.invoke('settings:syncProvider', input) as Promise<SettingsActionResult>,
   },

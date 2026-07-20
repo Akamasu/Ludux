@@ -9,10 +9,15 @@ export interface SteamOwnedGame {
   iconUrl: string | null
   playtimeForeverMinutes: number
   lastPlayedAt: string | null
+  description?: string | null
+  developer?: string | null
   installed?: boolean
   installPath?: string | null
   lastUpdatedAt?: string | null
+  publisher?: string | null
+  releaseDate?: string | null
   sizeOnDiskBytes?: number | null
+  website?: string | null
 }
 
 export interface SteamInstalledGame extends SteamOwnedGame {
@@ -32,8 +37,12 @@ export interface SteamAppDetails {
   appid: number
   title: string | null
   coverUrl: string | null
+  description: string | null
+  developer: string | null
   dlcAppIds: number[]
+  publisher: string | null
   releaseDate: string | null
+  website: string | null
 }
 
 export interface SteamAchievement {
@@ -102,6 +111,11 @@ interface SteamKeyValueObject {
 const defaultSteamTimeoutMs = 15_000
 const steamId64Pattern = /^\d{17}$/
 const steamId64AccountIdOffset = 76_561_197_960_265_728n
+const steamStoreHeaders = {
+  Accept: 'application/json,text/plain,*/*',
+  'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.5',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Ludux/0.24.4',
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -113,6 +127,18 @@ function readNumber(value: unknown) {
 
 function readString(value: unknown) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
+}
+
+function readStringList(value: unknown) {
+  if (!Array.isArray(value)) {
+    return null
+  }
+
+  const items = value
+    .map((item) => readString(item))
+    .filter((item): item is string => item !== null)
+
+  return items.length > 0 ? items.join(', ') : null
 }
 
 function readNumberLike(value: unknown) {
@@ -127,6 +153,42 @@ function readNumberLike(value: unknown) {
   const numberValue = Number(value.trim())
 
   return Number.isFinite(numberValue) ? numberValue : null
+}
+
+function decodeHtmlEntities(value: string) {
+  const entities: Record<string, string> = {
+    amp: '&',
+    apos: "'",
+    laquo: '«',
+    nbsp: ' ',
+    quot: '"',
+    raquo: '»',
+  }
+
+  return value.replace(/&(#(\d+)|#x([\da-f]+)|[a-z]+);/gi, (match, entity, decimal, hex) => {
+    if (decimal) {
+      return String.fromCodePoint(Number(decimal))
+    }
+
+    if (hex) {
+      return String.fromCodePoint(Number.parseInt(hex, 16))
+    }
+
+    return entities[String(entity).toLowerCase()] ?? match
+  })
+}
+
+function stripHtml(value: string | null) {
+  return decodeHtmlEntities(
+    value
+      ?.replace(/<\s*br\s*\/?>/gi, '\n')
+      .replace(/<\/\s*(p|li|h[1-6]|div)\s*>/gi, '\n\n')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n[ \t]+/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim() ?? '',
+  ).trim() || null
 }
 
 function steamCoverUrl(appid: number) {
@@ -153,7 +215,7 @@ function normalizeSteamApiKey(value: string) {
   const apiKey = value.trim()
 
   if (apiKey.length === 0) {
-    throw new Error('Cle API Steam obligatoire pour synchroniser.')
+    throw new Error('Clé API Steam obligatoire pour synchroniser.')
   }
 
   return apiKey
@@ -179,22 +241,22 @@ function latestIsoDate(left: string | null, right: string | null) {
 
 function createSteamErrorMessage(status: number) {
   if (status === 401 || status === 403) {
-    return 'Steam a refuse la synchronisation. Verifiez la cle API Steam.'
+    return 'Steam a refusé la synchronisation. Vérifiez la clé API Steam.'
   }
 
   if (status === 404) {
-    return 'Steam ne trouve pas le service de bibliotheque.'
+    return 'Steam ne trouve pas le service de bibliothèque.'
   }
 
   if (status === 429) {
-    return 'Steam limite temporairement les requetes. Reessayez plus tard.'
+    return 'Steam limite temporairement les requêtes. Réessayez plus tard.'
   }
 
   if (status >= 500) {
-    return 'Steam est temporairement indisponible. Reessayez plus tard.'
+    return 'Steam est temporairement indisponible. Réessayez plus tard.'
   }
 
-  return `Steam a refuse la synchronisation (${status}).`
+  return `Steam a refusé la synchronisation (${status}).`
 }
 
 function tokenizeSteamKeyValues(content: string) {
@@ -500,11 +562,28 @@ export function createSteamAppDetailsUrl(appid: number) {
   }
 
   const params = new URLSearchParams({
-    filters: 'basic,release_date,dlc',
+    filters:
+      'basic,short_description,about_the_game,detailed_description,developers,publishers,website,release_date,dlc',
     l: 'french',
   })
 
   return `https://store.steampowered.com/api/appdetails?appids=${normalizedAppId}&${params}`
+}
+
+export function createSteamDlcForAppUrl(appid: number) {
+  const normalizedAppId = Math.trunc(appid)
+
+  if (!Number.isFinite(normalizedAppId) || normalizedAppId <= 0) {
+    throw new Error('Identifiant Steam invalide.')
+  }
+
+  const params = new URLSearchParams({
+    appid: String(normalizedAppId),
+    l: 'french',
+    cc: 'FR',
+  })
+
+  return `https://store.steampowered.com/api/dlcforapp/?${params}`
 }
 
 export function createSteamAchievementSchemaUrl(apiKey: string, appid: number) {
@@ -609,7 +688,7 @@ function normalizeSteamAppIds(appids: number[]) {
 }
 
 function parseSteamStoreReleaseDate(value: unknown) {
-  const releaseDate = readString(isRecord(value) ? value['date'] : null)
+  const releaseDate = readString(isRecord(value) ? value['date'] : value)
 
   if (!releaseDate) {
     return null
@@ -647,14 +726,58 @@ export function parseSteamAppDetails(payload: unknown): SteamAppDetails[] {
     }
 
     const coverUrl = readString(data['header_image']) ?? readString(data['capsule_image'])
+    const description = stripHtml(
+      readString(data['short_description']) ??
+        readString(data['about_the_game']) ??
+        readString(data['detailed_description']),
+    )
 
     return [
       {
         appid,
         title: readString(data['name']),
         coverUrl,
+        description,
+        developer: readStringList(data['developers']),
         dlcAppIds: readSteamDlcAppIds(data['dlc']),
+        publisher: readStringList(data['publishers']),
         releaseDate: parseSteamStoreReleaseDate(data['release_date']),
+        website: readString(data['website']),
+      },
+    ]
+  })
+}
+
+export function parseSteamDlcForApp(payload: unknown): SteamAppDetails[] {
+  if (!isRecord(payload) || readNumberLike(payload['status']) !== 1) {
+    return []
+  }
+
+  const dlcs = Array.isArray(payload['dlc']) ? payload['dlc'] : []
+
+  return dlcs.flatMap((dlc): SteamAppDetails[] => {
+    if (!isRecord(dlc)) {
+      return []
+    }
+
+    const appid = Math.trunc(readNumberLike(dlc['id']) ?? 0)
+    const title = readString(dlc['name'])
+
+    if (appid <= 0 || !title) {
+      return []
+    }
+
+    return [
+      {
+        appid,
+        title,
+        coverUrl: readString(dlc['header_image']) ?? readString(dlc['capsule_image']),
+        description: stripHtml(readString(dlc['description'])),
+        developer: null,
+        dlcAppIds: [],
+        publisher: null,
+        releaseDate: parseSteamStoreReleaseDate(dlc['release_date']),
+        website: null,
       },
     ]
   })
@@ -676,7 +799,12 @@ export function mergeSteamAppDetails(
     return {
       ...game,
       coverUrl: detail.coverUrl ?? game.coverUrl,
+      description: detail.description ?? game.description,
+      developer: detail.developer ?? game.developer,
+      publisher: detail.publisher ?? game.publisher,
+      releaseDate: detail.releaseDate ?? game.releaseDate,
       title: detail.title ?? game.title,
+      website: detail.website ?? game.website,
     }
   })
 }
@@ -830,10 +958,11 @@ export async function fetchSteamAppDetails({
 
     try {
       response = await fetchImpl(createSteamAppDetailsUrl(appid), {
+        headers: steamStoreHeaders,
         signal: controller.signal,
       })
       if (!response.ok) {
-        throw new Error(`Steam Store a refuse les donnees (${response.status}).`)
+        throw new Error(`Steam Store a refusé les données (${response.status}).`)
       }
 
       details.push(...parseSteamAppDetails(await response.json()))
@@ -843,18 +972,18 @@ export async function fetchSteamAppDetails({
       }
 
       if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new Error('Steam Store ne repond pas. Reessayez plus tard.')
+        throw new Error('Steam Store ne répond pas. Réessayez plus tard.')
       }
 
       if (error instanceof TypeError) {
-        throw new Error('Impossible de joindre Steam Store. Verifiez la connexion reseau.')
+        throw new Error('Impossible de joindre Steam Store. Vérifiez la connexion réseau.')
       }
 
       if (error instanceof Error) {
         throw error
       }
 
-      throw new Error('Impossible de joindre Steam Store. Verifiez la connexion reseau.')
+      throw new Error('Impossible de joindre Steam Store. Vérifiez la connexion réseau.')
     } finally {
       clearTimeout(timeout)
     }
@@ -863,11 +992,79 @@ export async function fetchSteamAppDetails({
   return details
 }
 
+async function fetchSteamStoreJson({
+  fetchImpl,
+  timeoutMs,
+  url,
+}: {
+  fetchImpl: typeof fetch
+  timeoutMs: number
+  url: string
+}) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  let response: Response
+
+  try {
+    response = await fetchImpl(url, {
+      headers: steamStoreHeaders,
+      signal: controller.signal,
+    })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Steam Store ne répond pas. Réessayez plus tard.')
+    }
+
+    throw new Error('Impossible de joindre Steam Store. Vérifiez la connexion réseau.')
+  } finally {
+    clearTimeout(timeout)
+  }
+
+  if (!response.ok) {
+    throw new Error(`Steam Store a refusé les données (${response.status}).`)
+  }
+
+  return response.json() as Promise<unknown>
+}
+
+async function fetchSteamDlcForApp({
+  appid,
+  fetchImpl,
+  timeoutMs,
+}: {
+  appid: number
+  fetchImpl: typeof fetch
+  timeoutMs: number
+}) {
+  return parseSteamDlcForApp(
+    await fetchSteamStoreJson({
+      fetchImpl,
+      timeoutMs,
+      url: createSteamDlcForAppUrl(appid),
+    }),
+  )
+}
+
 export async function fetchSteamDlcCatalog({
   appid,
   fetchImpl = fetch,
   timeoutMs = defaultSteamTimeoutMs,
 }: FetchSteamDlcCatalogInput): Promise<SteamAppDetails[]> {
+  try {
+    const directDlcCatalog = await fetchSteamDlcForApp({
+      appid,
+      fetchImpl,
+      timeoutMs,
+    })
+
+    if (directDlcCatalog.length > 0) {
+      return directDlcCatalog
+    }
+  } catch {
+    // Steam Store can reject one public endpoint while another still works.
+  }
+
   const [gameDetails] = await fetchSteamAppDetails({
     appids: [appid],
     fetchImpl,
@@ -892,8 +1089,12 @@ export async function fetchSteamDlcCatalog({
         appid: dlcAppId,
         title: `Steam DLC ${dlcAppId}`,
         coverUrl: null,
+        description: null,
+        developer: null,
         dlcAppIds: [],
+        publisher: null,
         releaseDate: null,
+        website: null,
       },
   )
 }
@@ -918,10 +1119,10 @@ async function fetchSteamJson({
     })
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('Steam ne repond pas. Reessayez plus tard.')
+      throw new Error('Steam ne répond pas. Réessayez plus tard.')
     }
 
-    throw new Error('Impossible de joindre Steam. Verifiez la connexion reseau.')
+    throw new Error('Impossible de joindre Steam. Vérifiez la connexion réseau.')
   } finally {
     clearTimeout(timeout)
   }
@@ -1077,10 +1278,10 @@ export async function fetchSteamOwnedGames({
     })
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('Steam ne repond pas. Reessayez plus tard.')
+      throw new Error('Steam ne répond pas. Réessayez plus tard.')
     }
 
-    throw new Error('Impossible de joindre Steam. Verifiez la connexion reseau.')
+    throw new Error('Impossible de joindre Steam. Vérifiez la connexion réseau.')
   } finally {
     clearTimeout(timeout)
   }
