@@ -27,6 +27,12 @@ Le projet suit des versions de developpement simples :
 - `v0.21.x` : synchronisation automatique et secrets masques.
 - `v0.22.x` : stabilisation du connecteur Steam.
 
+## v0.22.6 - 2026-07-20
+
+- Alignement de la version `package.json` avec le jalon applicatif pour que les parametres affichent la vraie version.
+- Affichage de la version sous la forme `v0.22.6` dans les parametres.
+- Suppression de la carte redondante `Page ouverte`.
+
 ## v0.22.5 - 2026-07-20
 
 - Passage du preload Electron en build CommonJS `.cjs` pour conserver le sandbox par defaut.

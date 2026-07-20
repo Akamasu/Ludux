@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.22.5`
+Version courante : `v0.22.6`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
@@ -247,6 +247,7 @@ Tags principaux :
 - `v0.22.3` : correction du chargement du preload Electron.
 - `v0.22.4` : activation du preload ESM hors sandbox.
 - `v0.22.5` : cleanup du preload, des données locales et de la stratégie Steam publique.
+- `v0.22.6` : affichage de la vraie version applicative et simplification des paramètres.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.

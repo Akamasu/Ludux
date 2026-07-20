@@ -6,7 +6,6 @@ import {
   ExternalLink,
   FolderOpen,
   HardDrive,
-  Home,
   Link2,
   RefreshCw,
   RotateCcw,
@@ -70,6 +69,10 @@ function formatBytes(bytes: number) {
   const value = bytes / 1024 ** exponent
 
   return `${value.toFixed(value >= 10 || exponent === 0 ? 0 : 1)} ${units[exponent]}`
+}
+
+function formatAppVersion(version: string) {
+  return version === 'navigateur' ? version : `v${version}`
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -579,16 +582,16 @@ export function SettingsPage({
 
       {actionResult ? <ResultMessage result={actionResult} /> : null}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-3">
         <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">
           <div className="mb-5 flex items-center justify-between gap-4">
-            <p className="text-sm text-zinc-500">Application</p>
+            <p className="text-sm text-zinc-500">Version</p>
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-[#7C5CFF] text-white">
               <Settings size={18} aria-hidden="true" />
             </div>
           </div>
           <p className="text-2xl font-semibold text-white">
-            {isLoading ? '...' : overview.appVersion}
+            {isLoading ? '...' : formatAppVersion(overview.appVersion)}
           </p>
         </article>
         <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">
@@ -611,17 +614,6 @@ export function SettingsPage({
           </div>
           <p className="truncate text-2xl font-semibold text-white">
             {overview.lastBackupAt ? formatDate(overview.lastBackupAt) : 'Aucune'}
-          </p>
-        </article>
-        <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">
-          <div className="mb-5 flex items-center justify-between gap-4">
-            <p className="text-sm text-zinc-500">Page ouverte</p>
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-[#C9A646] text-[#0F1117]">
-              <Home size={18} aria-hidden="true" />
-            </div>
-          </div>
-          <p className="truncate text-2xl font-semibold text-white">
-            {launchViewOptions.find((option) => option.value === launchView)?.label}
           </p>
         </article>
       </section>
