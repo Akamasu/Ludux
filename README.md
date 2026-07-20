@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.23.3`
+Version courante : `v0.23.4`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :

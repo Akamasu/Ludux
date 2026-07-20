@@ -74,7 +74,6 @@ interface SteamKeyValueObject {
 }
 
 const defaultSteamTimeoutMs = 15_000
-const steamAppDetailsBatchSize = 50
 const steamId64Pattern = /^\d{17}$/
 const steamId64AccountIdOffset = 76_561_197_960_265_728n
 
@@ -468,15 +467,18 @@ export function createSteamOwnedGamesUrl(apiKey: string, steamId: string) {
   return `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?${params}`
 }
 
-export function createSteamAppDetailsUrl(appids: number[]) {
-  const normalizedAppIds = normalizeSteamAppIds(appids)
+export function createSteamAppDetailsUrl(appid: number) {
+  const normalizedAppId = Math.trunc(appid)
+
+  if (!Number.isFinite(normalizedAppId) || normalizedAppId <= 0) {
+    throw new Error('Identifiant Steam invalide.')
+  }
+
   const params = new URLSearchParams({
-    appids: normalizedAppIds.join(','),
     filters: 'basic',
-    l: 'french',
   })
 
-  return `https://store.steampowered.com/api/appdetails?${params}`
+  return `https://store.steampowered.com/api/appdetails?appids=${normalizedAppId}&${params}`
 }
 
 export function mergeSteamGames(
@@ -539,17 +541,6 @@ function normalizeSteamAppIds(appids: number[]) {
         .filter((appid) => Number.isFinite(appid) && appid > 0),
     ),
   ]
-}
-
-function chunkSteamAppIds(appids: number[]) {
-  const normalizedAppIds = normalizeSteamAppIds(appids)
-  const chunks: number[][] = []
-
-  for (let index = 0; index < normalizedAppIds.length; index += steamAppDetailsBatchSize) {
-    chunks.push(normalizedAppIds.slice(index, index + steamAppDetailsBatchSize))
-  }
-
-  return chunks
 }
 
 export function parseSteamAppDetails(payload: unknown): SteamAppDetails[] {
@@ -658,14 +649,14 @@ export async function fetchSteamAppDetails({
 }: FetchSteamAppDetailsInput): Promise<SteamAppDetails[]> {
   const details: SteamAppDetails[] = []
 
-  for (const appidBatch of chunkSteamAppIds(appids)) {
+  for (const appid of normalizeSteamAppIds(appids)) {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
     let response: Response
 
     try {
-      response = await fetchImpl(createSteamAppDetailsUrl(appidBatch), {
+      response = await fetchImpl(createSteamAppDetailsUrl(appid), {
         signal: controller.signal,
       })
     } catch (error) {

@@ -33,12 +33,11 @@ describe('steam provider', () => {
   })
 
   it('builds a Steam Store appdetails URL', () => {
-    const url = createSteamAppDetailsUrl([620, 620, 10])
+    const url = createSteamAppDetailsUrl(620)
 
     expect(url).toContain('/api/appdetails')
-    expect(url).toContain('appids=620%2C10')
+    expect(url).toContain('appids=620')
     expect(url).toContain('filters=basic')
-    expect(url).toContain('l=french')
   })
 
   it('normalizes owned games payloads', () => {

@@ -28,6 +28,13 @@ Le projet suit des versions de developpement simples :
 - `v0.22.x` : stabilisation du connecteur Steam.
 - `v0.23.x` : enrichissement des metadonnees via RAWG.
 
+## v0.23.4 - 2026-07-20
+
+- Chargement explicite de `.env` au demarrage du main process Electron.
+- Verification facilitee des cles providers comme `RAWG_API_KEY` et `STEAM_WEB_API_KEY`.
+- Correction des requetes Steam Store `appdetails` pour recuperer les jaquettes un AppID a la fois.
+- Validation reelle des jaquettes Steam Store sur les jeux qui n'avaient pas d'image CDN classique.
+
 ## v0.23.3 - 2026-07-20
 
 - Ajout d'un fallback visuel robuste quand une jaquette distante ne charge pas.
