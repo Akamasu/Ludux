@@ -74,7 +74,7 @@ function createPlatformAccumulator(name: string): PlatformAccumulator {
 
 class LibraryService {
   async getOverview(): Promise<LibraryOverview> {
-    const [games, recentChronicle] = await Promise.all([
+    const [games, recentChronicle, lastPlaySession] = await Promise.all([
       gameService.listGames(),
       prisma.chronicle.findFirst({
         where: {
@@ -89,7 +89,21 @@ class LibraryService {
           date: 'desc',
         },
       }),
+      prisma.playSession.findFirst({
+        where: {
+          game: {
+            archived: false,
+          },
+        },
+        select: {
+          gameId: true,
+        },
+        orderBy: {
+          start: 'desc',
+        },
+      }),
     ])
+    const gamesById = new Map(games.map((game) => [game.id, game]))
 
     return {
       gamesOwned: games.length,
@@ -98,7 +112,7 @@ class LibraryService {
       ).length,
       totalMinutes: games.reduce((total, game) => total + game.totalMinutes, 0),
       topPlatform: findTopPlatform(games),
-      lastAdventure: games[0] ?? null,
+      lastAdventure: lastPlaySession ? (gamesById.get(lastPlaySession.gameId) ?? null) : null,
       recentChronicle: recentChronicle
         ? {
             id: recentChronicle.id,

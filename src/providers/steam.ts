@@ -594,6 +594,12 @@ export function mergeSteamAppDetails(
   })
 }
 
+export function hasDatedSteamPlaytime(
+  game: Pick<SteamOwnedGame, 'lastPlayedAt' | 'playtimeForeverMinutes'>,
+) {
+  return game.playtimeForeverMinutes > 0 && Boolean(game.lastPlayedAt)
+}
+
 export function parseSteamOwnedGames(payload: unknown): SteamOwnedGamesResult {
   if (!isRecord(payload) || !isRecord(payload['response'])) {
     throw new Error('Reponse Steam invalide.')

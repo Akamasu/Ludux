@@ -28,6 +28,13 @@ Le projet suit des versions de developpement simples :
 - `v0.22.x` : stabilisation du connecteur Steam.
 - `v0.23.x` : enrichissement des metadonnees via RAWG.
 
+## v0.23.5 - 2026-07-20
+
+- Correction de la derniere aventure affichee sur l'accueil : elle utilise maintenant la derniere session jouee reelle.
+- Arret de la creation de sessions Steam datees du moment de synchronisation quand Steam ne fournit pas de date de dernier lancement.
+- Nettoyage automatique des anciennes sessions Steam synchronisees sans date fiable au prochain passage de synchronisation.
+- Ajout d'un test de regression pour eviter les fausses sessions Steam datees.
+
 ## v0.23.4 - 2026-07-20
 
 - Chargement explicite de `.env` au demarrage du main process Electron.

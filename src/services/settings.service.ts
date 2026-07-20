@@ -5,6 +5,7 @@ import { getDatabaseFilePath, prisma } from '../database/client'
 import {
   fetchSteamAppDetails,
   fetchSteamOwnedGames,
+  hasDatedSteamPlaytime,
   mergeSteamAppDetails,
   mergeSteamGames,
   normalizeSteamId,
@@ -508,12 +509,24 @@ async function upsertSteamPlaySession({
   playSessionId: string | null
   steamGame: SteamOwnedGame
 }) {
-  if (steamGame.playtimeForeverMinutes <= 0) {
-    return playSessionId
+  const lastPlayedAt = steamGame.lastPlayedAt
+
+  if (!hasDatedSteamPlaytime(steamGame) || !lastPlayedAt) {
+    if (playSessionId) {
+      await prisma.playSession.deleteMany({
+        where: {
+          id: playSessionId,
+          gameId,
+          note: steamTotalSessionNote,
+        },
+      })
+    }
+
+    return null
   }
 
   const sessionData = {
-    start: steamGame.lastPlayedAt ? new Date(steamGame.lastPlayedAt) : new Date(),
+    start: new Date(lastPlayedAt),
     durationMinutes: steamGame.playtimeForeverMinutes,
     note: steamTotalSessionNote,
     platformId,
@@ -652,7 +665,7 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
       steamGame,
     })
 
-    if (steamGame.playtimeForeverMinutes > 0) {
+    if (playSessionId) {
       stats.syncedSessions += 1
     }
 

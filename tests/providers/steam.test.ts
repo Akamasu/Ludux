@@ -4,6 +4,7 @@ import {
   createSteamOwnedGamesUrl,
   fetchSteamAppDetails,
   fetchSteamOwnedGames,
+  hasDatedSteamPlaytime,
   mergeSteamAppDetails,
   mergeSteamGames,
   normalizeSteamId,
@@ -124,6 +125,29 @@ describe('steam provider', () => {
         coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
       }),
     ])
+  })
+
+  it('requires a Steam last played date before creating a dated play session', () => {
+    expect(
+      hasDatedSteamPlaytime({
+        lastPlayedAt: '2026-07-19T22:19:07.000Z',
+        playtimeForeverMinutes: 120,
+      }),
+    ).toBe(true)
+
+    expect(
+      hasDatedSteamPlaytime({
+        lastPlayedAt: null,
+        playtimeForeverMinutes: 120,
+      }),
+    ).toBe(false)
+
+    expect(
+      hasDatedSteamPlaytime({
+        lastPlayedAt: '2026-07-19T22:19:07.000Z',
+        playtimeForeverMinutes: 0,
+      }),
+    ).toBe(false)
   })
 
   it('parses local Steam library folders', () => {
