@@ -231,7 +231,7 @@ describe('steam provider', () => {
       coverUrl: 'https://cdn.akamai.steamstatic.com/steam/apps/1245620/header.jpg',
       installed: true,
       installPath: 'E:\\SteamLibrary\\steamapps\\common\\ELDEN RING',
-      lastPlayedAt: '2026-07-19T22:19:07.000Z',
+      lastPlayedAt: null,
       lastUpdatedAt: '2026-07-16T10:59:39.000Z',
       ownerSteamId: '76561198299460314',
       sizeOnDiskBytes: 71_087_081_872,

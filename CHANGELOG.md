@@ -28,6 +28,12 @@ Le projet suit des versions de developpement simples :
 - `v0.22.x` : stabilisation du connecteur Steam.
 - `v0.23.x` : enrichissement des metadonnees via RAWG.
 
+## v0.23.6 - 2026-07-20
+
+- Les manifests Steam `.acf` ne sont plus utilises comme source de dernier lancement.
+- Les manifests restent utilises pour detecter les jeux installes, leur dossier et leur taille locale.
+- La date de dernier jeu Steam vient uniquement de sources plus fiables : Steam Web API ou `localconfig.vdf`.
+
 ## v0.23.5 - 2026-07-20
 
 - Correction de la derniere aventure affichee sur l'accueil : elle utilise maintenant la derniere session jouee reelle.

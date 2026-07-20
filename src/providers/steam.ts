@@ -370,7 +370,6 @@ export function parseSteamAppManifest(
   }
 
   const installDir = readString(appState['installdir'])
-  const lastPlayedAt = unixTimestampToIso(appState['LastPlayed'])
   const installPath =
     libraryPath && installDir
       ? join(libraryPath, 'steamapps', 'common', installDir)
@@ -383,7 +382,7 @@ export function parseSteamAppManifest(
     iconUrl: null,
     installed: true,
     installPath,
-    lastPlayedAt,
+    lastPlayedAt: null,
     lastUpdatedAt: unixTimestampToIso(appState['LastUpdated']),
     ownerSteamId: readString(appState['LastOwner']),
     playtimeForeverMinutes: 0,
