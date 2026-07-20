@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "tsc -b && electron-vite build",
+    "check": "npm run typecheck && npm run lint && npm test && npm run smoke:electron-sqlite && npm run smoke:electron-preload && npx prisma validate",
     "lint": "oxlint .",
     "postinstall": "prisma generate && npm run rebuild:electron",
     "preview": "electron-vite preview",

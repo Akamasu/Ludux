@@ -24,6 +24,17 @@ Steam est le premier provider actif :
 
 Les autres providers restent au stade de preparation tant qu'un acces officiel exploitable n'est pas branche.
 
+## Strategie Publique
+
+La cle Steam saisie dans l'interface est acceptable pour le developpement local et les tests personnels.
+
+Pour une v1 publique, Ludux ne doit pas embarquer une cle Steam commune dans l'application desktop. Une cle incluse cote client serait recuperable. La cible est donc :
+
+- une connexion utilisateur Steam via un service controle par Ludux ;
+- une cle Steam conservee cote backend, jamais dans le bundle desktop ;
+- une synchronisation locale qui passe par ce service lorsque le mode public est active ;
+- un mode local avance qui reste possible pour les utilisateurs souhaitant saisir leur propre cle.
+
 ## Contraintes Plateformes
 
 | Plateforme | Connexion utilisateur | Bibliotheque utilisateur | Position Ludux |
@@ -53,6 +64,7 @@ Compte utilisateur
 
 1. Tester Steam avec une vraie cle utilisateur et un vrai profil visible.
 2. Ajouter une file de synchronisation plus visible dans l'interface.
-3. Ajouter RAWG ou IGDB pour enrichir les jeux importes avec genres, studios et dates.
-4. Creer un ecran de resolution des correspondances quand un jeu externe ressemble a un jeu local.
-5. Brancher Epic, GOG, Xbox, PlayStation ou Nintendo uniquement lorsqu'un acces officiel exploitable est obtenu.
+3. Preparer Ludux Connect pour eviter les cles Steam utilisateur dans la v1 publique.
+4. Ajouter RAWG ou IGDB pour enrichir les jeux importes avec genres, studios et dates.
+5. Creer un ecran de resolution des correspondances quand un jeu externe ressemble a un jeu local.
+6. Brancher Epic, GOG, Xbox, PlayStation ou Nintendo uniquement lorsqu'un acces officiel exploitable est obtenu.

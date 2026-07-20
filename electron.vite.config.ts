@@ -21,6 +21,10 @@ export default defineConfig({
         input: {
           preload: resolve(__dirname, 'src/main/preload.ts'),
         },
+        output: {
+          entryFileNames: '[name].cjs',
+          format: 'cjs',
+        },
       },
     },
   },

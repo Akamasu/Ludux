@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.22.4`
+Version courante : `v0.22.5`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
@@ -157,6 +157,7 @@ Le mode développement lance l'application Electron avec son renderer Vite.
 ```bash
 npm run dev              # Lance l'application en développement
 npm run build            # Compile TypeScript et génère le build Electron/Vite
+npm run check            # Lance les validations principales du projet
 npm run preview          # Lance une preview du build
 npm run typecheck        # Vérifie les types TypeScript
 npm run lint             # Lance oxlint
@@ -245,6 +246,7 @@ Tags principaux :
 - `v0.22.2` : rebuild Electron pour le module SQLite natif.
 - `v0.22.3` : correction du chargement du preload Electron.
 - `v0.22.4` : activation du preload ESM hors sandbox.
+- `v0.22.5` : cleanup du preload, des données locales et de la stratégie Steam publique.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.

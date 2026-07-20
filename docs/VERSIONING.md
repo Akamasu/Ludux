@@ -50,3 +50,4 @@ Le tag `v0.1.0` correspond au bootstrap initial de Ludux : socle Electron/React,
 - `v0.22.2` : rebuild Electron pour le module SQLite natif.
 - `v0.22.3` : correction du chargement du preload Electron.
 - `v0.22.4` : activation du preload ESM hors sandbox.
+- `v0.22.5` : cleanup du preload, des donnees locales et de la strategie Steam publique.

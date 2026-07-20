@@ -4,6 +4,8 @@ Ce document liste les fichiers, variables et acces a recuperer pour connecter le
 
 Les secrets reels doivent rester dans `.env` ou etre saisis dans l'application. Ils ne doivent jamais etre commits.
 
+Pour la v1 publique, Ludux devra eviter toute cle API commune dans le client desktop. Les cles partagees ou applicatives devront rester cote backend.
+
 ## Fichiers Locaux
 
 - `.env.example` : modele versionne des variables attendues.
@@ -50,9 +52,10 @@ Les secrets reels doivent rester dans `.env` ou etre saisis dans l'application. 
 ## Ordre Recommande
 
 1. Stabiliser Steam avec une vraie cle utilisateur.
-2. Ajouter un provider de metadonnees : RAWG ou IGDB.
-3. Ajouter un ecran de correspondance manuelle lorsque plusieurs jeux ont le meme titre.
-4. Etudier Xbox, PlayStation, Nintendo, GOG et Epic seulement si un acces officiel ou acceptable est disponible.
+2. Preparer une passerelle Ludux Connect pour les secrets de production.
+3. Ajouter un provider de metadonnees : RAWG ou IGDB.
+4. Ajouter un ecran de correspondance manuelle lorsque plusieurs jeux ont le meme titre.
+5. Etudier Xbox, PlayStation, Nintendo, GOG et Epic seulement si un acces officiel ou acceptable est disponible.
 
 ## Liens de Reference
 

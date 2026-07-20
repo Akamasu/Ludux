@@ -5,7 +5,7 @@ const { join } = require('node:path')
 app
   .whenReady()
   .then(async () => {
-    const preload = join(__dirname, '..', 'out', 'preload', 'preload.mjs')
+    const preload = join(__dirname, '..', 'out', 'preload', 'preload.cjs')
 
     if (!existsSync(preload)) {
       throw new Error(`Preload build not found: ${preload}`)
@@ -17,7 +17,6 @@ app
         preload,
         contextIsolation: true,
         nodeIntegration: false,
-        sandbox: false,
       },
     })
 

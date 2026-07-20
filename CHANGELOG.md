@@ -27,6 +27,13 @@ Le projet suit des versions de developpement simples :
 - `v0.21.x` : synchronisation automatique et secrets masques.
 - `v0.22.x` : stabilisation du connecteur Steam.
 
+## v0.22.5 - 2026-07-20
+
+- Passage du preload Electron en build CommonJS `.cjs` pour conserver le sandbox par defaut.
+- Ajout du script global `npm run check`.
+- Ignorance complete de `userdata/` pour eviter de versionner les donnees locales, exports, sauvegardes et logs.
+- Documentation de la strategie Steam publique : cle utilisateur en dev/local, backend Ludux Connect pour une v1 distribuee.
+
 ## v0.22.4 - 2026-07-20
 
 - Activation de `sandbox: false` pour permettre au preload ESM `preload.mjs` d'exposer `window.ludux`.
