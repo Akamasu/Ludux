@@ -1,3 +1,5 @@
+import { copyFile, mkdir } from 'node:fs/promises'
+import { basename, extname, join, parse, resolve } from 'node:path'
 import { prisma } from '../database/client'
 import type {
   CreateAchievementInput,
@@ -14,6 +16,7 @@ import type {
   GameDetail,
   GameListItem,
   GameStatus,
+  ImportScreenshotFileInput,
   UpdateAchievementInput,
   UpdateChronicleInput,
   UpdateDlcInput,
@@ -21,6 +24,12 @@ import type {
   UpdateReviewInput,
   UpdateScreenshotInput,
 } from '../types/game'
+
+const screenshotMediaDirectory = resolve('userdata', 'media', 'screenshots')
+
+interface ImportScreenshotFileData extends ImportScreenshotFileInput {
+  sourcePath: string
+}
 
 async function fetchGames(archived = false) {
   return prisma.game.findMany({
@@ -210,6 +219,19 @@ function parseNullableDate(value: string | null | undefined) {
   }
 
   return new Date(value)
+}
+
+function createImportedScreenshotName(sourcePath: string) {
+  const parsed = parse(sourcePath)
+  const baseName = parsed.name
+    .trim()
+    .replace(/[^a-zA-Z0-9-_]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
+  const extension = extname(sourcePath) || '.png'
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+
+  return `${timestamp}-${baseName || 'capture'}${extension.toLowerCase()}`
 }
 
 async function requireGameDetail(id: string) {
@@ -516,6 +538,30 @@ class GameService {
     })
 
     return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async importScreenshotFile(input: ImportScreenshotFileData): Promise<GameDetail> {
+    const sourcePath = input.sourcePath.trim()
+
+    if (sourcePath.length === 0) {
+      throw new Error('Fichier de capture invalide.')
+    }
+
+    const destinationDirectory = join(screenshotMediaDirectory, input.gameId)
+    const destinationPath = join(
+      destinationDirectory,
+      createImportedScreenshotName(sourcePath),
+    )
+
+    await mkdir(destinationDirectory, { recursive: true })
+    await copyFile(sourcePath, destinationPath)
+
+    return this.createScreenshot({
+      gameId: input.gameId,
+      path: destinationPath,
+      description: input.description || basename(sourcePath),
+      chronicleId: input.chronicleId,
+    })
   }
 
   async updateScreenshot(input: UpdateScreenshotInput): Promise<GameDetail> {

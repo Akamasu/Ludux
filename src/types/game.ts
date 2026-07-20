@@ -284,6 +284,12 @@ export interface CreateScreenshotInput {
   chronicleId?: string
 }
 
+export interface ImportScreenshotFileInput {
+  gameId: string
+  description?: string
+  chronicleId?: string
+}
+
 export interface UpdateScreenshotInput {
   gameId: string
   id: string

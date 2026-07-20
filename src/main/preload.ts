@@ -13,6 +13,7 @@ import type {
   DeleteScreenshotInput,
   GameDetail,
   GameListItem,
+  ImportScreenshotFileInput,
   LibraryOverview,
   LibraryStatistics,
   LifeBookEvent,
@@ -71,6 +72,8 @@ const api: LuduxApi = {
       ipcRenderer.invoke('games:deleteAchievement', input) as Promise<GameDetail>,
     createScreenshot: (input: CreateScreenshotInput) =>
       ipcRenderer.invoke('games:createScreenshot', input) as Promise<GameDetail>,
+    importScreenshotFile: (input: ImportScreenshotFileInput) =>
+      ipcRenderer.invoke('games:importScreenshotFile', input) as Promise<GameDetail>,
     updateScreenshot: (input: UpdateScreenshotInput) =>
       ipcRenderer.invoke('games:updateScreenshot', input) as Promise<GameDetail>,
     deleteScreenshot: (input: DeleteScreenshotInput) =>

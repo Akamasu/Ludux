@@ -12,6 +12,7 @@ import type {
   DeleteScreenshotInput,
   GameDetail,
   GameListItem,
+  ImportScreenshotFileInput,
   LibraryOverview,
   LibraryStatistics,
   LifeBookEvent,
@@ -53,6 +54,7 @@ export interface LuduxApi {
     updateAchievement: (input: UpdateAchievementInput) => Promise<GameDetail>
     deleteAchievement: (input: DeleteAchievementInput) => Promise<GameDetail>
     createScreenshot: (input: CreateScreenshotInput) => Promise<GameDetail>
+    importScreenshotFile: (input: ImportScreenshotFileInput) => Promise<GameDetail>
     updateScreenshot: (input: UpdateScreenshotInput) => Promise<GameDetail>
     deleteScreenshot: (input: DeleteScreenshotInput) => Promise<GameDetail>
     createChronicle: (input: CreateChronicleInput) => Promise<GameDetail>

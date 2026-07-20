@@ -11,6 +11,7 @@ import type {
   DeleteScreenshotInput,
   GameDetail,
   GameListItem,
+  ImportScreenshotFileInput,
   UpdateAchievementInput,
   UpdateChronicleInput,
   UpdateDlcInput,
@@ -570,6 +571,25 @@ export function useGameDetail(
     }
   }, [])
 
+  const importScreenshotFile = useCallback(async (input: ImportScreenshotFileInput) => {
+    const api = window.ludux
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      if (!api) {
+        setError('Import de fichier disponible dans la version Electron.')
+        return
+      }
+
+      setDetail(await api.games.importScreenshotFile(input))
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [])
+
   const updateScreenshot = useCallback(async (input: UpdateScreenshotInput) => {
     const api = window.ludux
     setIsSaving(true)
@@ -712,6 +732,7 @@ export function useGameDetail(
     updateAchievement,
     deleteAchievement,
     createScreenshot,
+    importScreenshotFile,
     updateScreenshot,
     deleteScreenshot,
     createChronicle,

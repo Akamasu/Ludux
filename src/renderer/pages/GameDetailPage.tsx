@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock3,
   Download,
+  FolderOpen,
   ImagePlus,
   Pencil,
   Puzzle,
@@ -35,6 +36,7 @@ import {
   type Emotion,
   type GameDetail,
   type GameStatus,
+  type ImportScreenshotFileInput,
   type ScreenshotListItem,
   type UpdateAchievementInput,
   type UpdateChronicleInput,
@@ -62,6 +64,7 @@ interface GameDetailPageProps {
   onDeleteChronicle: (input: DeleteChronicleInput) => Promise<void>
   onDeleteDlc: (input: DeleteDlcInput) => Promise<void>
   onDeleteScreenshot: (input: DeleteScreenshotInput) => Promise<void>
+  onImportScreenshotFile: (input: ImportScreenshotFileInput) => Promise<void>
   onUpdateAchievement: (input: UpdateAchievementInput) => Promise<void>
   onUpdateChronicle: (input: UpdateChronicleInput) => Promise<void>
   onUpdateDlc: (input: UpdateDlcInput) => Promise<void>
@@ -112,6 +115,7 @@ export function GameDetailPage({
   onDeleteChronicle,
   onDeleteDlc,
   onDeleteScreenshot,
+  onImportScreenshotFile,
   onUpdateAchievement,
   onUpdateChronicle,
   onUpdateDlc,
@@ -255,6 +259,7 @@ export function GameDetailPage({
         isSaving={isSaving}
         onCreateScreenshot={onCreateScreenshot}
         onDeleteScreenshot={onDeleteScreenshot}
+        onImportScreenshotFile={onImportScreenshotFile}
         onUpdateScreenshot={onUpdateScreenshot}
       />
 
@@ -949,10 +954,12 @@ function ScreenshotPanel({
   isSaving,
   onCreateScreenshot,
   onDeleteScreenshot,
+  onImportScreenshotFile,
   onUpdateScreenshot,
 }: DetailChildProps & {
   onCreateScreenshot: (input: CreateScreenshotInput) => Promise<void>
   onDeleteScreenshot: (input: DeleteScreenshotInput) => Promise<void>
+  onImportScreenshotFile: (input: ImportScreenshotFileInput) => Promise<void>
   onUpdateScreenshot: (input: UpdateScreenshotInput) => Promise<void>
 }) {
   const [path, setPath] = useState('')
@@ -972,6 +979,17 @@ function ScreenshotPanel({
     })
 
     setPath('')
+    setDescription('')
+    setChronicleId('')
+  }
+
+  async function handleImportFile() {
+    await onImportScreenshotFile({
+      gameId: detail.id,
+      description,
+      chronicleId: chronicleId || undefined,
+    })
+
     setDescription('')
     setChronicleId('')
   }
@@ -1027,7 +1045,7 @@ function ScreenshotPanel({
       </div>
 
       <form className="grid gap-3" onSubmit={handleSubmit}>
-        <div className="grid gap-3 xl:grid-cols-[1fr_240px_auto]">
+        <div className="grid gap-3 xl:grid-cols-[1fr_240px_auto_auto]">
           <label>
             <span className="sr-only">Chemin de la capture</span>
             <input
@@ -1054,7 +1072,11 @@ function ScreenshotPanel({
           </label>
           <Button type="submit" disabled={isSaving || path.trim().length === 0}>
             <ImagePlus size={17} aria-hidden="true" />
-            Ajouter
+            Ajouter lien
+          </Button>
+          <Button type="button" onClick={handleImportFile} disabled={isSaving}>
+            <FolderOpen size={17} aria-hidden="true" />
+            Importer
           </Button>
         </div>
 

@@ -20,6 +20,7 @@ Le projet suit des versions de developpement simples :
 - `v0.14.x` : captures d'ecran et souvenirs visuels.
 - `v0.15.x` : providers externes prepares.
 - `v0.16.x` : edition et suppression des chroniques.
+- `v0.17.x` : import et copie locale des captures.
 
 ## v0.1.0 - 2026-07-16
 
@@ -155,3 +156,13 @@ Le projet suit des versions de developpement simples :
 - Conservation des captures liees avec retrait automatique du lien a la chronique supprimee.
 - Mise a jour des chroniques dans les hooks renderer et rafraichissement des vues derivees.
 - Exposition des actions via le service game, l'IPC Electron et le preload securise.
+
+## v0.17.0 - 2026-07-20
+
+- Ajout d'un bouton d'import de fichier dans les souvenirs visuels.
+- Ajout d'un selecteur Electron limite aux fichiers image.
+- Copie automatique des captures importees dans `userdata/media/screenshots/<gameId>`.
+- Generation d'un nom de fichier stable avec horodatage et nom source nettoye.
+- Creation automatique de la capture apres copie, avec description et chronique liee.
+- Conservation de l'ajout manuel par chemin ou URL pour les images externes.
+- Exposition de l'import via le service game, l'IPC Electron et le preload securise.

@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { dialog, ipcMain } from 'electron'
 import { gameService } from '../../services/game.service'
 import { libraryService } from '../../services/library.service'
 import {
@@ -16,6 +16,7 @@ import {
   type DeleteScreenshotInput,
   type Emotion,
   type GameStatus,
+  type ImportScreenshotFileInput,
   type UpdateAchievementInput,
   type UpdateChronicleInput,
   type UpdateDlcInput,
@@ -287,6 +288,18 @@ function parseCreateScreenshotInput(value: unknown): CreateScreenshotInput {
   }
 }
 
+function parseImportScreenshotFileInput(value: unknown): ImportScreenshotFileInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees de la capture sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    description: readOptionalString(value['description']),
+    chronicleId: readOptionalString(value['chronicleId']),
+  }
+}
+
 function parseUpdateScreenshotInput(value: unknown): UpdateScreenshotInput {
   if (!isRecord(value)) {
     throw new Error('Les donnees de la capture sont invalides.')
@@ -511,6 +524,40 @@ export function registerLibraryHandlers() {
   ipcMain.handle('games:createScreenshot', async (_event, input: unknown) => {
     try {
       return await gameService.createScreenshot(parseCreateScreenshotInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:importScreenshotFile', async (_event, input: unknown) => {
+    try {
+      const parsedInput = parseImportScreenshotFileInput(input)
+      const result = await dialog.showOpenDialog({
+        title: 'Importer une capture Ludux',
+        properties: ['openFile'],
+        filters: [
+          {
+            name: 'Images',
+            extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'avif'],
+          },
+        ],
+      })
+
+      if (result.canceled || result.filePaths.length === 0) {
+        const detail = await gameService.getGameById(parsedInput.gameId)
+
+        if (!detail) {
+          throw new Error('Jeu introuvable.')
+        }
+
+        return detail
+      }
+
+      return await gameService.importScreenshotFile({
+        ...parsedInput,
+        sourcePath: result.filePaths[0],
+      })
     } catch (error) {
       logger.error('[LibraryIPC]', error)
       throw error
