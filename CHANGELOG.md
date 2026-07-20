@@ -27,6 +27,12 @@ Le projet suit des versions de developpement simples :
 - `v0.21.x` : synchronisation automatique et secrets masques.
 - `v0.22.x` : stabilisation du connecteur Steam.
 
+## v0.22.4 - 2026-07-20
+
+- Activation de `sandbox: false` pour permettre au preload ESM `preload.mjs` d'exposer `window.ludux`.
+- Ajout du smoke test `npm run smoke:electron-preload`.
+- Verification automatisee que `window.ludux.settings.getOverview` est disponible dans Electron.
+
 ## v0.22.3 - 2026-07-20
 
 - Correction du chemin du preload Electron pour charger `preload.mjs`.

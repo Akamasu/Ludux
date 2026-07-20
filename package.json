@@ -13,6 +13,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "rebuild:electron": "electron-rebuild -f -w better-sqlite3",
+    "smoke:electron-preload": "npm run build && electron scripts/verify-electron-preload.cjs",
     "smoke:electron-sqlite": "electron scripts/verify-electron-sqlite.cjs",
     "test": "vitest run",
     "typecheck": "tsc -b"

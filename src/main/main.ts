@@ -22,6 +22,7 @@ async function createWindow() {
       preload: join(__dirname, '../preload/preload.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
     },
   })
 
