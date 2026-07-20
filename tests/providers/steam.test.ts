@@ -5,6 +5,7 @@ import {
   mergeSteamGames,
   normalizeSteamId,
   parseSteamAppManifest,
+  parseSteamKeyValues,
   parseSteamLibraryFolders,
   parseSteamLocalConfigApps,
   parseSteamOwnedGames,
@@ -77,6 +78,46 @@ describe('steam provider', () => {
         }
       `),
     ).toEqual(['C:\\Program Files (x86)\\Steam', 'E:\\SteamLibrary'])
+  })
+
+  it('preserves single backslashes in local Steam paths', () => {
+    expect(
+      parseSteamLibraryFolders(String.raw`
+        "libraryfolders"
+        {
+          "0"
+          {
+            "path" "C:\Program Files (x86)\Steam"
+          }
+          "1"
+          {
+            "path" "E:\SteamLibrary"
+          }
+        }
+      `),
+    ).toEqual(['C:\\Program Files (x86)\\Steam', 'E:\\SteamLibrary'])
+  })
+
+  it('accepts empty values from local Steam files', () => {
+    expect(
+      parseSteamKeyValues(`
+        "AppState"
+        {
+          "appid" "1245620"
+          "name" "ELDEN RING"
+          "UserConfig"
+          {
+            "language" ""
+          }
+        }
+      `),
+    ).toMatchObject({
+      AppState: {
+        UserConfig: {
+          language: '',
+        },
+      },
+    })
   })
 
   it('parses app manifests from local Steam libraries', () => {

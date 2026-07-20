@@ -28,6 +28,13 @@ Le projet suit des versions de developpement simples :
 - `v0.22.x` : stabilisation du connecteur Steam.
 - `v0.23.x` : enrichissement des metadonnees via RAWG.
 
+## v0.23.2 - 2026-07-20
+
+- Correction du parsing des fichiers Steam locaux contenant des valeurs vides.
+- Conservation correcte des chemins Windows avec antislashs simples dans les fichiers `.vdf` et `.acf`.
+- Lecture locale Steam plus tolerante : un fichier Steam invalide est ignore sans bloquer toute la synchronisation.
+- Ajout de tests de regression pour les chemins Windows et les valeurs vides Steam.
+
 ## v0.23.1 - 2026-07-20
 
 - Ajout de la lecture locale des bibliotheques Steam via `libraryfolders.vdf`.

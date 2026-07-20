@@ -195,9 +195,13 @@ function tokenizeSteamKeyValues(content: string) {
         const current = content[index]
 
         if (current === '\\' && index + 1 < content.length) {
-          value += content[index + 1]
-          index += 2
-          continue
+          const next = content[index + 1]
+
+          if (next === '\\' || next === '"') {
+            value += next
+            index += 2
+            continue
+          }
         }
 
         if (current === '"') {
@@ -240,7 +244,7 @@ function readSteamKeyValueObject(tokens: string[], cursor: { index: number }) {
     const key = tokens[cursor.index]
     const next = tokens[cursor.index + 1]
 
-    if (!key || !next || key === '{') {
+    if (key === undefined || next === undefined || key === '{') {
       throw new Error('Fichier Steam invalide.')
     }
 
@@ -412,6 +416,33 @@ export function parseSteamLocalConfigApps(content: string): SteamLocalAppActivit
   })
 }
 
+function tryParseSteamLibraryFolders(content: string) {
+  try {
+    return parseSteamLibraryFolders(content)
+  } catch {
+    return []
+  }
+}
+
+function tryParseSteamAppManifest(
+  content: string,
+  libraryPath: string | null,
+): SteamInstalledGame | null {
+  try {
+    return parseSteamAppManifest(content, libraryPath)
+  } catch {
+    return null
+  }
+}
+
+function tryParseSteamLocalConfigApps(content: string) {
+  try {
+    return parseSteamLocalConfigApps(content)
+  } catch {
+    return []
+  }
+}
+
 export function createSteamOwnedGamesUrl(apiKey: string, steamId: string) {
   const params = new URLSearchParams({
     key: normalizeSteamApiKey(apiKey),
@@ -546,7 +577,7 @@ export async function readSteamLocalLibrary({
     )
 
     if (libraryFoldersContent) {
-      for (const libraryPath of parseSteamLibraryFolders(libraryFoldersContent)) {
+      for (const libraryPath of tryParseSteamLibraryFolders(libraryFoldersContent)) {
         discoveredLibraryPaths.add(libraryPath)
       }
     }
@@ -573,7 +604,7 @@ export async function readSteamLocalLibrary({
       }
 
       const content = await readTextFileIfExists(join(steamAppsPath, file))
-      const game = content ? parseSteamAppManifest(content, libraryPath) : null
+      const game = content ? tryParseSteamAppManifest(content, libraryPath) : null
 
       if (!game) {
         continue
@@ -606,7 +637,7 @@ export async function readSteamLocalLibrary({
         continue
       }
 
-      activities = parseSteamLocalConfigApps(content)
+      activities = tryParseSteamLocalConfigApps(content)
       localConfigPath = candidatePath
       break
     }
