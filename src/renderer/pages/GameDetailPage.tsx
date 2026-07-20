@@ -7,6 +7,7 @@ import {
   Clock3,
   Download,
   ImagePlus,
+  Pencil,
   Puzzle,
   Save,
   Star,
@@ -20,12 +21,14 @@ import {
   GAME_STATUS_LABELS,
   GAME_STATUS_VALUES,
   type AchievementListItem,
+  type ChronicleListItem,
   type CreateAchievementInput,
   type CreateChronicleInput,
   type CreateDlcInput,
   type CreatePlaySessionInput,
   type CreateScreenshotInput,
   type DeleteAchievementInput,
+  type DeleteChronicleInput,
   type DeleteDlcInput,
   type DeleteScreenshotInput,
   type DlcListItem,
@@ -34,6 +37,7 @@ import {
   type GameStatus,
   type ScreenshotListItem,
   type UpdateAchievementInput,
+  type UpdateChronicleInput,
   type UpdateDlcInput,
   type UpdateGameInput,
   type UpdateReviewInput,
@@ -55,9 +59,11 @@ interface GameDetailPageProps {
   onCreatePlaySession: (input: CreatePlaySessionInput) => Promise<void>
   onCreateScreenshot: (input: CreateScreenshotInput) => Promise<void>
   onDeleteAchievement: (input: DeleteAchievementInput) => Promise<void>
+  onDeleteChronicle: (input: DeleteChronicleInput) => Promise<void>
   onDeleteDlc: (input: DeleteDlcInput) => Promise<void>
   onDeleteScreenshot: (input: DeleteScreenshotInput) => Promise<void>
   onUpdateAchievement: (input: UpdateAchievementInput) => Promise<void>
+  onUpdateChronicle: (input: UpdateChronicleInput) => Promise<void>
   onUpdateDlc: (input: UpdateDlcInput) => Promise<void>
   onUpdateGame: (input: UpdateGameInput) => Promise<void>
   onUpdateReview: (input: UpdateReviewInput) => Promise<void>
@@ -103,9 +109,11 @@ export function GameDetailPage({
   onCreatePlaySession,
   onCreateScreenshot,
   onDeleteAchievement,
+  onDeleteChronicle,
   onDeleteDlc,
   onDeleteScreenshot,
   onUpdateAchievement,
+  onUpdateChronicle,
   onUpdateDlc,
   onUpdateGame,
   onUpdateReview,
@@ -256,7 +264,12 @@ export function GameDetailPage({
       </section>
 
       <section>
-        <Timeline detail={detail} />
+        <Timeline
+          detail={detail}
+          isSaving={isSaving}
+          onDeleteChronicle={onDeleteChronicle}
+          onUpdateChronicle={onUpdateChronicle}
+        />
       </section>
     </div>
   )
@@ -1324,7 +1337,212 @@ function ChronicleForm({
   )
 }
 
-function Timeline({ detail }: { detail: GameDetail }) {
+function ChronicleTimelineArticle({
+  chronicle,
+  detail,
+  isSaving,
+  onDeleteChronicle,
+  onUpdateChronicle,
+}: {
+  chronicle: ChronicleListItem
+  detail: GameDetail
+  isSaving: boolean
+  onDeleteChronicle: (input: DeleteChronicleInput) => Promise<void>
+  onUpdateChronicle: (input: UpdateChronicleInput) => Promise<void>
+}) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [title, setTitle] = useState(chronicle.title)
+  const [content, setContent] = useState(chronicle.content)
+  const [date, setDate] = useState(chronicle.date.slice(0, 10))
+  const [emotion, setEmotion] = useState<Emotion | ''>(chronicle.emotion ?? '')
+  const [favorite, setFavorite] = useState(chronicle.favorite)
+
+  useEffect(() => {
+    setTitle(chronicle.title)
+    setContent(chronicle.content)
+    setDate(chronicle.date.slice(0, 10))
+    setEmotion(chronicle.emotion ?? '')
+    setFavorite(chronicle.favorite)
+  }, [chronicle])
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    await onUpdateChronicle({
+      gameId: detail.id,
+      id: chronicle.id,
+      title,
+      content,
+      date: new Date(date).toISOString(),
+      emotion: emotion || null,
+      favorite,
+    })
+
+    setIsEditing(false)
+  }
+
+  async function handleDeleteChronicle() {
+    const confirmed = window.confirm(`Supprimer la chronique "${chronicle.title}" ?`)
+
+    if (confirmed) {
+      await onDeleteChronicle({
+        gameId: detail.id,
+        id: chronicle.id,
+      })
+    }
+  }
+
+  if (isEditing) {
+    return (
+      <article className="rounded-lg border border-[#7C5CFF]/40 bg-[#121620] p-4">
+        <form className="grid gap-3" onSubmit={handleSubmit}>
+          <div className="grid gap-3 md:grid-cols-[1fr_170px_190px_auto]">
+            <label>
+              <span className="sr-only">Titre de la chronique</span>
+              <input
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+              />
+            </label>
+            <label>
+              <span className="sr-only">Date de la chronique</span>
+              <input
+                type="date"
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+                className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+              />
+            </label>
+            <label>
+              <span className="sr-only">Emotion de la chronique</span>
+              <select
+                value={emotion}
+                onChange={(event) => setEmotion(event.target.value as Emotion | '')}
+                className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+              >
+                <option value="">Aucune emotion</option>
+                {EMOTION_VALUES.map((value) => (
+                  <option key={value} value={value}>
+                    {EMOTION_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              aria-label="Marquer comme favori"
+              aria-pressed={favorite}
+              title="Favori"
+              onClick={() => setFavorite((current) => !current)}
+              className={`grid h-11 w-11 place-items-center rounded-lg border transition ${
+                favorite
+                  ? 'border-[#C9A646]/60 bg-[#C9A646]/15 text-[#F1DA7A]'
+                  : 'border-white/10 bg-[#0F1117] text-zinc-500 hover:text-white'
+              }`}
+            >
+              <Star size={18} aria-hidden="true" />
+            </button>
+          </div>
+
+          <label>
+            <span className="sr-only">Contenu de la chronique</span>
+            <textarea
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              rows={5}
+              className="w-full resize-none rounded-lg border border-white/10 bg-[#0F1117] px-3 py-3 text-sm leading-6 text-white outline-none transition focus:border-[#7C5CFF]"
+            />
+          </label>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="submit"
+              disabled={
+                isSaving ||
+                title.trim().length === 0 ||
+                content.trim().length === 0 ||
+                date.length === 0
+              }
+            >
+              <Save size={17} aria-hidden="true" />
+              Enregistrer
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsEditing(false)}
+              disabled={isSaving}
+            >
+              Annuler
+            </Button>
+          </div>
+        </form>
+      </article>
+    )
+  }
+
+  return (
+    <article className="rounded-lg border border-white/10 bg-[#121620] p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-medium text-white">{chronicle.title}</h3>
+            {chronicle.favorite ? (
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#C9A646]/10 px-2 py-1 text-xs text-[#F1DA7A]">
+                <Star size={13} aria-hidden="true" />
+                Favori
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 text-xs text-zinc-500">{formatDate(chronicle.date)}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {chronicle.emotion ? (
+            <span className="rounded-lg bg-[#7C5CFF]/10 px-3 py-1 text-xs text-[#D8D0FF]">
+              {EMOTION_LABELS[chronicle.emotion]}
+            </span>
+          ) : null}
+          <Button
+            type="button"
+            variant="secondary"
+            aria-label={`Modifier ${chronicle.title}`}
+            title="Modifier"
+            onClick={() => setIsEditing(true)}
+            disabled={isSaving}
+            className="h-9"
+          >
+            <Pencil size={15} aria-hidden="true" />
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            aria-label={`Supprimer ${chronicle.title}`}
+            title="Supprimer"
+            onClick={handleDeleteChronicle}
+            disabled={isSaving}
+            className="h-9 border-rose-400/30 bg-rose-400/10 text-rose-100 hover:border-rose-300/60 hover:bg-rose-400/15"
+          >
+            <Trash2 size={15} aria-hidden="true" />
+          </Button>
+        </div>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-zinc-400">{chronicle.content}</p>
+    </article>
+  )
+}
+
+function Timeline({
+  detail,
+  isSaving,
+  onDeleteChronicle,
+  onUpdateChronicle,
+}: {
+  detail: GameDetail
+  isSaving: boolean
+  onDeleteChronicle: (input: DeleteChronicleInput) => Promise<void>
+  onUpdateChronicle: (input: UpdateChronicleInput) => Promise<void>
+}) {
   return (
     <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
       <h2 className="text-lg font-semibold text-white">Mon histoire</h2>
@@ -1336,20 +1554,14 @@ function Timeline({ detail }: { detail: GameDetail }) {
         ) : null}
 
         {detail.chronicles.map((chronicle) => (
-          <article key={chronicle.id} className="rounded-lg border border-white/10 bg-[#121620] p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="font-medium text-white">{chronicle.title}</h3>
-                <p className="mt-1 text-xs text-zinc-500">{formatDate(chronicle.date)}</p>
-              </div>
-              {chronicle.emotion ? (
-                <span className="rounded-lg bg-[#7C5CFF]/10 px-3 py-1 text-xs text-[#D8D0FF]">
-                  {EMOTION_LABELS[chronicle.emotion]}
-                </span>
-              ) : null}
-            </div>
-            <p className="mt-3 text-sm leading-6 text-zinc-400">{chronicle.content}</p>
-          </article>
+          <ChronicleTimelineArticle
+            key={chronicle.id}
+            chronicle={chronicle}
+            detail={detail}
+            isSaving={isSaving}
+            onDeleteChronicle={onDeleteChronicle}
+            onUpdateChronicle={onUpdateChronicle}
+          />
         ))}
 
         {detail.sessions.map((session) => (

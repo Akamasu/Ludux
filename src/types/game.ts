@@ -305,6 +305,21 @@ export interface CreateChronicleInput {
   date?: string
 }
 
+export interface UpdateChronicleInput {
+  gameId: string
+  id: string
+  title?: string
+  content?: string
+  emotion?: Emotion | null
+  date?: string
+  favorite?: boolean
+}
+
+export interface DeleteChronicleInput {
+  gameId: string
+  id: string
+}
+
 export interface CreatePlaySessionInput {
   gameId: string
   start?: string

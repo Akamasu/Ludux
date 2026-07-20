@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.15.0`
+Version courante : `v0.16.0`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
@@ -64,7 +64,7 @@ Chaque jeu peut recevoir :
 - des succès avec suivi du déverrouillage ;
 - des captures et souvenirs visuels liés aux chroniques ;
 - des sessions de jeu avec durée, plateforme et commentaire ;
-- des chroniques avec émotion associée.
+- des chroniques avec émotion associée, édition et suppression.
 
 ### Chroniques
 
@@ -218,6 +218,7 @@ Tags principaux :
 - `v0.13.0` : gestion locale des succès.
 - `v0.14.0` : captures d'écran et souvenirs visuels.
 - `v0.15.0` : providers externes préparés sans synchronisation réseau.
+- `v0.16.0` : édition et suppression des chroniques.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.
@@ -226,7 +227,6 @@ Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 
 Prochaines pistes naturelles :
 
-- Édition avancée des chroniques.
 - Sélecteur de fichiers pour copier automatiquement les captures locales.
 - Intégrations réseau optionnelles avec des plateformes de jeu.
 

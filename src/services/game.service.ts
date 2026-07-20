@@ -7,6 +7,7 @@ import type {
   CreatePlaySessionInput,
   CreateScreenshotInput,
   DeleteAchievementInput,
+  DeleteChronicleInput,
   DeleteDlcInput,
   DeleteScreenshotInput,
   Emotion,
@@ -14,6 +15,7 @@ import type {
   GameListItem,
   GameStatus,
   UpdateAchievementInput,
+  UpdateChronicleInput,
   UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
@@ -604,6 +606,54 @@ class GameService {
         date: input.date ? new Date(input.date) : new Date(),
       },
     })
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async updateChronicle(input: UpdateChronicleInput): Promise<GameDetail> {
+    const title = trimOptional(input.title)
+    const content = trimOptional(input.content)
+
+    if (input.title !== undefined && !title) {
+      throw new Error('Le titre de la chronique est obligatoire.')
+    }
+
+    if (input.content !== undefined && !content) {
+      throw new Error('Le contenu de la chronique est obligatoire.')
+    }
+
+    const result = await prisma.chronicle.updateMany({
+      where: {
+        id: input.id,
+        gameId: input.gameId,
+      },
+      data: {
+        title,
+        content,
+        emotion: input.emotion,
+        date: input.date ? new Date(input.date) : undefined,
+        favorite: input.favorite,
+      },
+    })
+
+    if (result.count === 0) {
+      throw new Error('Chronique introuvable.')
+    }
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async deleteChronicle(input: DeleteChronicleInput): Promise<GameDetail> {
+    const result = await prisma.chronicle.deleteMany({
+      where: {
+        id: input.id,
+        gameId: input.gameId,
+      },
+    })
+
+    if (result.count === 0) {
+      throw new Error('Chronique introuvable.')
+    }
 
     return toGameDetail(await requireGameDetail(input.gameId))
   }

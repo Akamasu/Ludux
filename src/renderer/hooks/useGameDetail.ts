@@ -6,16 +6,24 @@ import type {
   CreatePlaySessionInput,
   CreateScreenshotInput,
   DeleteAchievementInput,
+  DeleteChronicleInput,
   DeleteDlcInput,
   DeleteScreenshotInput,
   GameDetail,
   GameListItem,
   UpdateAchievementInput,
+  UpdateChronicleInput,
   UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
   UpdateScreenshotInput,
 } from '../../types/game'
+
+function sortChroniclesByDate<T extends { date: string }>(chronicles: T[]) {
+  return [...chronicles].sort(
+    (left, right) => new Date(right.date).getTime() - new Date(left.date).getTime(),
+  )
+}
 
 function detailFromListItem(game: GameListItem): GameDetail {
   return {
@@ -136,6 +144,114 @@ export function useGameDetail(
         }
 
         setDetail(await api.games.createChronicle(input))
+        await onChanged()
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [onChanged],
+  )
+
+  const updateChronicle = useCallback(
+    async (input: UpdateChronicleInput) => {
+      const api = window.ludux
+      setIsSaving(true)
+      setError(null)
+
+      try {
+        if (!api) {
+          setDetail((current) => {
+            if (!current) {
+              return current
+            }
+
+            const chronicles = sortChroniclesByDate(
+              current.chronicles.map((chronicle) =>
+                chronicle.id === input.id
+                  ? {
+                      ...chronicle,
+                      title: input.title ?? chronicle.title,
+                      content: input.content ?? chronicle.content,
+                      emotion:
+                        input.emotion === undefined
+                          ? chronicle.emotion
+                          : input.emotion,
+                      date: input.date ?? chronicle.date,
+                      favorite: input.favorite ?? chronicle.favorite,
+                    }
+                  : chronicle,
+              ),
+            )
+            const updatedChronicle = chronicles.find(
+              (chronicle) => chronicle.id === input.id,
+            )
+
+            return {
+              ...current,
+              lastChronicleTitle: chronicles[0]?.title ?? null,
+              chronicles,
+              screenshots: current.screenshots.map((screenshot) =>
+                screenshot.chronicleId === input.id
+                  ? {
+                      ...screenshot,
+                      chronicleTitle: updatedChronicle?.title ?? screenshot.chronicleTitle,
+                    }
+                  : screenshot,
+              ),
+            }
+          })
+          return
+        }
+
+        setDetail(await api.games.updateChronicle(input))
+        await onChanged()
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [onChanged],
+  )
+
+  const deleteChronicle = useCallback(
+    async (input: DeleteChronicleInput) => {
+      const api = window.ludux
+      setIsSaving(true)
+      setError(null)
+
+      try {
+        if (!api) {
+          setDetail((current) => {
+            if (!current) {
+              return current
+            }
+
+            const chronicles = current.chronicles.filter(
+              (chronicle) => chronicle.id !== input.id,
+            )
+
+            return {
+              ...current,
+              lastChronicleTitle: chronicles[0]?.title ?? null,
+              chronicles,
+              screenshots: current.screenshots.map((screenshot) =>
+                screenshot.chronicleId === input.id
+                  ? {
+                      ...screenshot,
+                      chronicleId: null,
+                      chronicleTitle: null,
+                    }
+                  : screenshot,
+              ),
+            }
+          })
+          return
+        }
+
+        setDetail(await api.games.deleteChronicle(input))
         await onChanged()
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
@@ -599,6 +715,8 @@ export function useGameDetail(
     updateScreenshot,
     deleteScreenshot,
     createChronicle,
+    updateChronicle,
+    deleteChronicle,
     createPlaySession,
   }
 }

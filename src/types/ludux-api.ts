@@ -7,6 +7,7 @@ import type {
   CreatePlaySessionInput,
   CreateScreenshotInput,
   DeleteAchievementInput,
+  DeleteChronicleInput,
   DeleteDlcInput,
   DeleteScreenshotInput,
   GameDetail,
@@ -15,6 +16,7 @@ import type {
   LibraryStatistics,
   LifeBookEvent,
   UpdateAchievementInput,
+  UpdateChronicleInput,
   UpdateDlcInput,
   UpdateGameInput,
   UpdateReviewInput,
@@ -54,6 +56,8 @@ export interface LuduxApi {
     updateScreenshot: (input: UpdateScreenshotInput) => Promise<GameDetail>
     deleteScreenshot: (input: DeleteScreenshotInput) => Promise<GameDetail>
     createChronicle: (input: CreateChronicleInput) => Promise<GameDetail>
+    updateChronicle: (input: UpdateChronicleInput) => Promise<GameDetail>
+    deleteChronicle: (input: DeleteChronicleInput) => Promise<GameDetail>
     createPlaySession: (input: CreatePlaySessionInput) => Promise<GameDetail>
   }
   settings: {

@@ -19,6 +19,7 @@ Le projet suit des versions de developpement simples :
 - `v0.13.x` : gestion locale des succes.
 - `v0.14.x` : captures d'ecran et souvenirs visuels.
 - `v0.15.x` : providers externes prepares.
+- `v0.16.x` : edition et suppression des chroniques.
 
 ## v0.1.0 - 2026-07-16
 
@@ -145,3 +146,12 @@ Le projet suit des versions de developpement simples :
 - Ajout d'un etat de synchronisation prepare sans appel reseau obligatoire.
 - Ajout de la suppression d'une connexion provider avec confirmation.
 - Exposition des actions via le service settings, l'IPC Electron et le preload securise.
+
+## v0.16.0 - 2026-07-20
+
+- Ajout de l'edition inline des chroniques depuis la timeline des fiches de jeux.
+- Ajout de la modification du titre, du contenu, de la date, de l'emotion et du favori.
+- Ajout de la suppression d'une chronique avec confirmation.
+- Conservation des captures liees avec retrait automatique du lien a la chronique supprimee.
+- Mise a jour des chroniques dans les hooks renderer et rafraichissement des vues derivees.
+- Exposition des actions via le service game, l'IPC Electron et le preload securise.

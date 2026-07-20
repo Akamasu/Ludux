@@ -11,11 +11,13 @@ import {
   type CreatePlaySessionInput,
   type CreateScreenshotInput,
   type DeleteAchievementInput,
+  type DeleteChronicleInput,
   type DeleteDlcInput,
   type DeleteScreenshotInput,
   type Emotion,
   type GameStatus,
   type UpdateAchievementInput,
+  type UpdateChronicleInput,
   type UpdateDlcInput,
   type UpdateGameInput,
   type UpdateReviewInput,
@@ -136,6 +138,41 @@ function parseCreateChronicleInput(value: unknown): CreateChronicleInput {
     content: readRequiredString(value['content'], 'Le contenu de la chronique est obligatoire.'),
     emotion,
     date: readOptionalString(value['date']),
+  }
+}
+
+function parseUpdateChronicleInput(value: unknown): UpdateChronicleInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees de chronique sont invalides.')
+  }
+
+  const emotion = value['emotion']
+
+  if (emotion !== undefined && emotion !== null && !isEmotion(emotion)) {
+    throw new Error('Emotion invalide.')
+  }
+
+  const parsedEmotion = emotion === undefined || emotion === null ? emotion : emotion
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de chronique invalide.'),
+    title: readOptionalString(value['title']),
+    content: readOptionalString(value['content']),
+    emotion: parsedEmotion,
+    date: readOptionalString(value['date']),
+    favorite: readOptionalBoolean(value['favorite'], 'Favori invalide.'),
+  }
+}
+
+function parseDeleteChronicleInput(value: unknown): DeleteChronicleInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees de chronique sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de chronique invalide.'),
   }
 }
 
@@ -501,6 +538,24 @@ export function registerLibraryHandlers() {
   ipcMain.handle('games:createChronicle', async (_event, input: unknown) => {
     try {
       return await gameService.createChronicle(parseCreateChronicleInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:updateChronicle', async (_event, input: unknown) => {
+    try {
+      return await gameService.updateChronicle(parseUpdateChronicleInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:deleteChronicle', async (_event, input: unknown) => {
+    try {
+      return await gameService.deleteChronicle(parseDeleteChronicleInput(input))
     } catch (error) {
       logger.error('[LibraryIPC]', error)
       throw error
