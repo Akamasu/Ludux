@@ -24,6 +24,7 @@ Le projet suit des versions de developpement simples :
 - `v0.18.x` : edition et suppression des sessions de jeu.
 - `v0.19.x` : synchronisation Steam manuelle.
 - `v0.20.x` : fichiers de configuration et guides plateformes.
+- `v0.21.x` : synchronisation automatique et secrets masques.
 
 ## v0.1.0 - 2026-07-16
 
@@ -199,3 +200,14 @@ Le projet suit des versions de developpement simples :
 - Ajout des liens officiels utiles pour recuperer les cles, comptes developpeur et acces.
 - Ajout du fallback `STEAM_WEB_API_KEY` pour eviter de stocker la cle Steam dans la base locale.
 - Mise a jour du panneau Steam pour indiquer l'usage possible de `.env`.
+
+## v0.21.0 - 2026-07-20
+
+- Ajout d'une synchronisation Steam automatique au demarrage de l'application.
+- Ajout d'un intervalle automatique configurable via `LUDUX_AUTO_SYNC_INTERVAL_MINUTES`.
+- Ajout d'un garde-fou contre les synchronisations automatiques concurrentes.
+- Chiffrement des secrets de connexion via `safeStorage` quand Electron le permet.
+- Conservation retrocompatible des anciennes cles Steam deja enregistrees.
+- Suppression de l'exposition des secrets dans l'overview renderer.
+- Ajout d'un indicateur `hasToken` pour afficher l'existence d'une cle sans reveler sa valeur.
+- Mise a jour du panneau Steam pour conserver une cle existante si le champ reste vide.

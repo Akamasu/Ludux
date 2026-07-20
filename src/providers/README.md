@@ -25,6 +25,13 @@ La v0.19.0 ajoute la premiere integration reseau reelle avec Steam :
 - import controle par `SettingsService` dans la base Ludux ;
 - liens persistants dans `ExternalGame` pour eviter les doublons.
 
+La v0.21.0 ajoute la synchronisation automatique pour les providers disponibles :
+
+- lancement automatique au demarrage de l'application ;
+- relance periodique configurable ;
+- secrets masques cote renderer ;
+- chiffrement via Electron `safeStorage` quand disponible.
+
 Les prochaines integrations reseau devront rester optionnelles et passer par un adaptateur dedie avant de proposer une importation dans la base locale.
 
 Guides de preparation :

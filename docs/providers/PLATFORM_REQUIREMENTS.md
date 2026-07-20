@@ -8,6 +8,7 @@ Les secrets reels doivent rester dans `.env` ou etre saisis dans l'application. 
 
 - `.env.example` : modele versionne des variables attendues.
 - `.env` : fichier local ignore par Git pour les vraies cles et secrets.
+- `docs/providers/AUTO_SYNC_STRATEGY.md` : strategie de synchronisation automatique.
 - `src/providers/registry.ts` : registre visible dans l'interface.
 - `src/providers/<provider>.ts` : adaptateur reseau isole par plateforme.
 - `prisma/schema.prisma` : liens persistants entre jeux Ludux et jeux externes.
@@ -18,6 +19,7 @@ Les secrets reels doivent rester dans `.env` ou etre saisis dans l'application. 
 | --- | --- | --- | --- |
 | `STEAM_WEB_API_KEY` | Steam | Cle Web API pour lire la bibliotheque possedee | Actif |
 | `STEAM_ID_64` | Steam | Identifiant du compte a connecter | Optionnel, saisie UI possible |
+| `LUDUX_AUTO_SYNC_INTERVAL_MINUTES` | Ludux | Intervalle de synchronisation automatique | Actif |
 | `RAWG_API_KEY` | RAWG | Metadonnees publiques de jeux | A venir |
 | `IGDB_CLIENT_ID` | IGDB | Authentification Twitch/IGDB | A venir |
 | `IGDB_CLIENT_SECRET` | IGDB | Authentification Twitch/IGDB | A venir |

@@ -23,7 +23,7 @@ export interface ExternalAccountItem {
   provider: ExternalProvider
   externalId: string
   username: string | null
-  tokenHint: string | null
+  hasToken: boolean
   createdAt: string
   updatedAt: string
 }

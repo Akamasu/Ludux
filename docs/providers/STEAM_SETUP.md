@@ -38,6 +38,22 @@ STEAM_ID_64="7656119..."
 Dans Ludux, il faut quand meme enregistrer une connexion Steam avec le SteamID64.
 La cle peut rester vide dans l'interface si `STEAM_WEB_API_KEY` est defini.
 
+## Synchronisation Automatique
+
+Depuis `v0.21.0`, Ludux synchronise Steam automatiquement :
+
+- une premiere fois apres le demarrage de l'application ;
+- puis periodiquement toutes les 120 minutes par defaut ;
+- uniquement si une connexion Steam et une cle API sont disponibles.
+
+L'intervalle peut etre ajuste dans `.env` :
+
+```env
+LUDUX_AUTO_SYNC_INTERVAL_MINUTES="120"
+```
+
+La valeur minimale acceptee est 15 minutes.
+
 ## Donnees Importees
 
 - Jeux Steam manquants dans Ludux.

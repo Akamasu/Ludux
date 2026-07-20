@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.20.0`
+Version courante : `v0.21.0`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
@@ -41,7 +41,7 @@ utilisables sont déjà en place :
 - Musée des jeux terminés et terminés à 100 %.
 - Livre de Vie avec chronologie globale des sessions et chroniques.
 - Tableau de bord statistique.
-- Paramètres locaux avec sauvegarde SQLite, export JSON, préférences et synchronisation Steam.
+- Paramètres locaux avec sauvegarde SQLite, export JSON, préférences et synchronisation Steam automatique.
 - Stockage local SQLite via Prisma.
 - IPC Electron sécurisé entre le renderer et le main process.
 - Identité visuelle Ludux avec palette sombre, violet et bleu électrique.
@@ -98,7 +98,7 @@ Le tableau de bord calcule localement :
 
 Les paramètres donnent accès aux chemins locaux, à une sauvegarde de la base
 SQLite, à un export JSON complet, au choix de la page d'ouverture, à la
-synchronisation Steam et aux jeux archivés, restaurables ou supprimables
+synchronisation Steam automatique et aux jeux archivés, restaurables ou supprimables
 définitivement.
 
 ## Stack Technique
@@ -186,6 +186,7 @@ Guides disponibles :
 
 - `docs/providers/PLATFORM_REQUIREMENTS.md` : fichiers, clés et accès à récupérer.
 - `docs/providers/STEAM_SETUP.md` : configuration de la synchronisation Steam.
+- `docs/providers/AUTO_SYNC_STRATEGY.md` : stratégie de synchronisation automatique.
 
 ## Structure du Projet
 
@@ -235,6 +236,7 @@ Tags principaux :
 - `v0.18.0` : édition et suppression des sessions de jeu.
 - `v0.19.0` : synchronisation Steam manuelle.
 - `v0.20.0` : fichiers de configuration et guides plateformes.
+- `v0.21.0` : synchronisation automatique et secrets masqués.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.

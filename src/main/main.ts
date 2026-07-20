@@ -1,6 +1,7 @@
 import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'node:path'
 import { prisma } from '../database/client'
+import { settingsService } from '../services/settings.service'
 import { logger } from '../utils/logger'
 import { registerLibraryHandlers } from './ipc/library.ipc'
 import { registerSettingsHandlers } from './ipc/settings.ipc'
@@ -43,7 +44,10 @@ async function createWindow() {
   await mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
 }
 
-app.whenReady().then(createWindow).catch((error: unknown) => {
+app.whenReady().then(async () => {
+  settingsService.startAutoSync()
+  await createWindow()
+}).catch((error: unknown) => {
   logger.error('[ElectronMain]', error)
 })
 
@@ -60,5 +64,6 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  settingsService.stopAutoSync()
   void prisma.$disconnect()
 })

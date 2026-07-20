@@ -1,4 +1,4 @@
-import { app, dialog, shell } from 'electron'
+import { app, dialog, safeStorage, shell } from 'electron'
 import { copyFile, mkdir, readdir, stat, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { getDatabaseFilePath, prisma } from '../database/client'
@@ -15,6 +15,7 @@ import type {
 } from '../types/settings'
 import { EXTERNAL_PROVIDER_DEFINITIONS } from '../providers/registry'
 import { libraryService } from './library.service'
+import { logger } from '../utils/logger'
 
 const userDataDirectory = resolve('userdata')
 const exportDirectory = join(userDataDirectory, 'exports')
@@ -22,6 +23,7 @@ const backupDirectory = join(userDataDirectory, 'backups')
 const steamProvider: ExternalProvider = 'STEAM'
 const steamPlatformName = 'Steam'
 const steamTotalSessionNote = 'Temps total Steam synchronise.'
+const defaultAutoSyncIntervalMinutes = 120
 
 interface SteamImportStats {
   importedGames: number
@@ -71,6 +73,57 @@ function trimOptional(value: string | undefined) {
 
 function readEnvValue(name: string) {
   return trimOptional(process.env[name])
+}
+
+function readAutoSyncIntervalMinutes() {
+  const rawValue = Number(process.env['LUDUX_AUTO_SYNC_INTERVAL_MINUTES'])
+
+  return Number.isFinite(rawValue) && rawValue >= 15
+    ? rawValue
+    : defaultAutoSyncIntervalMinutes
+}
+
+function encryptSecret(value: string | undefined) {
+  const secret = trimOptional(value)
+
+  if (!secret) {
+    return undefined
+  }
+
+  if (safeStorage.isEncryptionAvailable()) {
+    return `safe:${safeStorage.encryptString(secret).toString('base64')}`
+  }
+
+  return `plain:${secret}`
+}
+
+function decryptSecret(value: string | null | undefined) {
+  const storedValue = trimOptional(value ?? undefined)
+
+  if (!storedValue) {
+    return undefined
+  }
+
+  if (storedValue.startsWith('safe:')) {
+    try {
+      return safeStorage.decryptString(Buffer.from(storedValue.slice(5), 'base64'))
+    } catch {
+      return undefined
+    }
+  }
+
+  if (storedValue.startsWith('plain:')) {
+    return trimOptional(storedValue.slice(6))
+  }
+
+  return storedValue
+}
+
+function hasProviderToken(provider: ExternalProvider, tokenHint: string | null) {
+  return (
+    Boolean(trimOptional(tokenHint ?? undefined)) ||
+    (provider === steamProvider && Boolean(readEnvValue('STEAM_WEB_API_KEY')))
+  )
 }
 
 function isExternalProvider(value: string): value is ExternalProvider {
@@ -134,7 +187,7 @@ async function buildProviderOverview(): Promise<ProviderOverview> {
             provider: account.provider as ExternalProvider,
             externalId: account.externalId,
             username: account.username,
-            tokenHint: account.tokenHint,
+            hasToken: hasProviderToken(account.provider as ExternalProvider, account.tokenHint),
             createdAt: account.createdAt.toISOString(),
             updatedAt: account.updatedAt.toISOString(),
           }
@@ -466,6 +519,63 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
 }
 
 class SettingsService {
+  private autoSyncTimer: NodeJS.Timeout | null = null
+  private isAutoSyncRunning = false
+
+  startAutoSync() {
+    if (this.autoSyncTimer) {
+      return
+    }
+
+    const intervalMs = readAutoSyncIntervalMinutes() * 60_000
+    const runSync = () => {
+      void this.syncConfiguredProvidersAutomatically()
+    }
+
+    this.autoSyncTimer = setInterval(runSync, intervalMs)
+    setTimeout(runSync, 15_000)
+  }
+
+  stopAutoSync() {
+    if (!this.autoSyncTimer) {
+      return
+    }
+
+    clearInterval(this.autoSyncTimer)
+    this.autoSyncTimer = null
+  }
+
+  async syncConfiguredProvidersAutomatically() {
+    if (this.isAutoSyncRunning) {
+      return
+    }
+
+    this.isAutoSyncRunning = true
+
+    try {
+      const steamAccount = await prisma.externalAccount.findFirst({
+        where: {
+          provider: steamProvider,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      })
+      const steamApiKey =
+        decryptSecret(steamAccount?.tokenHint) ?? readEnvValue('STEAM_WEB_API_KEY')
+
+      if (steamAccount && steamApiKey) {
+        await this.syncProvider({
+          provider: steamProvider,
+        })
+      }
+    } catch (error) {
+      logger.error('[SettingsAutoSync]', error)
+    } finally {
+      this.isAutoSyncRunning = false
+    }
+  }
+
   async getOverview(): Promise<SettingsOverview> {
     const databasePath = getDatabaseFilePath()
 
@@ -493,6 +603,17 @@ class SettingsService {
       throw new Error('Identifiant externe obligatoire.')
     }
 
+    const currentAccount = await prisma.externalAccount.findFirst({
+      where: {
+        provider: input.provider,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    })
+    const tokenHint =
+      encryptSecret(input.tokenHint) ?? currentAccount?.tokenHint ?? undefined
+
     await prisma.$transaction([
       prisma.externalAccount.deleteMany({
         where: {
@@ -504,7 +625,7 @@ class SettingsService {
           provider: input.provider,
           externalId,
           username: trimOptional(input.username),
-          tokenHint: trimOptional(input.tokenHint),
+          tokenHint,
         },
       }),
       prisma.syncData.create({
@@ -513,7 +634,7 @@ class SettingsService {
           status: 'READY',
           message:
             input.provider === steamProvider
-              ? 'Compte Steam pret pour une synchronisation manuelle.'
+              ? 'Compte Steam pret pour la synchronisation automatique.'
               : 'Compte reference localement. Synchronisation reseau non active.',
         },
       }),
@@ -574,7 +695,7 @@ class SettingsService {
     }
 
     const apiKey =
-      trimOptional(account.tokenHint ?? undefined) ?? readEnvValue('STEAM_WEB_API_KEY')
+      decryptSecret(account.tokenHint) ?? readEnvValue('STEAM_WEB_API_KEY')
 
     if (!apiKey) {
       throw new Error('Cle API Steam obligatoire pour synchroniser.')

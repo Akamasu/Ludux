@@ -162,7 +162,7 @@ function ProvidersPanel({
   useEffect(() => {
     setExternalId(selectedProvider?.account?.externalId ?? '')
     setUsername(selectedProvider?.account?.username ?? '')
-    setTokenHint(selectedProvider?.account?.tokenHint ?? '')
+    setTokenHint('')
   }, [selectedProvider])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -211,7 +211,7 @@ function ProvidersPanel({
         <div>
           <h2 className="text-lg font-semibold text-white">Providers externes</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Comptes et sources prepares pour les futures integrations.
+            Comptes connectes et synchronisations automatiques selon les acces disponibles.
           </p>
         </div>
         <Cloud className="text-[#8CA7FF]" size={20} aria-hidden="true" />
@@ -334,11 +334,18 @@ function ProvidersPanel({
                     onChange={(event) => setTokenHint(event.target.value)}
                     placeholder={
                       selectedProvider.provider === 'STEAM'
-                        ? 'Optionnel si STEAM_WEB_API_KEY est defini'
+                        ? selectedProvider.account?.hasToken
+                          ? 'Laisser vide pour conserver la cle existante'
+                          : 'Optionnel si STEAM_WEB_API_KEY est defini'
                         : 'Optionnel'
                     }
                     className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
                   />
+                  {selectedProvider.account?.hasToken ? (
+                    <span className="mt-2 block text-xs text-[#C9D6FF]">
+                      Cle configuree. Sa valeur n'est pas affichee.
+                    </span>
+                  ) : null}
                 </label>
               </div>
             </div>
@@ -354,7 +361,9 @@ function ProvidersPanel({
                   variant="secondary"
                   onClick={handleSyncProvider}
                   disabled={
-                    isBusy || selectedProvider.provider !== 'STEAM'
+                    isBusy ||
+                    selectedProvider.provider !== 'STEAM' ||
+                    !selectedProvider.account.hasToken
                   }
                 >
                   <RefreshCw size={17} aria-hidden="true" />
