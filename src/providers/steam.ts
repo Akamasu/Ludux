@@ -9,6 +9,7 @@ export interface SteamOwnedGame {
   iconUrl: string | null
   playtimeForeverMinutes: number
   lastPlayedAt: string | null
+  categories?: string[]
   description?: string | null
   developer?: string | null
   installed?: boolean
@@ -60,12 +61,19 @@ export interface SteamLocalAppActivity {
   lastPlayedAt: string | null
 }
 
+export interface SteamLocalAppCategories {
+  appid: number
+  categories: string[]
+}
+
 export interface SteamLocalLibraryResult {
   games: SteamInstalledGame[]
   activities: SteamLocalAppActivity[]
+  categories: SteamLocalAppCategories[]
   libraryPaths: string[]
   manifestCount: number
   localConfigPath: string | null
+  sharedConfigPath: string | null
 }
 
 interface FetchSteamOwnedGamesInput {
@@ -369,6 +377,38 @@ function asSteamKeyValueObject(value: SteamKeyValue | undefined) {
   return typeof value === 'object' && value !== null ? value : null
 }
 
+function readSteamObjectValue(
+  object: SteamKeyValueObject | null,
+  key: string,
+) {
+  if (!object) {
+    return undefined
+  }
+
+  const normalizedKey = key.toLocaleLowerCase('en-US')
+
+  return Object.entries(object).find(
+    ([entryKey]) => entryKey.toLocaleLowerCase('en-US') === normalizedKey,
+  )?.[1]
+}
+
+function readSteamNestedObject(
+  root: SteamKeyValueObject,
+  keys: string[],
+) {
+  let current: SteamKeyValueObject | null = root
+
+  for (const key of keys) {
+    current = asSteamKeyValueObject(readSteamObjectValue(current, key))
+
+    if (!current) {
+      return null
+    }
+  }
+
+  return current
+}
+
 function accountIdFromSteamId64(steamId: string) {
   const normalizedSteamId = normalizeSteamId(steamId)
   const accountId = BigInt(normalizedSteamId) - steamId64AccountIdOffset
@@ -480,15 +520,13 @@ export function parseSteamAppManifest(
 
 export function parseSteamLocalConfigApps(content: string): SteamLocalAppActivity[] {
   const root = parseSteamKeyValues(content)
-  const apps = asSteamKeyValueObject(
-    asSteamKeyValueObject(
-      asSteamKeyValueObject(
-        asSteamKeyValueObject(
-          asSteamKeyValueObject(root['UserLocalConfigStore'])?.['Software'],
-        )?.['Valve'],
-      )?.['Steam'],
-    )?.['apps'],
-  )
+  const apps = readSteamNestedObject(root, [
+    'UserLocalConfigStore',
+    'Software',
+    'Valve',
+    'Steam',
+    'apps',
+  ])
 
   if (!apps) {
     return []
@@ -515,6 +553,105 @@ export function parseSteamLocalConfigApps(content: string): SteamLocalAppActivit
   })
 }
 
+function readSteamAppMap(root: SteamKeyValueObject) {
+  return [
+    readSteamNestedObject(root, [
+      'UserRoamingConfigStore',
+      'Software',
+      'Valve',
+      'Steam',
+      'apps',
+    ]),
+    readSteamNestedObject(root, [
+      'UserLocalConfigStore',
+      'Software',
+      'Valve',
+      'Steam',
+      'apps',
+    ]),
+  ].filter((apps): apps is SteamKeyValueObject => apps !== null)
+}
+
+function readSteamAppCategories(app: SteamKeyValueObject) {
+  const tags = asSteamKeyValueObject(
+    readSteamObjectValue(app, 'tags') ?? readSteamObjectValue(app, 'categories'),
+  )
+
+  if (!tags) {
+    return []
+  }
+
+  return Array.from(
+    new Set(
+      Object.values(tags)
+        .map((value) => readString(value))
+        .filter((category): category is string => category !== null),
+    ),
+  ).sort((left, right) => left.localeCompare(right, 'fr-FR'))
+}
+
+export function parseSteamLocalAppCategories(
+  content: string,
+): SteamLocalAppCategories[] {
+  const root = parseSteamKeyValues(content)
+  const categoriesByAppId = new Map<number, Set<string>>()
+
+  for (const apps of readSteamAppMap(root)) {
+    for (const [appidValue, value] of Object.entries(apps)) {
+      const appid = Math.trunc(readNumberLike(appidValue) ?? 0)
+      const app = asSteamKeyValueObject(value)
+
+      if (appid <= 0 || !app) {
+        continue
+      }
+
+      const categories = readSteamAppCategories(app)
+
+      if (categories.length === 0) {
+        continue
+      }
+
+      const existingCategories = categoriesByAppId.get(appid) ?? new Set<string>()
+
+      for (const category of categories) {
+        existingCategories.add(category)
+      }
+
+      categoriesByAppId.set(appid, existingCategories)
+    }
+  }
+
+  return [...categoriesByAppId.entries()]
+    .map(([appid, categories]) => ({
+      appid,
+      categories: [...categories].sort((left, right) => left.localeCompare(right, 'fr-FR')),
+    }))
+    .sort((left, right) => left.appid - right.appid)
+}
+
+function mergeSteamLocalCategories(
+  ...categoryLists: SteamLocalAppCategories[][]
+) {
+  const categoriesByAppId = new Map<number, Set<string>>()
+
+  for (const categoryList of categoryLists) {
+    for (const item of categoryList) {
+      const categories = categoriesByAppId.get(item.appid) ?? new Set<string>()
+
+      for (const category of item.categories) {
+        categories.add(category)
+      }
+
+      categoriesByAppId.set(item.appid, categories)
+    }
+  }
+
+  return [...categoriesByAppId.entries()].map(([appid, categories]) => ({
+    appid,
+    categories: [...categories].sort((left, right) => left.localeCompare(right, 'fr-FR')),
+  }))
+}
+
 function tryParseSteamLibraryFolders(content: string) {
   try {
     return parseSteamLibraryFolders(content)
@@ -537,6 +674,14 @@ function tryParseSteamAppManifest(
 function tryParseSteamLocalConfigApps(content: string) {
   try {
     return parseSteamLocalConfigApps(content)
+  } catch {
+    return []
+  }
+}
+
+function tryParseSteamLocalAppCategories(content: string) {
+  try {
+    return parseSteamLocalAppCategories(content)
   } catch {
     return []
   }
@@ -629,8 +774,12 @@ export function mergeSteamGames(
   ownedGames: SteamOwnedGame[],
   installedGames: SteamInstalledGame[],
   localActivities: SteamLocalAppActivity[] = [],
+  localCategories: SteamLocalAppCategories[] = [],
 ) {
   const gamesByAppId = new Map<number, SteamOwnedGame>()
+  const categoriesByAppId = new Map(
+    localCategories.map((item) => [item.appid, item.categories]),
+  )
 
   for (const game of ownedGames) {
     gamesByAppId.set(game.appid, {
@@ -669,6 +818,19 @@ export function mergeSteamGames(
         existingGame.playtimeForeverMinutes,
         activity.playtimeForeverMinutes,
       ),
+    })
+  }
+
+  for (const [appid, categories] of categoriesByAppId) {
+    const existingGame = gamesByAppId.get(appid)
+
+    if (!existingGame) {
+      continue
+    }
+
+    gamesByAppId.set(appid, {
+      ...existingGame,
+      categories,
     })
   }
 
@@ -1235,7 +1397,9 @@ export async function readSteamLocalLibrary({
 
   const accountId = ownerSteamId ? accountIdFromSteamId64(ownerSteamId) : null
   let activities: SteamLocalAppActivity[] = []
+  let categories: SteamLocalAppCategories[] = []
   let localConfigPath: string | null = null
+  let sharedConfigPath: string | null = null
 
   if (accountId) {
     for (const rootPath of existingSteamRootPaths) {
@@ -1247,17 +1411,56 @@ export async function readSteamLocalLibrary({
       }
 
       activities = tryParseSteamLocalConfigApps(content)
+      categories = mergeSteamLocalCategories(
+        categories,
+        tryParseSteamLocalAppCategories(content),
+      )
       localConfigPath = candidatePath
       break
     }
+
+    for (const rootPath of existingSteamRootPaths) {
+      const candidatePaths = [
+        join(rootPath, 'userdata', accountId, '7', 'remote', 'sharedconfig.vdf'),
+        join(rootPath, 'userdata', accountId, 'config', 'sharedconfig.vdf'),
+      ]
+
+      for (const candidatePath of candidatePaths) {
+        const content = await readTextFileIfExists(candidatePath)
+
+        if (!content) {
+          continue
+        }
+
+        categories = mergeSteamLocalCategories(
+          categories,
+          tryParseSteamLocalAppCategories(content),
+        )
+        sharedConfigPath = candidatePath
+        break
+      }
+
+      if (sharedConfigPath) {
+        break
+      }
+    }
   }
 
-  return {
-    games: mergeSteamGames([], [...localGamesByAppId.values()], activities) as SteamInstalledGame[],
+  const games = mergeSteamGames(
+    [],
+    [...localGamesByAppId.values()],
     activities,
+    categories,
+  ) as SteamInstalledGame[]
+
+  return {
+    games,
+    activities,
+    categories,
     libraryPaths: [...discoveredLibraryPaths],
     localConfigPath,
     manifestCount,
+    sharedConfigPath,
   }
 }
 

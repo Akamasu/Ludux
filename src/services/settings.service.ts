@@ -55,6 +55,7 @@ interface SteamImportStats {
   syncedDlc: number
   syncedAchievements: number
   syncedAchievementGames: number
+  syncedCollections: number
 }
 
 interface SteamSyncSources {
@@ -260,6 +261,7 @@ function createSteamSyncMessage(stats: SteamImportStats, sources: SteamSyncSourc
     `${stats.importedGames} ajoutés`,
     `${stats.linkedGames} reliés`,
     `${stats.updatedGames} déjà connus`,
+    `${stats.syncedCollections} catégories Steam liées`,
     `${stats.syncedSessions} temps de jeu synchronisés`,
     `${stats.syncedDlc} DLC Steam détectés`,
     `${stats.syncedAchievements} succès Steam synchronisés`,
@@ -557,6 +559,65 @@ async function ensureSteamPlatformForGame(gameId: string, platformId: string) {
       played: true,
     },
   })
+}
+
+function normalizeSteamCategories(value: string[] | undefined) {
+  return Array.from(
+    new Set(
+      value
+        ?.map((category) => category.trim())
+        .filter((category) => category.length > 0) ?? [],
+    ),
+  ).sort((left, right) => left.localeCompare(right, 'fr-FR'))
+}
+
+async function ensureCollection(name: string) {
+  const existingCollection = await prisma.collection.findFirst({
+    where: {
+      name,
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  if (existingCollection) {
+    return existingCollection
+  }
+
+  return prisma.collection.create({
+    data: {
+      description: 'Catégorie Steam synchronisée.',
+      name,
+    },
+    select: {
+      id: true,
+    },
+  })
+}
+
+async function syncSteamGameCollections(gameId: string, steamGame: SteamOwnedGame) {
+  const categories = normalizeSteamCategories(steamGame.categories)
+
+  for (const category of categories) {
+    const collection = await ensureCollection(category)
+
+    await prisma.collectionGame.upsert({
+      where: {
+        collectionId_gameId: {
+          collectionId: collection.id,
+          gameId,
+        },
+      },
+      update: {},
+      create: {
+        collectionId: collection.id,
+        gameId,
+      },
+    })
+  }
+
+  return categories.length
 }
 
 async function upsertSteamPlaySession({
@@ -905,6 +966,7 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
     syncedDlc: 0,
     syncedAchievements: 0,
     syncedAchievementGames: 0,
+    syncedCollections: 0,
   }
   const steamPlatform = await ensureSteamPlatform()
   const localGames = await prisma.game.findMany({
@@ -1003,6 +1065,8 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
     if (matchedGame) {
       await ensureSteamPlatformForGame(localGame.id, steamPlatform.id)
     }
+
+    stats.syncedCollections += await syncSteamGameCollections(localGame.id, steamGame)
 
     if (
       steamGame.coverUrl &&
@@ -1467,6 +1531,7 @@ class SettingsService {
         remoteGames,
         localLibrary.games,
         localLibrary.activities,
+        localLibrary.categories,
       )
       let gamesToImport = mergedGames
       let steamAppDetails: SteamAppDetails[] = []

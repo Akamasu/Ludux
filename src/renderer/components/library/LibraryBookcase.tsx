@@ -16,6 +16,7 @@ interface GenreShelf {
   accent: string
   palette: string[]
   keywords: string[]
+  source: 'steam' | 'fallback'
 }
 
 interface BookcaseShelf {
@@ -48,6 +49,7 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Mondes persistants, gestion et expériences contemplatives.',
     accent: '#8BC7FF',
     palette: ['#274C77', '#3B6EA5', '#2D5F73', '#415A77'],
+    source: 'fallback',
     keywords: [
       'sim',
       'simulator',
@@ -68,6 +70,7 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Quêtes longues, builds, choix et grands voyages.',
     accent: '#A797FF',
     palette: ['#4B367C', '#5B3F93', '#37215F', '#6D4ED8'],
+    source: 'fallback',
     keywords: [
       'rpg',
       'fantasy',
@@ -89,6 +92,7 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Rythme, réflexes, combats et campagnes nerveuses.',
     accent: '#FF6F91',
     palette: ['#7A3148', '#963F5A', '#5C2638', '#AA4A65'],
+    source: 'fallback',
     keywords: [
       'action',
       'battlefield',
@@ -109,6 +113,7 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Exploration, récit, mystères et grands horizons.',
     accent: '#F4C95D',
     palette: ['#735C27', '#8A6E2F', '#5E4B20', '#9A7A33'],
+    source: 'fallback',
     keywords: [
       'adventure',
       'avent',
@@ -128,6 +133,7 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Plans, empires, tactique et décisions lentes.',
     accent: '#73D2A3',
     palette: ['#22543D', '#2F6B4F', '#1F4A37', '#3B7B5D'],
+    source: 'fallback',
     keywords: [
       'strategy',
       'strategie',
@@ -147,6 +153,7 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Idées singulières, énigmes et petites merveilles.',
     accent: '#F4A261',
     palette: ['#7A4A2D', '#965E38', '#623C24', '#A66A41'],
+    source: 'fallback',
     keywords: [
       'puzzle',
       'portal',
@@ -166,6 +173,7 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Compétition, vitesse et records personnels.',
     accent: '#4F7CFF',
     palette: ['#1E3A8A', '#2548A8', '#1D2F6F', '#315BBF'],
+    source: 'fallback',
     keywords: [
       'sport',
       'football',
@@ -189,13 +197,54 @@ const fallbackShelf: GenreShelf = {
   accent: '#C9A646',
   palette: ['#3C3344', '#45395B', '#2F3444', '#524667'],
   keywords: [],
+  source: 'fallback',
 }
+
+const collectionAccents = [
+  '#8BC7FF',
+  '#A797FF',
+  '#FF6F91',
+  '#F4C95D',
+  '#73D2A3',
+  '#F4A261',
+  '#4F7CFF',
+]
+
+const collectionPalettes = [
+  ['#274C77', '#3B6EA5', '#2D5F73', '#415A77'],
+  ['#4B367C', '#5B3F93', '#37215F', '#6D4ED8'],
+  ['#7A3148', '#963F5A', '#5C2638', '#AA4A65'],
+  ['#735C27', '#8A6E2F', '#5E4B20', '#9A7A33'],
+  ['#22543D', '#2F6B4F', '#1F4A37', '#3B7B5D'],
+  ['#7A4A2D', '#965E38', '#623C24', '#A66A41'],
+  ['#1E3A8A', '#2548A8', '#1D2F6F', '#315BBF'],
+]
 
 function normalizeText(value: string) {
   return value
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .toLocaleLowerCase('fr-FR')
+}
+
+function hashText(value: string) {
+  return [...value].reduce((total, character) => total + character.charCodeAt(0), 0)
+}
+
+function createCollectionShelf(name: string): GenreShelf {
+  const normalizedName = normalizeText(name)
+  const seed = hashText(normalizedName)
+  const paletteIndex = seed % collectionPalettes.length
+
+  return {
+    id: `steam:${normalizedName}`,
+    label: name,
+    subtitle: 'Catégorie Steam synchronisée depuis votre bibliothèque.',
+    accent: collectionAccents[paletteIndex],
+    palette: collectionPalettes[paletteIndex],
+    keywords: [],
+    source: 'steam',
+  }
 }
 
 function inferGenre(game: GameListItem) {
@@ -206,6 +255,22 @@ function inferGenre(game: GameListItem) {
       shelf.keywords.some((keyword) => haystack.includes(normalizeText(keyword))),
     ) ?? fallbackShelf
   )
+}
+
+function resolveShelvesForGame(game: GameListItem) {
+  const collections = Array.from(
+    new Set(
+      game.collections
+        .map((collection) => collection.trim())
+        .filter((collection) => collection.length > 0),
+    ),
+  )
+
+  if (collections.length > 0) {
+    return collections.map(createCollectionShelf)
+  }
+
+  return [inferGenre(game)]
 }
 
 function chunkGames(games: GameListItem[]) {
@@ -232,23 +297,34 @@ function buildBookcasePages(games: GameListItem[]) {
   const groupedGames = new Map<string, { genre: GenreShelf; games: GameListItem[] }>()
 
   for (const game of games) {
-    const genre = inferGenre(game)
-    const group = groupedGames.get(genre.id)
+    for (const genre of resolveShelvesForGame(game)) {
+      const group = groupedGames.get(genre.id)
 
-    if (group) {
-      group.games.push(game)
-    } else {
-      groupedGames.set(genre.id, {
-        genre,
-        games: [game],
-      })
+      if (group) {
+        group.games.push(game)
+      } else {
+        groupedGames.set(genre.id, {
+          genre,
+          games: [game],
+        })
+      }
     }
   }
 
   const order = [...genreShelves, fallbackShelf].map((genre) => genre.id)
 
   const shelves = [...groupedGames.values()]
-    .sort((left, right) => order.indexOf(left.genre.id) - order.indexOf(right.genre.id))
+    .sort((left, right) => {
+      if (left.genre.source !== right.genre.source) {
+        return left.genre.source === 'steam' ? -1 : 1
+      }
+
+      if (left.genre.source === 'steam') {
+        return left.genre.label.localeCompare(right.genre.label, 'fr-FR')
+      }
+
+      return order.indexOf(left.genre.id) - order.indexOf(right.genre.id)
+    })
     .flatMap((group) => {
       const sortedGames = [...group.games].sort((left, right) =>
         left.title.localeCompare(right.title, 'fr-FR'),
@@ -302,9 +378,11 @@ export function LibraryBookcase({ games, onOpen }: LibraryBookcaseProps) {
 
   const currentPage = pages[currentPageIndex]
   const currentAccent = currentPage.shelves[0]?.genre.accent ?? '#C9A646'
-  const currentSubtitle = currentPage.shelves
-    .map((shelf) => shelf.genre.subtitle)
-    .join(' ')
+  const currentSubtitle = currentPage.shelves.every(
+    (shelf) => shelf.genre.source === 'steam',
+  )
+    ? 'Catégories Steam synchronisées depuis votre bibliothèque.'
+    : currentPage.shelves.map((shelf) => shelf.genre.subtitle).join(' ')
   const currentVolumeCount = currentPage.shelves.reduce(
     (total, shelf) => total + shelf.games.length,
     0,
@@ -403,9 +481,9 @@ export function LibraryBookcase({ games, onOpen }: LibraryBookcaseProps) {
 
           <footer className="library-page-footer">
             <span>
-              {currentVolumeCount} volume{currentVolumeCount > 1 ? 's' : ''}
+              {currentVolumeCount} jeu{currentVolumeCount > 1 ? 'x' : ''}
             </span>
-            <span>Feuillet {currentPageIndex + 1}</span>
+            <span>{games.length} jeux filtrés</span>
           </footer>
         </div>
       </div>

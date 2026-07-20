@@ -46,6 +46,7 @@ export interface GameListItem {
   status: GameStatus
   coverUrl: string | null
   platforms: string[]
+  collections: string[]
   totalMinutes: number
   rating: number | null
   lastChronicleTitle: string | null

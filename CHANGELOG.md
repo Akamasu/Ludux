@@ -29,6 +29,12 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.6 - 2026-07-20
+
+- Synchronisation des catégories Steam locales depuis les fichiers de configuration Steam.
+- Tri de l'armoire ancienne par catégories Steam quand elles existent, avec fallback par genre pour les jeux non classés.
+- Remplacement du libellé `Feuillet` par le nombre de jeux affichés sur la page et le total filtré.
+
 ## v0.24.5 - 2026-07-20
 
 - Ajout d'une vue `Armoire ancienne` dans la bibliothèque, activée par défaut.

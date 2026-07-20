@@ -19,6 +19,7 @@ import {
   parseSteamAchievementSchema,
   parseSteamDlcForApp,
   parseSteamKeyValues,
+  parseSteamLocalAppCategories,
   parseSteamLibraryFolders,
   parseSteamLocalConfigApps,
   parseSteamOwnedGames,
@@ -398,6 +399,52 @@ describe('steam provider', () => {
     ])
   })
 
+  it('parses Steam library categories from shared config', () => {
+    expect(
+      parseSteamLocalAppCategories(`
+        "UserRoamingConfigStore"
+        {
+          "Software"
+          {
+            "Valve"
+            {
+              "Steam"
+              {
+                "apps"
+                {
+                  "730"
+                  {
+                    "tags"
+                    {
+                      "0" "FPS"
+                      "1" "Soirees"
+                    }
+                  }
+                  "620"
+                  {
+                    "tags"
+                    {
+                      "0" "Puzzle"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `),
+    ).toEqual([
+      {
+        appid: 620,
+        categories: ['Puzzle'],
+      },
+      {
+        appid: 730,
+        categories: ['FPS', 'Soirees'],
+      },
+    ])
+  })
+
   it('merges web API games with fresher local Steam data', () => {
     const mergedGames = mergeSteamGames(
       [
@@ -432,6 +479,12 @@ describe('steam provider', () => {
           playtimeForeverMinutes: 200,
         },
       ],
+      [
+        {
+          appid: 730,
+          categories: ['FPS', 'Soirees'],
+        },
+      ],
     )
 
     expect(mergedGames).toEqual([
@@ -441,6 +494,7 @@ describe('steam provider', () => {
         installed: true,
         lastPlayedAt: '2026-02-01T00:00:00.000Z',
         playtimeForeverMinutes: 200,
+        categories: ['FPS', 'Soirees'],
       }),
     ])
   })

@@ -225,14 +225,23 @@ button:disabled {
   position: absolute;
   top: 0;
   left: 0.25rem;
+  right: 0.25rem;
   z-index: 2;
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  justify-content: space-between;
   color: #d9c98b;
   font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.genre-shelf-heading span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .genre-shelf::after {
@@ -374,9 +383,13 @@ button:disabled {
 
 .library-page-tab {
   flex: 0 0 auto;
+  max-width: min(18rem, 70vw);
   min-height: 2.15rem;
+  overflow: hidden;
   padding: 0.45rem 0.75rem;
   color: #a6adbb;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
