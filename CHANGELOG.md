@@ -27,6 +27,12 @@ Le projet suit des versions de developpement simples :
 - `v0.21.x` : synchronisation automatique et secrets masques.
 - `v0.22.x` : stabilisation du connecteur Steam.
 
+## v0.22.3 - 2026-07-20
+
+- Correction du chemin du preload Electron pour charger `preload.mjs`.
+- Retablissement de l'API `window.ludux` dans la fenetre Electron.
+- Correction du faux message indiquant que les providers etaient reserves a Electron alors que la fenetre Electron etait deja ouverte.
+
 ## v0.22.2 - 2026-07-20
 
 - Ajout de `@electron/rebuild` pour reconstruire `better-sqlite3` avec l'ABI Electron.

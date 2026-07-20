@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.22.2`
+Version courante : `v0.22.3`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
@@ -242,6 +242,7 @@ Tags principaux :
 - `v0.22.0` : stabilisation du connecteur Steam.
 - `v0.22.1` : retour visuel de validation Steam dans les paramètres.
 - `v0.22.2` : rebuild Electron pour le module SQLite natif.
+- `v0.22.3` : correction du chargement du preload Electron.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.

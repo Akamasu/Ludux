@@ -19,7 +19,7 @@ async function createWindow() {
     title: 'Ludux',
     backgroundColor: '#0F1117',
     webPreferences: {
-      preload: join(__dirname, '../preload/preload.js'),
+      preload: join(__dirname, '../preload/preload.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
     },
