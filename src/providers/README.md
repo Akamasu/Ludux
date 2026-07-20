@@ -32,6 +32,13 @@ La v0.21.0 ajoute la synchronisation automatique pour les providers disponibles 
 - secrets masques cote renderer ;
 - chiffrement via Electron `safeStorage` quand disponible.
 
+La v0.22.0 stabilise Steam avant l'ajout de providers de metadonnees :
+
+- validation SteamID64 ;
+- timeout reseau ;
+- erreurs Steam lisibles ;
+- tests unitaires du parsing et des refus API.
+
 Les prochaines integrations reseau devront rester optionnelles et passer par un adaptateur dedie avant de proposer une importation dans la base locale.
 
 Guides de preparation :

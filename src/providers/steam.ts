@@ -15,7 +15,12 @@ export interface SteamOwnedGamesResult {
 interface FetchSteamOwnedGamesInput {
   apiKey: string
   steamId: string
+  fetchImpl?: typeof fetch
+  timeoutMs?: number
 }
+
+const defaultSteamTimeoutMs = 15_000
+const steamId64Pattern = /^\d{17}$/
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -39,7 +44,59 @@ function steamIconUrl(appid: number, hash: string | null) {
     : null
 }
 
-function parseSteamOwnedGames(payload: unknown): SteamOwnedGamesResult {
+export function normalizeSteamId(value: string) {
+  const steamId = value.trim()
+
+  if (!steamId64Pattern.test(steamId)) {
+    throw new Error('SteamID64 invalide. Il doit contenir 17 chiffres.')
+  }
+
+  return steamId
+}
+
+function normalizeSteamApiKey(value: string) {
+  const apiKey = value.trim()
+
+  if (apiKey.length === 0) {
+    throw new Error('Cle API Steam obligatoire pour synchroniser.')
+  }
+
+  return apiKey
+}
+
+function createSteamErrorMessage(status: number) {
+  if (status === 401 || status === 403) {
+    return 'Steam a refuse la synchronisation. Verifiez la cle API Steam.'
+  }
+
+  if (status === 404) {
+    return 'Steam ne trouve pas le service de bibliotheque.'
+  }
+
+  if (status === 429) {
+    return 'Steam limite temporairement les requetes. Reessayez plus tard.'
+  }
+
+  if (status >= 500) {
+    return 'Steam est temporairement indisponible. Reessayez plus tard.'
+  }
+
+  return `Steam a refuse la synchronisation (${status}).`
+}
+
+export function createSteamOwnedGamesUrl(apiKey: string, steamId: string) {
+  const params = new URLSearchParams({
+    key: normalizeSteamApiKey(apiKey),
+    steamid: normalizeSteamId(steamId),
+    include_appinfo: '1',
+    include_played_free_games: '1',
+    format: 'json',
+  })
+
+  return `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?${params}`
+}
+
+export function parseSteamOwnedGames(payload: unknown): SteamOwnedGamesResult {
   if (!isRecord(payload) || !isRecord(payload['response'])) {
     throw new Error('Reponse Steam invalide.')
   }
@@ -89,21 +146,31 @@ function parseSteamOwnedGames(payload: unknown): SteamOwnedGamesResult {
 
 export async function fetchSteamOwnedGames({
   apiKey,
+  fetchImpl = fetch,
   steamId,
+  timeoutMs = defaultSteamTimeoutMs,
 }: FetchSteamOwnedGamesInput): Promise<SteamOwnedGamesResult> {
-  const params = new URLSearchParams({
-    key: apiKey,
-    steamid: steamId,
-    include_appinfo: '1',
-    include_played_free_games: '1',
-    format: 'json',
-  })
-  const response = await fetch(
-    `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?${params}`,
-  )
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  let response: Response
+
+  try {
+    response = await fetchImpl(createSteamOwnedGamesUrl(apiKey, steamId), {
+      signal: controller.signal,
+    })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Steam ne repond pas. Reessayez plus tard.')
+    }
+
+    throw new Error('Impossible de joindre Steam. Verifiez la connexion reseau.')
+  } finally {
+    clearTimeout(timeout)
+  }
 
   if (!response.ok) {
-    throw new Error(`Steam a refuse la synchronisation (${response.status}).`)
+    throw new Error(createSteamErrorMessage(response.status))
   }
 
   return parseSteamOwnedGames(await response.json())

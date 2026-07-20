@@ -20,6 +20,7 @@ Steam est le premier provider actif :
 - synchronisation manuelle depuis les parametres ;
 - synchronisation automatique au demarrage et a intervalle regulier ;
 - import des jeux, jaquettes, plateforme Steam et temps total.
+- validation SteamID64 et erreurs reseau explicites.
 
 Les autres providers restent au stade de preparation tant qu'un acces officiel exploitable n'est pas branche.
 
@@ -50,7 +51,7 @@ Compte utilisateur
 
 ## Prochaines Etapes
 
-1. Stabiliser Steam avec une vraie cle utilisateur et un vrai profil de test.
+1. Tester Steam avec une vraie cle utilisateur et un vrai profil visible.
 2. Ajouter une file de synchronisation plus visible dans l'interface.
 3. Ajouter RAWG ou IGDB pour enrichir les jeux importes avec genres, studios et dates.
 4. Creer un ecran de resolution des correspondances quand un jeu externe ressemble a un jeu local.

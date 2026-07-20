@@ -147,5 +147,5 @@ Avant les fonctionnalités plus ambitieuses, Ludux doit permettre de :
 Les prochaines étapes les plus cohérentes avec le document de conception sont :
 
 - Bibliothèque : enrichir les fiches avec genres, développeur, éditeur et date de sortie.
-- Providers : stabiliser Steam avec une vraie clé utilisateur, puis choisir RAWG ou IGDB pour les métadonnées.
+- Providers : tester Steam avec une vraie clé utilisateur, puis choisir RAWG ou IGDB pour les métadonnées.
 - Release : préparer le packaging et les versions installables.

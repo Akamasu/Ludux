@@ -2,7 +2,11 @@ import { app, dialog, safeStorage, shell } from 'electron'
 import { copyFile, mkdir, readdir, stat, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { getDatabaseFilePath, prisma } from '../database/client'
-import { fetchSteamOwnedGames, type SteamOwnedGame } from '../providers/steam'
+import {
+  fetchSteamOwnedGames,
+  normalizeSteamId,
+  type SteamOwnedGame,
+} from '../providers/steam'
 import { EXTERNAL_PROVIDER_VALUES } from '../types/settings'
 import type {
   DeleteProviderConnectionInput,
@@ -135,6 +139,10 @@ function normalizeTitle(value: string) {
 }
 
 function createSteamSyncMessage(stats: SteamImportStats, totalRemoteGames: number) {
+  if (totalRemoteGames === 0) {
+    return 'Aucun jeu Steam recu. Verifiez le SteamID64, la cle API et la visibilite des details de jeux.'
+  }
+
   return [
     `${totalRemoteGames} jeux lus depuis Steam`,
     `${stats.importedGames} ajoutes`,
@@ -597,7 +605,10 @@ class SettingsService {
       throw new Error('Provider invalide.')
     }
 
-    const externalId = input.externalId.trim()
+    const externalId =
+      input.provider === steamProvider
+        ? normalizeSteamId(input.externalId)
+        : input.externalId.trim()
 
     if (externalId.length === 0) {
       throw new Error('Identifiant externe obligatoire.')

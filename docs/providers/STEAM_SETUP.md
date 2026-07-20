@@ -15,6 +15,8 @@ Steam est la premiere integration reseau active de Ludux.
 2. Le SteamID64 du compte a synchroniser.
 3. Un profil Steam dont les details de jeux sont visibles pour que la bibliotheque puisse etre lue.
 
+Le SteamID64 est valide par Ludux avant enregistrement. Il doit contenir 17 chiffres.
+
 ## Option A : Cle dans l'Interface
 
 Dans Ludux :
@@ -64,10 +66,17 @@ La valeur minimale acceptee est 15 minutes.
 
 ## Limites Actuelles
 
-- La synchronisation est manuelle.
+- La synchronisation est automatique, mais peut aussi etre relancee manuellement.
 - La correspondance automatique par titre peut se tromper si deux jeux ont un nom identique.
 - Les succes Steam ne sont pas encore importes.
 - Les jeux masques par la confidentialite Steam peuvent ne pas remonter.
+
+## Diagnostic
+
+- `SteamID64 invalide` : verifier que l'identifiant contient 17 chiffres.
+- `Verifiez la cle API Steam` : la cle est absente, incorrecte ou refusee.
+- `Steam limite temporairement les requetes` : attendre avant de relancer.
+- `Aucun jeu Steam recu` : verifier le SteamID64 et la visibilite des details de jeux.
 
 ## Liens
 

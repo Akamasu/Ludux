@@ -25,6 +25,7 @@ Le projet suit des versions de developpement simples :
 - `v0.19.x` : synchronisation Steam manuelle.
 - `v0.20.x` : fichiers de configuration et guides plateformes.
 - `v0.21.x` : synchronisation automatique et secrets masques.
+- `v0.22.x` : stabilisation du connecteur Steam.
 
 ## v0.1.0 - 2026-07-16
 
@@ -211,3 +212,13 @@ Le projet suit des versions de developpement simples :
 - Suppression de l'exposition des secrets dans l'overview renderer.
 - Ajout d'un indicateur `hasToken` pour afficher l'existence d'une cle sans reveler sa valeur.
 - Mise a jour du panneau Steam pour conserver une cle existante si le champ reste vide.
+
+## v0.22.0 - 2026-07-20
+
+- Ajout d'une validation stricte du SteamID64 avant enregistrement et synchronisation.
+- Ajout d'une construction d'URL Steam centralisee et testable.
+- Ajout d'un timeout reseau pour eviter une synchronisation bloquee.
+- Ajout de messages d'erreur explicites pour cle refusee, service absent, limite de requetes et indisponibilite Steam.
+- Ajout d'un message dedie lorsqu'aucun jeu Steam n'est recu.
+- Ajout d'une aide de saisie SteamID64 dans les parametres.
+- Ajout de tests Vitest pour le parsing, l'URL, la validation SteamID64 et les erreurs HTTP.

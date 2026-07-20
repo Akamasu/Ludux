@@ -38,7 +38,7 @@ Les secrets reels doivent rester dans `.env` ou etre saisis dans l'application. 
 
 | Plateforme | Donnees visees | Ce qu'il faut recuperer | Source officielle | Decision Ludux |
 | --- | --- | --- | --- | --- |
-| Steam | Bibliotheque, temps de jeu, jaquettes | Web API key, SteamID64, details de jeux visibles | Steam Web API, IPlayerService | Integration active en sync manuelle |
+| Steam | Bibliotheque, temps de jeu, jaquettes | Web API key, SteamID64, details de jeux visibles | Steam Web API, IPlayerService | Integration active en sync automatique |
 | RAWG | Metadonnees catalogue | Cle API RAWG | RAWG API docs | Bon candidat pour enrichir les fiches |
 | IGDB | Metadonnees catalogue | Twitch Client ID, Client Secret, token OAuth app | IGDB API docs, Twitch OAuth | Bon candidat pour jaquettes/studios/genres |
 | Xbox | Succes, activite, profil | Acces Microsoft/Xbox Services autorise | Microsoft Learn Xbox Services | A garder pour plus tard, acces plus contraint |

@@ -307,9 +307,15 @@ function ProvidersPanel({
                 <input
                   value={externalId}
                   onChange={(event) => setExternalId(event.target.value)}
+                  inputMode={selectedProvider.provider === 'STEAM' ? 'numeric' : 'text'}
                   placeholder={providerExternalIdPlaceholder(selectedProvider)}
                   className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
                 />
+                {selectedProvider.provider === 'STEAM' ? (
+                  <span className="mt-2 block text-xs text-zinc-600">
+                    SteamID64 attendu : 17 chiffres.
+                  </span>
+                ) : null}
               </label>
 
               <div className="grid gap-3 md:grid-cols-2">
