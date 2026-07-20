@@ -2,6 +2,7 @@ import { dialog, ipcMain } from 'electron'
 import { gameService } from '../../services/game.service'
 import { libraryService } from '../../services/library.service'
 import {
+  type AddAvailableDlcInput,
   EMOTION_VALUES,
   GAME_STATUS_VALUES,
   type CreateAchievementInput,
@@ -267,6 +268,18 @@ function parseDeleteDlcInput(value: unknown): DeleteDlcInput {
   }
 }
 
+function parseAddAvailableDlcInput(value: unknown): AddAvailableDlcInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees du DLC sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    provider: readRequiredString(value['provider'], 'Fournisseur de DLC invalide.'),
+    externalId: readRequiredString(value['externalId'], 'Identifiant de DLC invalide.'),
+  }
+}
+
 function parseCreateAchievementInput(value: unknown): CreateAchievementInput {
   if (!isRecord(value)) {
     throw new Error('Les donnees du succes sont invalides.')
@@ -506,6 +519,26 @@ export function registerLibraryHandlers() {
   ipcMain.handle('games:createDlc', async (_event, input: unknown) => {
     try {
       return await gameService.createDlc(parseCreateDlcInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:listAvailableDlc', async (_event, gameId: unknown) => {
+    try {
+      return await gameService.listAvailableDlc(
+        readRequiredString(gameId, 'Identifiant de jeu invalide.'),
+      )
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:addAvailableDlc', async (_event, input: unknown) => {
+    try {
+      return await gameService.addAvailableDlc(parseAddAvailableDlcInput(input))
     } catch (error) {
       logger.error('[LibraryIPC]', error)
       throw error

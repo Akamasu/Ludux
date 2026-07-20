@@ -1,7 +1,10 @@
 import { copyFile, mkdir } from 'node:fs/promises'
 import { basename, extname, join, parse, resolve } from 'node:path'
 import { prisma } from '../database/client'
+import { fetchSteamDlcCatalog, type SteamAppDetails } from '../providers/steam'
 import type {
+  AddAvailableDlcInput,
+  AvailableDlcListItem,
   CreateAchievementInput,
   CreateChronicleInput,
   CreateDlcInput,
@@ -28,6 +31,7 @@ import type {
 } from '../types/game'
 
 const screenshotMediaDirectory = resolve('userdata', 'media', 'screenshots')
+const steamProvider = 'STEAM'
 
 interface ImportScreenshotFileData extends ImportScreenshotFileInput {
   sourcePath: string
@@ -230,6 +234,10 @@ function trimNullable(value: string | null | undefined) {
   return trimmed ? trimmed : null
 }
 
+function normalizeLookupText(value: string) {
+  return value.trim().toLocaleLowerCase('fr-FR')
+}
+
 function parseNullableDate(value: string | null | undefined) {
   if (value === undefined) {
     return undefined
@@ -255,6 +263,16 @@ function createImportedScreenshotName(sourcePath: string) {
   return `${timestamp}-${baseName || 'capture'}${extension.toLowerCase()}`
 }
 
+function readSteamAppId(value: string | null | undefined) {
+  const appid = Number(value)
+
+  return Number.isInteger(appid) && appid > 0 ? appid : null
+}
+
+function createSteamDlcName(detail: SteamAppDetails) {
+  return detail.title ?? `Steam DLC ${detail.appid}`
+}
+
 async function requireGameDetail(id: string) {
   const game = await fetchGameDetail(id)
 
@@ -275,6 +293,27 @@ async function requireChronicleForGame(gameId: string, chronicleId: string) {
 
   if (count === 0) {
     throw new Error('Chronique introuvable pour ce jeu.')
+  }
+}
+
+function toAvailableDlcListItem(
+  detail: SteamAppDetails,
+  existingSteamExternalIds: Set<string>,
+  existingDlcNames: Set<string>,
+): AvailableDlcListItem {
+  const name = createSteamDlcName(detail)
+  const externalId = String(detail.appid)
+
+  return {
+    appid: detail.appid,
+    name,
+    coverUrl: detail.coverUrl,
+    releaseDate: detail.releaseDate,
+    provider: steamProvider,
+    externalId,
+    added:
+      existingSteamExternalIds.has(externalId) ||
+      existingDlcNames.has(normalizeLookupText(name)),
   }
 }
 
@@ -348,6 +387,58 @@ class GameService {
     return game ? toGameDetail(game) : null
   }
 
+  async listAvailableDlc(gameId: string): Promise<AvailableDlcListItem[]> {
+    const game = await prisma.game.findFirst({
+      where: {
+        id: gameId,
+        archived: false,
+      },
+      include: {
+        dlcs: true,
+        externalGames: {
+          where: {
+            provider: steamProvider,
+          },
+          take: 1,
+        },
+      },
+    })
+
+    if (!game) {
+      throw new Error('Jeu introuvable.')
+    }
+
+    const steamAppId = readSteamAppId(game.externalGames[0]?.externalId)
+
+    if (!steamAppId) {
+      return []
+    }
+
+    const catalog = await fetchSteamDlcCatalog({
+      appid: steamAppId,
+    })
+    const existingSteamExternalIds = new Set(
+      game.dlcs.flatMap((dlc) =>
+        dlc.provider === steamProvider && dlc.externalId ? [dlc.externalId] : [],
+      ),
+    )
+    const existingDlcNames = new Set(
+      game.dlcs.map((dlc) => normalizeLookupText(dlc.name)),
+    )
+
+    return catalog
+      .map((detail) =>
+        toAvailableDlcListItem(detail, existingSteamExternalIds, existingDlcNames),
+      )
+      .sort((left, right) => {
+        if (left.added !== right.added) {
+          return left.added ? 1 : -1
+        }
+
+        return left.name.localeCompare(right.name, 'fr-FR')
+      })
+  }
+
   async updateGame(input: UpdateGameInput): Promise<GameDetail> {
     const title = trimOptional(input.title)
 
@@ -415,6 +506,123 @@ class GameService {
         releaseDate: parseNullableDate(input.releaseDate),
         owned: input.completed ? true : input.owned ?? false,
         completed: input.completed ?? false,
+      },
+    })
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async addAvailableDlc(input: AddAvailableDlcInput): Promise<GameDetail> {
+    if (input.provider !== steamProvider) {
+      throw new Error('Catalogue DLC non pris en charge.')
+    }
+
+    const dlcAppId = readSteamAppId(input.externalId)
+
+    if (!dlcAppId) {
+      throw new Error('Identifiant de DLC Steam invalide.')
+    }
+
+    const game = await prisma.game.findFirst({
+      where: {
+        id: input.gameId,
+        archived: false,
+      },
+      include: {
+        externalGames: {
+          where: {
+            provider: steamProvider,
+          },
+          take: 1,
+        },
+      },
+    })
+
+    if (!game) {
+      throw new Error('Jeu introuvable.')
+    }
+
+    const steamAppId = readSteamAppId(game.externalGames[0]?.externalId)
+
+    if (!steamAppId) {
+      throw new Error("Ce jeu n'est pas relie a Steam.")
+    }
+
+    const catalog = await fetchSteamDlcCatalog({
+      appid: steamAppId,
+    })
+    const detail = catalog.find((dlc) => dlc.appid === dlcAppId)
+
+    if (!detail) {
+      throw new Error('DLC Steam introuvable pour ce jeu.')
+    }
+
+    const externalId = String(detail.appid)
+    const name = createSteamDlcName(detail)
+    const releaseDate = parseNullableDate(detail.releaseDate)
+    const existingSyncedDlc = await prisma.dlc.findFirst({
+      where: {
+        gameId: input.gameId,
+        provider: steamProvider,
+        externalId,
+      },
+      select: {
+        id: true,
+      },
+    })
+
+    if (existingSyncedDlc) {
+      await prisma.dlc.update({
+        where: {
+          id: existingSyncedDlc.id,
+        },
+        data: {
+          name,
+          releaseDate,
+          owned: true,
+        },
+      })
+
+      return toGameDetail(await requireGameDetail(input.gameId))
+    }
+
+    const existingManualDlc = await prisma.dlc.findFirst({
+      where: {
+        gameId: input.gameId,
+        name,
+        provider: null,
+        externalId: null,
+      },
+      select: {
+        id: true,
+      },
+    })
+
+    if (existingManualDlc) {
+      await prisma.dlc.update({
+        where: {
+          id: existingManualDlc.id,
+        },
+        data: {
+          releaseDate,
+          owned: true,
+          provider: steamProvider,
+          externalId,
+        },
+      })
+
+      return toGameDetail(await requireGameDetail(input.gameId))
+    }
+
+    await prisma.dlc.create({
+      data: {
+        gameId: input.gameId,
+        name,
+        releaseDate,
+        owned: true,
+        completed: false,
+        provider: steamProvider,
+        externalId,
       },
     })
 

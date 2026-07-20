@@ -85,6 +85,16 @@ export interface DlcListItem {
   completed: boolean
 }
 
+export interface AvailableDlcListItem {
+  appid: number
+  name: string
+  coverUrl: string | null
+  releaseDate: string | null
+  provider: string
+  externalId: string
+  added: boolean
+}
+
 export interface AchievementListItem {
   id: string
   name: string
@@ -260,6 +270,12 @@ export interface UpdateDlcInput {
 export interface DeleteDlcInput {
   gameId: string
   id: string
+}
+
+export interface AddAvailableDlcInput {
+  gameId: string
+  provider: string
+  externalId: string
 }
 
 export interface CreateAchievementInput {

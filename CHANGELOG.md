@@ -29,6 +29,13 @@ Le projet suit des versions de developpement simples :
 - `v0.23.x` : enrichissement des metadonnees via RAWG.
 - `v0.24.x` : experience immersive, navigation animee et habillage bibliotheque.
 
+## v0.24.3 - 2026-07-20
+
+- Ajout d'une liste de DLC disponibles depuis Steam Store directement dans les fiches de jeu.
+- Ajout manuel en un clic des DLC Steam detectes, marques comme possedes dans Ludux.
+- Synchronisation DLC Steam plus robuste : les erreurs partielles de Steam Store ne vident plus toute la detection.
+- Requetes Steam Store localisees en francais quand les donnees existent.
+
 ## v0.24.2 - 2026-07-20
 
 - Simplification du README pour presenter Ludux avant les details de developpement.

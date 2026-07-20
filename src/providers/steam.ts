@@ -67,7 +67,14 @@ interface FetchSteamOwnedGamesInput {
 }
 
 interface FetchSteamAppDetailsInput {
+  allowPartial?: boolean
   appids: number[]
+  fetchImpl?: typeof fetch
+  timeoutMs?: number
+}
+
+interface FetchSteamDlcCatalogInput {
+  appid: number
   fetchImpl?: typeof fetch
   timeoutMs?: number
 }
@@ -494,6 +501,7 @@ export function createSteamAppDetailsUrl(appid: number) {
 
   const params = new URLSearchParams({
     filters: 'basic,release_date,dlc',
+    l: 'french',
   })
 
   return `https://store.steampowered.com/api/appdetails?appids=${normalizedAppId}&${params}`
@@ -807,6 +815,7 @@ export function parseSteamOwnedGames(payload: unknown): SteamOwnedGamesResult {
 }
 
 export async function fetchSteamAppDetails({
+  allowPartial = false,
   appids,
   fetchImpl = fetch,
   timeoutMs = defaultSteamTimeoutMs,
@@ -823,24 +832,70 @@ export async function fetchSteamAppDetails({
       response = await fetchImpl(createSteamAppDetailsUrl(appid), {
         signal: controller.signal,
       })
+      if (!response.ok) {
+        throw new Error(`Steam Store a refuse les donnees (${response.status}).`)
+      }
+
+      details.push(...parseSteamAppDetails(await response.json()))
     } catch (error) {
+      if (allowPartial) {
+        continue
+      }
+
       if (error instanceof DOMException && error.name === 'AbortError') {
         throw new Error('Steam Store ne repond pas. Reessayez plus tard.')
+      }
+
+      if (error instanceof TypeError) {
+        throw new Error('Impossible de joindre Steam Store. Verifiez la connexion reseau.')
+      }
+
+      if (error instanceof Error) {
+        throw error
       }
 
       throw new Error('Impossible de joindre Steam Store. Verifiez la connexion reseau.')
     } finally {
       clearTimeout(timeout)
     }
-
-    if (!response.ok) {
-      throw new Error(`Steam Store a refuse les jaquettes (${response.status}).`)
-    }
-
-    details.push(...parseSteamAppDetails(await response.json()))
   }
 
   return details
+}
+
+export async function fetchSteamDlcCatalog({
+  appid,
+  fetchImpl = fetch,
+  timeoutMs = defaultSteamTimeoutMs,
+}: FetchSteamDlcCatalogInput): Promise<SteamAppDetails[]> {
+  const [gameDetails] = await fetchSteamAppDetails({
+    appids: [appid],
+    fetchImpl,
+    timeoutMs,
+  })
+
+  if (!gameDetails || gameDetails.dlcAppIds.length === 0) {
+    return []
+  }
+
+  const dlcDetails = await fetchSteamAppDetails({
+    allowPartial: true,
+    appids: gameDetails.dlcAppIds,
+    fetchImpl,
+    timeoutMs,
+  })
+  const dlcDetailsByAppId = new Map(dlcDetails.map((detail) => [detail.appid, detail]))
+
+  return gameDetails.dlcAppIds.map(
+    (dlcAppId) =>
+      dlcDetailsByAppId.get(dlcAppId) ?? {
+        appid: dlcAppId,
+        title: `Steam DLC ${dlcAppId}`,
+        coverUrl: null,
+        dlcAppIds: [],
+        releaseDate: null,
+      },
+  )
 }
 
 async function fetchSteamJson({

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type {
+  AddAvailableDlcInput,
+  AvailableDlcListItem,
   CreateAchievementInput,
   CreateChronicleInput,
   CreateDlcInput,
@@ -60,7 +62,9 @@ export function useGameDetail(
   onChanged: () => Promise<void>,
 ) {
   const [detail, setDetail] = useState<GameDetail | null>(null)
+  const [availableDlc, setAvailableDlc] = useState<AvailableDlcListItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingAvailableDlc, setIsLoadingAvailableDlc] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -88,6 +92,31 @@ export function useGameDetail(
       setIsLoading(false)
     }
   }, [fallbackGame, gameId])
+
+  const loadAvailableDlc = useCallback(async () => {
+    if (!gameId) {
+      setAvailableDlc([])
+      return
+    }
+
+    const api = window.ludux
+
+    if (!api) {
+      setAvailableDlc([])
+      return
+    }
+
+    setIsLoadingAvailableDlc(true)
+
+    try {
+      setAvailableDlc(await api.games.listAvailableDlc(gameId))
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      setAvailableDlc([])
+    } finally {
+      setIsLoadingAvailableDlc(false)
+    }
+  }, [gameId])
 
   const updateGame = useCallback(
     async (input: UpdateGameInput) => {
@@ -348,13 +377,37 @@ export function useGameDetail(
         }
 
         setDetail(await api.games.createDlc(input))
+        await loadAvailableDlc()
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
       } finally {
         setIsSaving(false)
       }
     },
-    [],
+    [loadAvailableDlc],
+  )
+
+  const addAvailableDlc = useCallback(
+    async (input: AddAvailableDlcInput) => {
+      const api = window.ludux
+      setIsSaving(true)
+      setError(null)
+
+      try {
+        if (!api) {
+          setError('Ajout de DLC Steam disponible dans la version Electron.')
+          return
+        }
+
+        setDetail(await api.games.addAvailableDlc(input))
+        await loadAvailableDlc()
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [loadAvailableDlc],
   )
 
   const updateDlc = useCallback(async (input: UpdateDlcInput) => {
@@ -829,15 +882,23 @@ export function useGameDetail(
     void refresh()
   }, [refresh])
 
+  useEffect(() => {
+    void loadAvailableDlc()
+  }, [loadAvailableDlc])
+
   return {
+    availableDlc,
     detail,
     error,
     isLoading,
+    isLoadingAvailableDlc,
     isSaving,
     refresh,
+    loadAvailableDlc,
     updateGame,
     updateReview,
     createDlc,
+    addAvailableDlc,
     updateDlc,
     deleteDlc,
     createAchievement,

@@ -12,7 +12,9 @@ import {
   FolderOpen,
   ImagePlus,
   Pencil,
+  Plus,
   Puzzle,
+  RefreshCw,
   Save,
   Star,
   Trash2,
@@ -25,6 +27,8 @@ import {
   GAME_STATUS_LABELS,
   GAME_STATUS_VALUES,
   type AchievementListItem,
+  type AddAvailableDlcInput,
+  type AvailableDlcListItem,
   type ChronicleListItem,
   type CreateAchievementInput,
   type CreateChronicleInput,
@@ -61,10 +65,13 @@ import { formatDate, formatHours } from '../utils/formatters'
 
 interface GameDetailPageProps {
   detail: GameDetail | null
+  availableDlc: AvailableDlcListItem[]
   error: string | null
   isLoading: boolean
+  isLoadingAvailableDlc: boolean
   isSaving: boolean
   onBack: () => void
+  onAddAvailableDlc: (input: AddAvailableDlcInput) => Promise<void>
   onArchiveGame: (gameId: string) => Promise<void>
   onCreateAchievement: (input: CreateAchievementInput) => Promise<void>
   onCreateChronicle: (input: CreateChronicleInput) => Promise<void>
@@ -77,6 +84,7 @@ interface GameDetailPageProps {
   onDeletePlaySession: (input: DeletePlaySessionInput) => Promise<void>
   onDeleteScreenshot: (input: DeleteScreenshotInput) => Promise<void>
   onImportScreenshotFile: (input: ImportScreenshotFileInput) => Promise<void>
+  onRefreshAvailableDlc: () => Promise<void>
   onUpdateAchievement: (input: UpdateAchievementInput) => Promise<void>
   onUpdateChronicle: (input: UpdateChronicleInput) => Promise<void>
   onUpdateDlc: (input: UpdateDlcInput) => Promise<void>
@@ -337,10 +345,13 @@ function GameArchiveHero({
 }
 
 export function GameDetailPage({
+  availableDlc,
   detail,
   error,
   isLoading,
+  isLoadingAvailableDlc,
   isSaving,
+  onAddAvailableDlc,
   onBack,
   onArchiveGame,
   onCreateAchievement,
@@ -354,6 +365,7 @@ export function GameDetailPage({
   onDeletePlaySession,
   onDeleteScreenshot,
   onImportScreenshotFile,
+  onRefreshAvailableDlc,
   onUpdateAchievement,
   onUpdateChronicle,
   onUpdateDlc,
@@ -418,10 +430,14 @@ export function GameDetailPage({
       </section>
 
       <DlcPanel
+        availableDlc={availableDlc}
         detail={detail}
+        isLoadingAvailableDlc={isLoadingAvailableDlc}
         isSaving={isSaving}
+        onAddAvailableDlc={onAddAvailableDlc}
         onCreateDlc={onCreateDlc}
         onDeleteDlc={onDeleteDlc}
+        onRefreshAvailableDlc={onRefreshAvailableDlc}
         onUpdateDlc={onUpdateDlc}
       />
 
@@ -671,14 +687,22 @@ function ReviewPanel({
 }
 
 function DlcPanel({
+  availableDlc,
   detail,
+  isLoadingAvailableDlc,
   isSaving,
+  onAddAvailableDlc,
   onCreateDlc,
   onDeleteDlc,
+  onRefreshAvailableDlc,
   onUpdateDlc,
 }: DetailChildProps & {
+  availableDlc: AvailableDlcListItem[]
+  isLoadingAvailableDlc: boolean
+  onAddAvailableDlc: (input: AddAvailableDlcInput) => Promise<void>
   onCreateDlc: (input: CreateDlcInput) => Promise<void>
   onDeleteDlc: (input: DeleteDlcInput) => Promise<void>
+  onRefreshAvailableDlc: () => Promise<void>
   onUpdateDlc: (input: UpdateDlcInput) => Promise<void>
 }) {
   const [name, setName] = useState('')
@@ -687,6 +711,7 @@ function DlcPanel({
   const [completed, setCompleted] = useState(false)
   const completedCount = detail.dlcs.filter((dlc) => dlc.completed).length
   const ownedCount = detail.dlcs.filter((dlc) => dlc.owned).length
+  const availableToAddCount = availableDlc.filter((dlc) => !dlc.added).length
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -727,6 +752,14 @@ function DlcPanel({
     }
   }
 
+  async function handleAddAvailableDlc(dlc: AvailableDlcListItem) {
+    await onAddAvailableDlc({
+      gameId: detail.id,
+      provider: dlc.provider,
+      externalId: dlc.externalId,
+    })
+  }
+
   return (
     <section className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
@@ -754,6 +787,82 @@ function DlcPanel({
           <p className="text-xs text-zinc-500">Termines</p>
           <p className="mt-1 text-xl font-semibold text-white">{completedCount}</p>
         </div>
+      </div>
+
+      <div className="mb-5 rounded-lg border border-white/10 bg-[#121620] p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-semibold text-white">DLC disponibles</h3>
+            <p className="mt-1 text-sm text-zinc-500">
+              {availableToAddCount > 0
+                ? `${availableToAddCount} extension(s) a ajouter depuis Steam Store.`
+                : 'Catalogue Steam Store pour cette fiche.'}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onRefreshAvailableDlc}
+            disabled={isSaving || isLoadingAvailableDlc}
+            aria-label="Rafraichir les DLC disponibles"
+            title="Rafraichir"
+            className="h-10 px-3"
+          >
+            <RefreshCw
+              size={16}
+              aria-hidden="true"
+              className={isLoadingAvailableDlc ? 'animate-spin' : undefined}
+            />
+          </Button>
+        </div>
+
+        {isLoadingAvailableDlc ? (
+          <p className="mt-4 rounded-lg border border-dashed border-white/15 bg-[#0F1117] p-4 text-sm text-zinc-500">
+            Recherche des DLC Steam...
+          </p>
+        ) : availableDlc.length === 0 ? (
+          <p className="mt-4 rounded-lg border border-dashed border-white/15 bg-[#0F1117] p-4 text-sm text-zinc-500">
+            Aucun DLC Steam disponible pour cette fiche.
+          </p>
+        ) : (
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            {availableDlc.map((dlc) => (
+              <article
+                key={`${dlc.provider}-${dlc.externalId}`}
+                className="grid grid-cols-[72px_1fr] gap-3 rounded-lg border border-white/10 bg-[#0F1117] p-3 sm:grid-cols-[80px_1fr_auto]"
+              >
+                <div className="h-12 overflow-hidden rounded-md border border-white/10 bg-[#181B23]">
+                  <GameCover
+                    title={dlc.name}
+                    coverUrl={dlc.coverUrl}
+                    initialClassName="text-xl"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="truncate text-sm font-medium text-white">{dlc.name}</h4>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                    <span>Steam</span>
+                    {dlc.releaseDate ? <span>{formatDate(dlc.releaseDate)}</span> : null}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant={dlc.added ? 'secondary' : 'primary'}
+                  onClick={() => handleAddAvailableDlc(dlc)}
+                  disabled={isSaving || isLoadingAvailableDlc || dlc.added}
+                  className="col-span-2 h-10 px-3 sm:col-span-1"
+                >
+                  {dlc.added ? (
+                    <CheckCircle2 size={16} aria-hidden="true" />
+                  ) : (
+                    <Plus size={16} aria-hidden="true" />
+                  )}
+                  {dlc.added ? 'Ajoute' : 'Ajouter'}
+                </Button>
+              </article>
+            ))}
+          </div>
+        )}
       </div>
 
       <form className="grid gap-3 xl:grid-cols-[1fr_180px_auto]" onSubmit={handleSubmit}>

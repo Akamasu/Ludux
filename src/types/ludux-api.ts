@@ -1,4 +1,6 @@
 import type {
+  AddAvailableDlcInput,
+  AvailableDlcListItem,
   ChronicleTimelineItem,
   CreateAchievementInput,
   CreateChronicleInput,
@@ -56,6 +58,8 @@ export interface LuduxApi {
     delete: (id: string) => Promise<void>
     updateReview: (input: UpdateReviewInput) => Promise<GameDetail>
     createDlc: (input: CreateDlcInput) => Promise<GameDetail>
+    listAvailableDlc: (gameId: string) => Promise<AvailableDlcListItem[]>
+    addAvailableDlc: (input: AddAvailableDlcInput) => Promise<GameDetail>
     updateDlc: (input: UpdateDlcInput) => Promise<GameDetail>
     deleteDlc: (input: DeleteDlcInput) => Promise<GameDetail>
     createAchievement: (input: CreateAchievementInput) => Promise<GameDetail>

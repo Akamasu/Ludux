@@ -692,6 +692,7 @@ async function syncSteamDlcCatalog(
   }
 
   const dlcDetails = await fetchSteamAppDetails({
+    allowPartial: true,
     appids: dlcAppIds,
   })
   const dlcDetailsByAppId = new Map(dlcDetails.map((detail) => [detail.appid, detail]))
@@ -1332,6 +1333,7 @@ class SettingsService {
 
       try {
         steamAppDetails = await fetchSteamAppDetails({
+          allowPartial: true,
           appids: mergedGames.map((game) => game.appid),
         })
 

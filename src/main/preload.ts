@@ -1,5 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
+  AddAvailableDlcInput,
+  AvailableDlcListItem,
   ChronicleTimelineItem,
   CreateAchievementInput,
   CreateChronicleInput,
@@ -69,6 +71,12 @@ const api: LuduxApi = {
       ipcRenderer.invoke('games:updateReview', input) as Promise<GameDetail>,
     createDlc: (input: CreateDlcInput) =>
       ipcRenderer.invoke('games:createDlc', input) as Promise<GameDetail>,
+    listAvailableDlc: (gameId: string) =>
+      ipcRenderer.invoke('games:listAvailableDlc', gameId) as Promise<
+        AvailableDlcListItem[]
+      >,
+    addAvailableDlc: (input: AddAvailableDlcInput) =>
+      ipcRenderer.invoke('games:addAvailableDlc', input) as Promise<GameDetail>,
     updateDlc: (input: UpdateDlcInput) =>
       ipcRenderer.invoke('games:updateDlc', input) as Promise<GameDetail>,
     deleteDlc: (input: DeleteDlcInput) =>

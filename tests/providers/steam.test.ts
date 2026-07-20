@@ -7,6 +7,7 @@ import {
   fetchSteamAppDetails,
   fetchSteamAchievements,
   fetchSteamOwnedGames,
+  fetchSteamDlcCatalog,
   hasDatedSteamPlaytime,
   mergeSteamAchievements,
   mergeSteamAppDetails,
@@ -47,6 +48,7 @@ describe('steam provider', () => {
     expect(url).toContain('filters=basic')
     expect(url).toContain('release_date')
     expect(url).toContain('dlc')
+    expect(url).toContain('l=french')
   })
 
   it('builds Steam achievements URLs with normalized credentials', () => {
@@ -429,6 +431,67 @@ describe('steam provider', () => {
         appid: 620,
         title: 'Portal 2',
         coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
+        dlcAppIds: [],
+        releaseDate: null,
+      },
+    ])
+  })
+
+  it('fetches a Steam DLC catalog with partial detail fallback', async () => {
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      const urlValue = String(url)
+
+      if (urlValue.includes('appids=620')) {
+        return new Response(
+          JSON.stringify({
+            '620': {
+              success: true,
+              data: {
+                name: 'Portal 2',
+                dlc: [1234, 5678],
+              },
+            },
+          }),
+        )
+      }
+
+      if (urlValue.includes('appids=1234')) {
+        return new Response(
+          JSON.stringify({
+            '1234': {
+              success: true,
+              data: {
+                name: 'Portal 2 - Test Chambers',
+                header_image: 'https://shared.akamai.steamstatic.com/dlc.jpg',
+                release_date: {
+                  date: 'May 1, 2011',
+                },
+              },
+            },
+          }),
+        )
+      }
+
+      return new Response(null, { status: 500 })
+    })
+
+    await expect(
+      fetchSteamDlcCatalog({
+        appid: 620,
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+      }),
+    ).resolves.toEqual([
+      {
+        appid: 1234,
+        title: 'Portal 2 - Test Chambers',
+        coverUrl: 'https://shared.akamai.steamstatic.com/dlc.jpg',
+        dlcAppIds: [],
+        releaseDate: '2011-05-01T00:00:00.000Z',
+      },
+      {
+        appid: 5678,
+        title: 'Steam DLC 5678',
+        coverUrl: null,
         dlcAppIds: [],
         releaseDate: null,
       },

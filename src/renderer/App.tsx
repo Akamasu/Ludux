@@ -103,11 +103,14 @@ export default function App() {
     content = (
       <GameDetailPage
         detail={gameDetailState.detail}
+        availableDlc={gameDetailState.availableDlc}
         error={gameDetailState.error}
         isLoading={gameDetailState.isLoading}
+        isLoadingAvailableDlc={gameDetailState.isLoadingAvailableDlc}
         isSaving={gameDetailState.isSaving}
         onBack={() => setSelectedGameId(null)}
         onArchiveGame={archiveGame}
+        onAddAvailableDlc={gameDetailState.addAvailableDlc}
         onCreateAchievement={gameDetailState.createAchievement}
         onCreateChronicle={gameDetailState.createChronicle}
         onCreateDlc={gameDetailState.createDlc}
@@ -119,6 +122,7 @@ export default function App() {
         onDeletePlaySession={gameDetailState.deletePlaySession}
         onDeleteScreenshot={gameDetailState.deleteScreenshot}
         onImportScreenshotFile={gameDetailState.importScreenshotFile}
+        onRefreshAvailableDlc={gameDetailState.loadAvailableDlc}
         onUpdateAchievement={gameDetailState.updateAchievement}
         onUpdateChronicle={gameDetailState.updateChronicle}
         onUpdateDlc={gameDetailState.updateDlc}
