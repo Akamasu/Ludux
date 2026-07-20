@@ -20,7 +20,12 @@ import type {
   UpdateReviewInput,
   UpdateScreenshotInput,
 } from './game'
-import type { SettingsActionResult, SettingsOverview } from './settings'
+import type {
+  DeleteProviderConnectionInput,
+  SettingsActionResult,
+  SettingsOverview,
+  UpsertProviderConnectionInput,
+} from './settings'
 
 export interface LuduxApi {
   library: {
@@ -56,6 +61,12 @@ export interface LuduxApi {
     exportLibrary: () => Promise<SettingsActionResult>
     createBackup: () => Promise<SettingsActionResult>
     openDataFolder: () => Promise<boolean>
+    upsertProviderConnection: (
+      input: UpsertProviderConnectionInput,
+    ) => Promise<SettingsOverview>
+    deleteProviderConnection: (
+      input: DeleteProviderConnectionInput,
+    ) => Promise<SettingsOverview>
   }
 }
 

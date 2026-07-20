@@ -163,11 +163,13 @@ export default function App() {
           launchView={launchView}
           onChangeLaunchView={changeLaunchView}
           onCreateBackup={settingsState.createBackup}
+          onDeleteProviderConnection={settingsState.deleteProviderConnection}
           onDeleteGame={libraryState.deleteGame}
           onExportLibrary={settingsState.exportLibrary}
           onOpenDataFolder={settingsState.openDataFolder}
           onRefresh={refreshSettingsView}
           onRestoreGame={libraryState.restoreGame}
+          onUpsertProviderConnection={settingsState.upsertProviderConnection}
         />
       ) : null}
     </AppShell>

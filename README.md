@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.14.0`
+Version courante : `v0.15.0`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
@@ -41,7 +41,7 @@ utilisables sont déjà en place :
 - Musée des jeux terminés et terminés à 100 %.
 - Livre de Vie avec chronologie globale des sessions et chroniques.
 - Tableau de bord statistique.
-- Paramètres locaux avec sauvegarde SQLite, export JSON et préférences.
+- Paramètres locaux avec sauvegarde SQLite, export JSON, préférences et providers externes préparés.
 - Stockage local SQLite via Prisma.
 - IPC Electron sécurisé entre le renderer et le main process.
 - Identité visuelle Ludux avec palette sombre, violet et bleu électrique.
@@ -97,8 +97,9 @@ Le tableau de bord calcule localement :
 ### Paramètres
 
 Les paramètres donnent accès aux chemins locaux, à une sauvegarde de la base
-SQLite, à un export JSON complet, au choix de la page d'ouverture et aux jeux
-archivés, restaurables ou supprimables définitivement.
+SQLite, à un export JSON complet, au choix de la page d'ouverture, aux providers
+externes préparés et aux jeux archivés, restaurables ou supprimables
+définitivement.
 
 ## Stack Technique
 
@@ -216,6 +217,7 @@ Tags principaux :
 - `v0.12.0` : gestion locale des DLC.
 - `v0.13.0` : gestion locale des succès.
 - `v0.14.0` : captures d'écran et souvenirs visuels.
+- `v0.15.0` : providers externes préparés sans synchronisation réseau.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.
@@ -225,7 +227,8 @@ Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 Prochaines pistes naturelles :
 
 - Édition avancée des chroniques.
-- Intégrations optionnelles avec des plateformes de jeu.
+- Sélecteur de fichiers pour copier automatiquement les captures locales.
+- Intégrations réseau optionnelles avec des plateformes de jeu.
 
 La vision produit détaillée est synthétisée dans `docs/PRODUCT_VISION.md`.
 

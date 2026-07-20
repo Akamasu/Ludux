@@ -120,6 +120,7 @@ Avant les fonctionnalités plus ambitieuses, Ludux doit permettre de :
 - suivre les succès ;
 - tenir un journal ;
 - rattacher des captures d'écran ;
+- préparer les comptes externes à synchroniser plus tard ;
 - voir des statistiques simples ;
 - éviter les crashs bloquants.
 
@@ -140,5 +141,6 @@ Avant les fonctionnalités plus ambitieuses, Ludux doit permettre de :
 
 Les prochaines étapes les plus cohérentes avec le document de conception sont :
 
-- Providers : préparer une interface de fournisseur externe sans intégration
-  réseau obligatoire au départ.
+- Chroniques : ajouter l'édition et la suppression depuis les fiches de jeux.
+- Captures : copier automatiquement les fichiers locaux dans le dossier Ludux.
+- Providers : brancher une première intégration réseau optionnelle.

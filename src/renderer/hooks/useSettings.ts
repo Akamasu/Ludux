@@ -1,5 +1,23 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { SettingsActionResult, SettingsOverview } from '../../types/settings'
+import { EXTERNAL_PROVIDER_DEFINITIONS } from '../../providers/registry'
+import type {
+  DeleteProviderConnectionInput,
+  SettingsActionResult,
+  SettingsOverview,
+  UpsertProviderConnectionInput,
+} from '../../types/settings'
+
+const BROWSER_PROVIDER_OVERVIEW = {
+  providers: EXTERNAL_PROVIDER_DEFINITIONS.map((definition) => ({
+    ...definition,
+    account: null,
+    sync: null,
+    configured: false,
+  })),
+  configuredCount: 0,
+  totalProviders: EXTERNAL_PROVIDER_DEFINITIONS.length,
+  lastSyncAt: null,
+}
 
 const BROWSER_OVERVIEW: SettingsOverview = {
   appVersion: 'navigateur',
@@ -8,6 +26,7 @@ const BROWSER_OVERVIEW: SettingsOverview = {
   exportDirectory: 'Electron requis',
   backupDirectory: 'Electron requis',
   lastBackupAt: null,
+  providerOverview: BROWSER_PROVIDER_OVERVIEW,
 }
 
 export function useSettings() {
@@ -118,6 +137,72 @@ export function useSettings() {
     }
   }, [])
 
+  const upsertProviderConnection = useCallback(
+    async (input: UpsertProviderConnectionInput) => {
+      const api = window.ludux
+
+      if (!api) {
+        setActionResult({
+          canceled: true,
+          path: null,
+          message: 'Providers disponibles dans la version Electron.',
+        })
+        return
+      }
+
+      setIsBusy(true)
+      setError(null)
+      setActionResult(null)
+
+      try {
+        setOverview(await api.settings.upsertProviderConnection(input))
+        setActionResult({
+          canceled: false,
+          path: null,
+          message: 'Connexion provider enregistree localement.',
+        })
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsBusy(false)
+      }
+    },
+    [],
+  )
+
+  const deleteProviderConnection = useCallback(
+    async (input: DeleteProviderConnectionInput) => {
+      const api = window.ludux
+
+      if (!api) {
+        setActionResult({
+          canceled: true,
+          path: null,
+          message: 'Providers disponibles dans la version Electron.',
+        })
+        return
+      }
+
+      setIsBusy(true)
+      setError(null)
+      setActionResult(null)
+
+      try {
+        setOverview(await api.settings.deleteProviderConnection(input))
+        setActionResult({
+          canceled: false,
+          path: null,
+          message: 'Connexion provider retiree.',
+        })
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsBusy(false)
+      }
+    },
+    [],
+  )
+
   useEffect(() => {
     void refresh()
   }, [refresh])
@@ -132,5 +217,7 @@ export function useSettings() {
     exportLibrary,
     createBackup,
     openDataFolder,
+    upsertProviderConnection,
+    deleteProviderConnection,
   }
 }

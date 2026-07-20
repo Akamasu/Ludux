@@ -22,7 +22,12 @@ import type {
   UpdateScreenshotInput,
 } from '../types/game'
 import type { LuduxApi } from '../types/ludux-api'
-import type { SettingsActionResult, SettingsOverview } from '../types/settings'
+import type {
+  DeleteProviderConnectionInput,
+  SettingsActionResult,
+  SettingsOverview,
+  UpsertProviderConnectionInput,
+} from '../types/settings'
 
 const api: LuduxApi = {
   library: {
@@ -82,6 +87,10 @@ const api: LuduxApi = {
       ipcRenderer.invoke('settings:createBackup') as Promise<SettingsActionResult>,
     openDataFolder: () =>
       ipcRenderer.invoke('settings:openDataFolder') as Promise<boolean>,
+    upsertProviderConnection: (input: UpsertProviderConnectionInput) =>
+      ipcRenderer.invoke('settings:upsertProviderConnection', input) as Promise<SettingsOverview>,
+    deleteProviderConnection: (input: DeleteProviderConnectionInput) =>
+      ipcRenderer.invoke('settings:deleteProviderConnection', input) as Promise<SettingsOverview>,
   },
 }
 

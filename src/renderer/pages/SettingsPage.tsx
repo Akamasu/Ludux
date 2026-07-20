@@ -1,18 +1,28 @@
 import {
   Archive,
+  Cloud,
   Database,
   Download,
   ExternalLink,
   FolderOpen,
   HardDrive,
   Home,
+  Link2,
   RefreshCw,
   RotateCcw,
   Settings,
+  ShieldCheck,
   Trash2,
 } from 'lucide-react'
+import { useEffect, useState, type FormEvent } from 'react'
 import type { GameListItem } from '../../types/game'
-import type { SettingsActionResult, SettingsOverview } from '../../types/settings'
+import type {
+  DeleteProviderConnectionInput,
+  ProviderConnection,
+  SettingsActionResult,
+  SettingsOverview,
+  UpsertProviderConnectionInput,
+} from '../../types/settings'
 import type { AppView } from '../types/navigation'
 import { Button } from '../components/ui/Button'
 import { formatDate } from '../utils/formatters'
@@ -28,10 +38,12 @@ interface SettingsPageProps {
   onChangeLaunchView: (view: AppView) => void
   onCreateBackup: () => Promise<void>
   onDeleteGame: (gameId: string) => Promise<void>
+  onDeleteProviderConnection: (input: DeleteProviderConnectionInput) => Promise<void>
   onExportLibrary: () => Promise<void>
   onOpenDataFolder: () => Promise<void>
   onRefresh: () => Promise<void>
   onRestoreGame: (gameId: string) => Promise<void>
+  onUpsertProviderConnection: (input: UpsertProviderConnectionInput) => Promise<void>
 }
 
 const launchViewOptions: {
@@ -79,6 +91,252 @@ function ResultMessage({ result }: { result: SettingsActionResult }) {
         </p>
       ) : null}
     </div>
+  )
+}
+
+function providerStatusLabel(connection: ProviderConnection) {
+  if (!connection.configured) {
+    return 'Non configure'
+  }
+
+  if (connection.sync?.status === 'READY') {
+    return 'Pret'
+  }
+
+  return connection.sync?.status ?? 'Local'
+}
+
+function ProvidersPanel({
+  isBusy,
+  overview,
+  onDeleteProviderConnection,
+  onUpsertProviderConnection,
+}: {
+  isBusy: boolean
+  overview: SettingsOverview
+  onDeleteProviderConnection: (input: DeleteProviderConnectionInput) => Promise<void>
+  onUpsertProviderConnection: (input: UpsertProviderConnectionInput) => Promise<void>
+}) {
+  const providers = overview.providerOverview.providers
+  const [selectedProviderId, setSelectedProviderId] = useState(
+    providers[0]?.provider ?? 'STEAM',
+  )
+  const selectedProvider =
+    providers.find((provider) => provider.provider === selectedProviderId) ?? providers[0]
+  const [externalId, setExternalId] = useState('')
+  const [username, setUsername] = useState('')
+  const [tokenHint, setTokenHint] = useState('')
+
+  useEffect(() => {
+    setExternalId(selectedProvider?.account?.externalId ?? '')
+    setUsername(selectedProvider?.account?.username ?? '')
+    setTokenHint(selectedProvider?.account?.tokenHint ?? '')
+  }, [selectedProvider])
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!selectedProvider) {
+      return
+    }
+
+    await onUpsertProviderConnection({
+      provider: selectedProvider.provider,
+      externalId,
+      username,
+      tokenHint,
+    })
+  }
+
+  async function handleDeleteConnection() {
+    if (!selectedProvider?.account) {
+      return
+    }
+
+    const confirmed = window.confirm(`Retirer la connexion ${selectedProvider.label} ?`)
+
+    if (confirmed) {
+      await onDeleteProviderConnection({
+        provider: selectedProvider.provider,
+        accountId: selectedProvider.account.id,
+      })
+    }
+  }
+
+  return (
+    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Providers externes</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Comptes et sources prepares pour les futures integrations.
+          </p>
+        </div>
+        <Cloud className="text-[#8CA7FF]" size={20} aria-hidden="true" />
+      </div>
+
+      <div className="mb-5 grid gap-3 md:grid-cols-3">
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Providers</p>
+          <p className="mt-1 text-xl font-semibold text-white">
+            {overview.providerOverview.totalProviders}
+          </p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Configures</p>
+          <p className="mt-1 text-xl font-semibold text-white">
+            {overview.providerOverview.configuredCount}
+          </p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Dernier etat</p>
+          <p className="mt-1 truncate text-xl font-semibold text-white">
+            {overview.providerOverview.lastSyncAt
+              ? formatDate(overview.providerOverview.lastSyncAt)
+              : 'Aucun'}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+        <div className="grid gap-2 sm:grid-cols-2">
+          {providers.map((provider) => {
+            const isSelected = provider.provider === selectedProvider?.provider
+
+            return (
+              <button
+                key={provider.provider}
+                type="button"
+                onClick={() => setSelectedProviderId(provider.provider)}
+                className={`rounded-lg border p-3 text-left transition ${
+                  isSelected
+                    ? 'border-[#7C5CFF]/70 bg-[#7C5CFF]/10'
+                    : 'border-white/10 bg-[#121620] hover:border-white/20'
+                }`}
+              >
+                <span className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-white">{provider.label}</span>
+                  <span
+                    className={`rounded-lg px-2 py-1 text-xs ${
+                      provider.configured
+                        ? 'bg-[#4F7CFF]/10 text-[#C9D6FF]'
+                        : 'bg-white/7 text-zinc-500'
+                    }`}
+                  >
+                    {providerStatusLabel(provider)}
+                  </span>
+                </span>
+                <span className="mt-2 line-clamp-2 block text-sm leading-5 text-zinc-500">
+                  {provider.description}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {selectedProvider ? (
+          <form className="border-t border-white/10 pt-4" onSubmit={handleSubmit}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-base font-semibold text-white">{selectedProvider.label}</h3>
+                <p className="mt-1 text-sm leading-6 text-zinc-500">
+                  {selectedProvider.description}
+                </p>
+              </div>
+              <ShieldCheck className="text-[#A797FF]" size={20} aria-hidden="true" />
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {selectedProvider.capabilities.map((capability) => (
+                <span
+                  key={capability}
+                  className="rounded-lg bg-[#0F1117] px-2.5 py-1 text-xs text-zinc-300"
+                >
+                  {capability}
+                </span>
+              ))}
+            </div>
+
+            <div className="mt-5 grid gap-3">
+              <label>
+                <span className="mb-2 block text-xs font-medium text-zinc-500">
+                  Identifiant externe
+                </span>
+                <input
+                  value={externalId}
+                  onChange={(event) => setExternalId(event.target.value)}
+                  placeholder="SteamID, gamertag, pseudo, cle publique..."
+                  className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+                />
+              </label>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <label>
+                  <span className="mb-2 block text-xs font-medium text-zinc-500">
+                    Nom affiche
+                  </span>
+                  <input
+                    value={username}
+                    onChange={(event) => setUsername(event.target.value)}
+                    placeholder="Compte principal"
+                    className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+                  />
+                </label>
+                <label>
+                  <span className="mb-2 block text-xs font-medium text-zinc-500">
+                    Indice token
+                  </span>
+                  <input
+                    value={tokenHint}
+                    onChange={(event) => setTokenHint(event.target.value)}
+                    placeholder="Optionnel"
+                    className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <Button type="submit" disabled={isBusy || externalId.trim().length === 0}>
+                <Link2 size={17} aria-hidden="true" />
+                Enregistrer
+              </Button>
+              {selectedProvider.account ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleDeleteConnection}
+                  disabled={isBusy}
+                  className="border-rose-400/30 bg-rose-400/10 text-rose-100 hover:border-rose-300/60 hover:bg-rose-400/15"
+                >
+                  <Trash2 size={17} aria-hidden="true" />
+                  Retirer
+                </Button>
+              ) : null}
+            </div>
+
+            {selectedProvider.account ? (
+              <div className="mt-5 rounded-lg border border-white/10 bg-[#0F1117] p-3 text-sm text-zinc-400">
+                <p className="font-medium text-white">
+                  {selectedProvider.account.username ?? selectedProvider.account.externalId}
+                </p>
+                <p className="mt-1 truncate text-xs text-zinc-500">
+                  {selectedProvider.account.externalId}
+                </p>
+                <p className="mt-2 text-xs text-zinc-600">
+                  Mis a jour le {formatDate(selectedProvider.account.updatedAt)}
+                </p>
+                {selectedProvider.sync?.message ? (
+                  <p className="mt-2 text-xs text-[#C9D6FF]">
+                    {selectedProvider.sync.message}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </form>
+        ) : null}
+      </div>
+    </section>
   )
 }
 
@@ -174,10 +432,12 @@ export function SettingsPage({
   onChangeLaunchView,
   onCreateBackup,
   onDeleteGame,
+  onDeleteProviderConnection,
   onExportLibrary,
   onOpenDataFolder,
   onRefresh,
   onRestoreGame,
+  onUpsertProviderConnection,
   overview,
 }: SettingsPageProps) {
   return (
@@ -336,6 +596,13 @@ export function SettingsPage({
           <DetailRow label="Sauvegardes" value={overview.backupDirectory} />
         </dl>
       </section>
+
+      <ProvidersPanel
+        overview={overview}
+        isBusy={isBusy}
+        onDeleteProviderConnection={onDeleteProviderConnection}
+        onUpsertProviderConnection={onUpsertProviderConnection}
+      />
 
       <ArchivedGamesPanel
         archivedGames={archivedGames}

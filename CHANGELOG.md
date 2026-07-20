@@ -18,6 +18,7 @@ Le projet suit des versions de developpement simples :
 - `v0.12.x` : gestion locale des DLC.
 - `v0.13.x` : gestion locale des succes.
 - `v0.14.x` : captures d'ecran et souvenirs visuels.
+- `v0.15.x` : providers externes prepares.
 
 ## v0.1.0 - 2026-07-16
 
@@ -135,3 +136,12 @@ Le projet suit des versions de developpement simples :
 - Ajout de la modification rapide de la chronique liee a une capture.
 - Ajout de la suppression d'une capture avec confirmation.
 - Exposition des actions via le service game, l'IPC Electron et le preload securise.
+
+## v0.15.0 - 2026-07-20
+
+- Ajout d'un registre local de providers externes : Steam, Xbox, PlayStation, Nintendo, GOG, Epic, IGDB et RAWG.
+- Ajout d'un panneau Providers externes dans les parametres.
+- Ajout de l'enregistrement local d'un identifiant externe, d'un nom affiche et d'un indice token.
+- Ajout d'un etat de synchronisation prepare sans appel reseau obligatoire.
+- Ajout de la suppression d'une connexion provider avec confirmation.
+- Exposition des actions via le service settings, l'IPC Electron et le preload securise.
