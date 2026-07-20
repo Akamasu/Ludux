@@ -8,6 +8,7 @@ import type {
   DeleteAchievementInput,
   DeleteChronicleInput,
   DeleteDlcInput,
+  DeletePlaySessionInput,
   DeleteScreenshotInput,
   GameDetail,
   GameListItem,
@@ -16,6 +17,7 @@ import type {
   UpdateChronicleInput,
   UpdateDlcInput,
   UpdateGameInput,
+  UpdatePlaySessionInput,
   UpdateReviewInput,
   UpdateScreenshotInput,
 } from '../../types/game'
@@ -23,6 +25,13 @@ import type {
 function sortChroniclesByDate<T extends { date: string }>(chronicles: T[]) {
   return [...chronicles].sort(
     (left, right) => new Date(right.date).getTime() - new Date(left.date).getTime(),
+  )
+}
+
+function sortSessionsByStart<T extends { start: string }>(sessions: T[]) {
+  return [...sessions].sort(
+    (left, right) =>
+      new Date(right.start).getTime() - new Date(left.start).getTime(),
   )
 }
 
@@ -713,6 +722,103 @@ export function useGameDetail(
     [onChanged],
   )
 
+  const updatePlaySession = useCallback(
+    async (input: UpdatePlaySessionInput) => {
+      const api = window.ludux
+      setIsSaving(true)
+      setError(null)
+
+      try {
+        if (!api) {
+          setDetail((current) => {
+            const sessionToUpdate = current?.sessions.find(
+              (session) => session.id === input.id,
+            )
+
+            if (!current || !sessionToUpdate) {
+              return current
+            }
+
+            const nextDuration =
+              input.durationMinutes ?? sessionToUpdate.durationMinutes
+
+            return {
+              ...current,
+              totalMinutes:
+                current.totalMinutes - sessionToUpdate.durationMinutes + nextDuration,
+              sessions: sortSessionsByStart(
+                current.sessions.map((session) =>
+                  session.id === input.id
+                    ? {
+                        ...session,
+                        start: input.start ?? session.start,
+                        durationMinutes: nextDuration,
+                        note:
+                          input.note === undefined ? session.note : input.note,
+                        platformName:
+                          input.platformName === undefined
+                            ? session.platformName
+                            : input.platformName,
+                      }
+                    : session,
+                ),
+              ),
+            }
+          })
+          return
+        }
+
+        setDetail(await api.games.updatePlaySession(input))
+        await onChanged()
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [onChanged],
+  )
+
+  const deletePlaySession = useCallback(
+    async (input: DeletePlaySessionInput) => {
+      const api = window.ludux
+      setIsSaving(true)
+      setError(null)
+
+      try {
+        if (!api) {
+          setDetail((current) => {
+            const sessionToDelete = current?.sessions.find(
+              (session) => session.id === input.id,
+            )
+
+            if (!current) {
+              return current
+            }
+
+            return {
+              ...current,
+              totalMinutes:
+                current.totalMinutes - (sessionToDelete?.durationMinutes ?? 0),
+              sessions: current.sessions.filter(
+                (session) => session.id !== input.id,
+              ),
+            }
+          })
+          return
+        }
+
+        setDetail(await api.games.deletePlaySession(input))
+        await onChanged()
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [onChanged],
+  )
+
   useEffect(() => {
     void refresh()
   }, [refresh])
@@ -739,5 +845,7 @@ export function useGameDetail(
     updateChronicle,
     deleteChronicle,
     createPlaySession,
+    updatePlaySession,
+    deletePlaySession,
   }
 }

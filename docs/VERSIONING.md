@@ -41,3 +41,4 @@ Le tag `v0.1.0` correspond au bootstrap initial de Ludux : socle Electron/React,
 - `v0.15.0` : providers externes prepares sans synchronisation reseau.
 - `v0.16.0` : edition et suppression des chroniques.
 - `v0.17.0` : import et copie locale des captures.
+- `v0.18.0` : edition et suppression des sessions de jeu.

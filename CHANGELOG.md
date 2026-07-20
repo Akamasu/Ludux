@@ -21,6 +21,7 @@ Le projet suit des versions de developpement simples :
 - `v0.15.x` : providers externes prepares.
 - `v0.16.x` : edition et suppression des chroniques.
 - `v0.17.x` : import et copie locale des captures.
+- `v0.18.x` : edition et suppression des sessions de jeu.
 
 ## v0.1.0 - 2026-07-16
 
@@ -166,3 +167,13 @@ Le projet suit des versions de developpement simples :
 - Creation automatique de la capture apres copie, avec description et chronique liee.
 - Conservation de l'ajout manuel par chemin ou URL pour les images externes.
 - Exposition de l'import via le service game, l'IPC Electron et le preload securise.
+
+## v0.18.0 - 2026-07-20
+
+- Ajout de l'edition inline des sessions depuis la timeline des fiches de jeux.
+- Ajout de la modification de la date, de la duree, de la plateforme et du commentaire.
+- Ajout de la suppression d'une session avec confirmation.
+- Recalcul automatique du temps total apres modification ou suppression.
+- Mise a jour des statistiques derivees apres changement de session.
+- Exposition des actions via le service game, l'IPC Electron et le preload securise.
+- Mise a jour de la vision produit pour une premiere version publique connectee.

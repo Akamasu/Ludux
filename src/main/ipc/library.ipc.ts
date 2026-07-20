@@ -13,6 +13,7 @@ import {
   type DeleteAchievementInput,
   type DeleteChronicleInput,
   type DeleteDlcInput,
+  type DeletePlaySessionInput,
   type DeleteScreenshotInput,
   type Emotion,
   type GameStatus,
@@ -21,6 +22,7 @@ import {
   type UpdateChronicleInput,
   type UpdateDlcInput,
   type UpdateGameInput,
+  type UpdatePlaySessionInput,
   type UpdateReviewInput,
   type UpdateScreenshotInput,
 } from '../../types/game'
@@ -188,6 +190,38 @@ function parseCreatePlaySessionInput(value: unknown): CreatePlaySessionInput {
     durationMinutes: value['durationMinutes'],
     note: readOptionalString(value['note']),
     platformName: readOptionalString(value['platformName']),
+  }
+}
+
+function parseUpdatePlaySessionInput(value: unknown): UpdatePlaySessionInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees de session sont invalides.')
+  }
+
+  const durationMinutes = value['durationMinutes']
+
+  if (durationMinutes !== undefined && typeof durationMinutes !== 'number') {
+    throw new Error('Les donnees de session sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de session invalide.'),
+    start: readOptionalString(value['start']),
+    durationMinutes,
+    note: readNullableString(value['note'], 'Commentaire invalide.'),
+    platformName: readNullableString(value['platformName'], 'Plateforme invalide.'),
+  }
+}
+
+function parseDeletePlaySessionInput(value: unknown): DeletePlaySessionInput {
+  if (!isRecord(value)) {
+    throw new Error('Les donnees de session sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de session invalide.'),
   }
 }
 
@@ -612,6 +646,24 @@ export function registerLibraryHandlers() {
   ipcMain.handle('games:createPlaySession', async (_event, input: unknown) => {
     try {
       return await gameService.createPlaySession(parseCreatePlaySessionInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:updatePlaySession', async (_event, input: unknown) => {
+    try {
+      return await gameService.updatePlaySession(parseUpdatePlaySessionInput(input))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:deletePlaySession', async (_event, input: unknown) => {
+    try {
+      return await gameService.deletePlaySession(parseDeletePlaySessionInput(input))
     } catch (error) {
       logger.error('[LibraryIPC]', error)
       throw error

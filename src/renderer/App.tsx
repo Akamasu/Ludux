@@ -105,12 +105,14 @@ export default function App() {
           onDeleteAchievement={gameDetailState.deleteAchievement}
           onDeleteChronicle={gameDetailState.deleteChronicle}
           onDeleteDlc={gameDetailState.deleteDlc}
+          onDeletePlaySession={gameDetailState.deletePlaySession}
           onDeleteScreenshot={gameDetailState.deleteScreenshot}
           onImportScreenshotFile={gameDetailState.importScreenshotFile}
           onUpdateAchievement={gameDetailState.updateAchievement}
           onUpdateChronicle={gameDetailState.updateChronicle}
           onUpdateDlc={gameDetailState.updateDlc}
           onUpdateGame={gameDetailState.updateGame}
+          onUpdatePlaySession={gameDetailState.updatePlaySession}
           onUpdateReview={gameDetailState.updateReview}
           onUpdateScreenshot={gameDetailState.updateScreenshot}
         />

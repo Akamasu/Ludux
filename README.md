@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.17.0`
+Version courante : `v0.18.0`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
@@ -220,6 +220,7 @@ Tags principaux :
 - `v0.15.0` : providers externes préparés sans synchronisation réseau.
 - `v0.16.0` : édition et suppression des chroniques.
 - `v0.17.0` : import et copie locale des captures.
+- `v0.18.0` : édition et suppression des sessions de jeu.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.
@@ -228,8 +229,9 @@ Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 
 Prochaines pistes naturelles :
 
-- Intégrations réseau optionnelles avec des plateformes de jeu.
+- Première intégration réseau optionnelle avant la version publique.
 - Bibliothèque enrichie avec genres, développeur, éditeur et date de sortie.
+- Préparation du packaging et des releases installables.
 
 La vision produit détaillée est synthétisée dans `docs/PRODUCT_VISION.md`.
 

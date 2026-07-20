@@ -31,17 +31,20 @@ import {
   type DeleteAchievementInput,
   type DeleteChronicleInput,
   type DeleteDlcInput,
+  type DeletePlaySessionInput,
   type DeleteScreenshotInput,
   type DlcListItem,
   type Emotion,
   type GameDetail,
   type GameStatus,
   type ImportScreenshotFileInput,
+  type PlaySessionListItem,
   type ScreenshotListItem,
   type UpdateAchievementInput,
   type UpdateChronicleInput,
   type UpdateDlcInput,
   type UpdateGameInput,
+  type UpdatePlaySessionInput,
   type UpdateReviewInput,
   type UpdateScreenshotInput,
 } from '../../types/game'
@@ -63,12 +66,14 @@ interface GameDetailPageProps {
   onDeleteAchievement: (input: DeleteAchievementInput) => Promise<void>
   onDeleteChronicle: (input: DeleteChronicleInput) => Promise<void>
   onDeleteDlc: (input: DeleteDlcInput) => Promise<void>
+  onDeletePlaySession: (input: DeletePlaySessionInput) => Promise<void>
   onDeleteScreenshot: (input: DeleteScreenshotInput) => Promise<void>
   onImportScreenshotFile: (input: ImportScreenshotFileInput) => Promise<void>
   onUpdateAchievement: (input: UpdateAchievementInput) => Promise<void>
   onUpdateChronicle: (input: UpdateChronicleInput) => Promise<void>
   onUpdateDlc: (input: UpdateDlcInput) => Promise<void>
   onUpdateGame: (input: UpdateGameInput) => Promise<void>
+  onUpdatePlaySession: (input: UpdatePlaySessionInput) => Promise<void>
   onUpdateReview: (input: UpdateReviewInput) => Promise<void>
   onUpdateScreenshot: (input: UpdateScreenshotInput) => Promise<void>
 }
@@ -114,12 +119,14 @@ export function GameDetailPage({
   onDeleteAchievement,
   onDeleteChronicle,
   onDeleteDlc,
+  onDeletePlaySession,
   onDeleteScreenshot,
   onImportScreenshotFile,
   onUpdateAchievement,
   onUpdateChronicle,
   onUpdateDlc,
   onUpdateGame,
+  onUpdatePlaySession,
   onUpdateReview,
   onUpdateScreenshot,
 }: GameDetailPageProps) {
@@ -273,7 +280,9 @@ export function GameDetailPage({
           detail={detail}
           isSaving={isSaving}
           onDeleteChronicle={onDeleteChronicle}
+          onDeletePlaySession={onDeletePlaySession}
           onUpdateChronicle={onUpdateChronicle}
+          onUpdatePlaySession={onUpdatePlaySession}
         />
       </section>
     </div>
@@ -1195,6 +1204,21 @@ function ScreenshotPreview({ screenshot }: { screenshot: ScreenshotListItem }) {
   )
 }
 
+function splitDurationMinutes(durationMinutes: number) {
+  return {
+    hours: String(Math.floor(durationMinutes / 60)),
+    minutes: String(durationMinutes % 60),
+  }
+}
+
+function durationFromInputs(hours: string, minutes: string) {
+  return Number(hours || 0) * 60 + Number(minutes || 0)
+}
+
+function isPositiveDuration(durationMinutes: number) {
+  return Number.isFinite(durationMinutes) && durationMinutes > 0
+}
+
 function SessionForm({
   detail,
   isSaving,
@@ -1207,11 +1231,10 @@ function SessionForm({
   const [minutes, setMinutes] = useState('0')
   const [note, setNote] = useState('')
   const [platformName, setPlatformName] = useState(detail.platforms[0] ?? '')
+  const durationMinutes = durationFromInputs(hours, minutes)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-
-    const durationMinutes = Number(hours) * 60 + Number(minutes)
 
     await onCreatePlaySession({
       gameId: detail.id,
@@ -1278,7 +1301,7 @@ function SessionForm({
           className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
         />
       </label>
-      <Button className="mt-4" type="submit" disabled={isSaving || Number(hours) * 60 + Number(minutes) <= 0}>
+      <Button className="mt-4" type="submit" disabled={isSaving || !isPositiveDuration(durationMinutes)}>
         <Clock3 size={17} aria-hidden="true" />
         Ajouter
       </Button>
@@ -1554,16 +1577,205 @@ function ChronicleTimelineArticle({
   )
 }
 
+function SessionTimelineArticle({
+  detail,
+  isSaving,
+  onDeletePlaySession,
+  onUpdatePlaySession,
+  session,
+}: {
+  detail: GameDetail
+  isSaving: boolean
+  onDeletePlaySession: (input: DeletePlaySessionInput) => Promise<void>
+  onUpdatePlaySession: (input: UpdatePlaySessionInput) => Promise<void>
+  session: PlaySessionListItem
+}) {
+  const initialDuration = splitDurationMinutes(session.durationMinutes)
+  const [isEditing, setIsEditing] = useState(false)
+  const [date, setDate] = useState(session.start.slice(0, 10))
+  const [hours, setHours] = useState(initialDuration.hours)
+  const [minutes, setMinutes] = useState(initialDuration.minutes)
+  const [note, setNote] = useState(session.note ?? '')
+  const [platformName, setPlatformName] = useState(session.platformName ?? '')
+
+  useEffect(() => {
+    const nextDuration = splitDurationMinutes(session.durationMinutes)
+
+    setDate(session.start.slice(0, 10))
+    setHours(nextDuration.hours)
+    setMinutes(nextDuration.minutes)
+    setNote(session.note ?? '')
+    setPlatformName(session.platformName ?? '')
+  }, [session])
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    await onUpdatePlaySession({
+      gameId: detail.id,
+      id: session.id,
+      start: new Date(date).toISOString(),
+      durationMinutes: durationFromInputs(hours, minutes),
+      note: note || null,
+      platformName: platformName || null,
+    })
+
+    setIsEditing(false)
+  }
+
+  async function handleDeletePlaySession() {
+    const confirmed = window.confirm(
+      `Supprimer la session du ${formatDate(session.start)} ?`,
+    )
+
+    if (confirmed) {
+      await onDeletePlaySession({
+        gameId: detail.id,
+        id: session.id,
+      })
+    }
+  }
+
+  if (isEditing) {
+    const durationMinutes = durationFromInputs(hours, minutes)
+
+    return (
+      <article className="rounded-lg border border-[#4F7CFF]/40 bg-[#121620] p-4">
+        <form className="grid gap-3" onSubmit={handleSubmit}>
+          <div className="grid gap-3 md:grid-cols-[170px_1fr_110px_110px]">
+            <label>
+              <span className="sr-only">Date de la session</span>
+              <input
+                type="date"
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+                className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+              />
+            </label>
+            <label>
+              <span className="sr-only">Plateforme de la session</span>
+              <input
+                value={platformName}
+                onChange={(event) => setPlatformName(event.target.value)}
+                className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+              />
+            </label>
+            <label>
+              <span className="sr-only">Heures de session</span>
+              <input
+                type="number"
+                min="0"
+                value={hours}
+                onChange={(event) => setHours(event.target.value)}
+                className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+              />
+            </label>
+            <label>
+              <span className="sr-only">Minutes de session</span>
+              <input
+                type="number"
+                min="0"
+                max="59"
+                value={minutes}
+                onChange={(event) => setMinutes(event.target.value)}
+                className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+              />
+            </label>
+          </div>
+
+          <label>
+            <span className="sr-only">Commentaire de session</span>
+            <input
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+            />
+          </label>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="submit"
+              disabled={
+                isSaving || date.length === 0 || !isPositiveDuration(durationMinutes)
+              }
+            >
+              <Save size={17} aria-hidden="true" />
+              Enregistrer
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsEditing(false)}
+              disabled={isSaving}
+            >
+              Annuler
+            </Button>
+          </div>
+        </form>
+      </article>
+    )
+  }
+
+  return (
+    <article className="rounded-lg border border-white/10 bg-[#121620] p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3 text-sm text-white">
+            <CalendarDays size={17} aria-hidden="true" />
+            <span>{formatDate(session.start)}</span>
+            <span className="text-zinc-600">/</span>
+            <span>{formatHours(session.durationMinutes)}</span>
+          </div>
+          <p className="mt-2 text-sm text-zinc-500">
+            {session.platformName ?? 'Plateforme non renseignee'}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            aria-label={`Modifier la session du ${formatDate(session.start)}`}
+            title="Modifier"
+            onClick={() => setIsEditing(true)}
+            disabled={isSaving}
+            className="h-9"
+          >
+            <Pencil size={15} aria-hidden="true" />
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            aria-label={`Supprimer la session du ${formatDate(session.start)}`}
+            title="Supprimer"
+            onClick={handleDeletePlaySession}
+            disabled={isSaving}
+            className="h-9 border-rose-400/30 bg-rose-400/10 text-rose-100 hover:border-rose-300/60 hover:bg-rose-400/15"
+          >
+            <Trash2 size={15} aria-hidden="true" />
+          </Button>
+        </div>
+      </div>
+      {session.note ? (
+        <p className="mt-3 text-sm leading-6 text-zinc-400">{session.note}</p>
+      ) : null}
+    </article>
+  )
+}
+
 function Timeline({
   detail,
   isSaving,
   onDeleteChronicle,
+  onDeletePlaySession,
   onUpdateChronicle,
+  onUpdatePlaySession,
 }: {
   detail: GameDetail
   isSaving: boolean
   onDeleteChronicle: (input: DeleteChronicleInput) => Promise<void>
+  onDeletePlaySession: (input: DeletePlaySessionInput) => Promise<void>
   onUpdateChronicle: (input: UpdateChronicleInput) => Promise<void>
+  onUpdatePlaySession: (input: UpdatePlaySessionInput) => Promise<void>
 }) {
   return (
     <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
@@ -1587,20 +1799,14 @@ function Timeline({
         ))}
 
         {detail.sessions.map((session) => (
-          <article key={session.id} className="rounded-lg border border-white/10 bg-[#121620] p-4">
-            <div className="flex items-center gap-3 text-sm text-white">
-              <CalendarDays size={17} aria-hidden="true" />
-              <span>{formatDate(session.start)}</span>
-              <span className="text-zinc-600">/</span>
-              <span>{formatHours(session.durationMinutes)}</span>
-            </div>
-            <p className="mt-2 text-sm text-zinc-500">
-              {session.platformName ?? 'Plateforme non renseignee'}
-            </p>
-            {session.note ? (
-              <p className="mt-3 text-sm leading-6 text-zinc-400">{session.note}</p>
-            ) : null}
-          </article>
+          <SessionTimelineArticle
+            key={session.id}
+            detail={detail}
+            isSaving={isSaving}
+            onDeletePlaySession={onDeletePlaySession}
+            onUpdatePlaySession={onUpdatePlaySession}
+            session={session}
+          />
         ))}
       </div>
     </section>

@@ -120,9 +120,12 @@ Avant les fonctionnalités plus ambitieuses, Ludux doit permettre de :
 - suivre les succès ;
 - tenir un journal ;
 - modifier et supprimer les chroniques ;
+- modifier et supprimer les sessions de jeu ;
 - rattacher des captures d'écran ;
 - copier les captures locales dans le dossier Ludux ;
-- préparer les comptes externes à synchroniser plus tard ;
+- préparer les comptes externes ;
+- connecter au moins une plateforme externe de façon optionnelle ;
+- lancer une première synchronisation réseau contrôlée ;
 - voir des statistiques simples ;
 - éviter les crashs bloquants.
 
@@ -130,7 +133,7 @@ Avant les fonctionnalités plus ambitieuses, Ludux doit permettre de :
 
 À reporter après le socle 1.0 :
 
-- synchronisation Steam, Xbox, PlayStation, Nintendo ;
+- synchronisation complète Steam, Xbox, PlayStation, Nintendo ;
 - import automatique depuis bibliothèques Steam, dossiers de jeux et émulateurs ;
 - profil joueur ;
 - réseau social ;
@@ -145,4 +148,4 @@ Les prochaines étapes les plus cohérentes avec le document de conception sont 
 
 - Providers : brancher une première intégration réseau optionnelle.
 - Bibliothèque : enrichir les fiches avec genres, développeur, éditeur et date de sortie.
-- Sessions : ajouter l'édition et la suppression des sessions de jeu.
+- Release : préparer le packaging et les versions installables.

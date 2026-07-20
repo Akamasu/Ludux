@@ -11,6 +11,7 @@ import type {
   DeleteAchievementInput,
   DeleteChronicleInput,
   DeleteDlcInput,
+  DeletePlaySessionInput,
   DeleteScreenshotInput,
   Emotion,
   GameDetail,
@@ -21,6 +22,7 @@ import type {
   UpdateChronicleInput,
   UpdateDlcInput,
   UpdateGameInput,
+  UpdatePlaySessionInput,
   UpdateReviewInput,
   UpdateScreenshotInput,
 } from '../types/game'
@@ -736,6 +738,79 @@ class GameService {
           : undefined,
       },
     })
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async updatePlaySession(input: UpdatePlaySessionInput): Promise<GameDetail> {
+    if (
+      input.durationMinutes !== undefined &&
+      (!Number.isFinite(input.durationMinutes) || input.durationMinutes <= 0)
+    ) {
+      throw new Error('La duree de session doit etre positive.')
+    }
+
+    const session = await prisma.playSession.findFirst({
+      where: {
+        id: input.id,
+        gameId: input.gameId,
+      },
+      select: {
+        id: true,
+      },
+    })
+
+    if (!session) {
+      throw new Error('Session introuvable.')
+    }
+
+    const platformName = trimNullable(input.platformName)
+
+    await prisma.playSession.update({
+      where: {
+        id: input.id,
+      },
+      data: {
+        start: input.start ? new Date(input.start) : undefined,
+        durationMinutes:
+          input.durationMinutes === undefined
+            ? undefined
+            : Math.round(input.durationMinutes),
+        note: trimNullable(input.note),
+        platform:
+          platformName === undefined
+            ? undefined
+            : platformName === null
+              ? {
+                  disconnect: true,
+                }
+              : {
+                  connectOrCreate: {
+                    where: {
+                      name: platformName,
+                    },
+                    create: {
+                      name: platformName,
+                    },
+                  },
+                },
+      },
+    })
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async deletePlaySession(input: DeletePlaySessionInput): Promise<GameDetail> {
+    const result = await prisma.playSession.deleteMany({
+      where: {
+        id: input.id,
+        gameId: input.gameId,
+      },
+    })
+
+    if (result.count === 0) {
+      throw new Error('Session introuvable.')
+    }
 
     return toGameDetail(await requireGameDetail(input.gameId))
   }

@@ -10,6 +10,7 @@ import type {
   DeleteAchievementInput,
   DeleteChronicleInput,
   DeleteDlcInput,
+  DeletePlaySessionInput,
   DeleteScreenshotInput,
   GameDetail,
   GameListItem,
@@ -21,6 +22,7 @@ import type {
   UpdateChronicleInput,
   UpdateDlcInput,
   UpdateGameInput,
+  UpdatePlaySessionInput,
   UpdateReviewInput,
   UpdateScreenshotInput,
 } from '../types/game'
@@ -86,6 +88,10 @@ const api: LuduxApi = {
       ipcRenderer.invoke('games:deleteChronicle', input) as Promise<GameDetail>,
     createPlaySession: (input: CreatePlaySessionInput) =>
       ipcRenderer.invoke('games:createPlaySession', input) as Promise<GameDetail>,
+    updatePlaySession: (input: UpdatePlaySessionInput) =>
+      ipcRenderer.invoke('games:updatePlaySession', input) as Promise<GameDetail>,
+    deletePlaySession: (input: DeletePlaySessionInput) =>
+      ipcRenderer.invoke('games:deletePlaySession', input) as Promise<GameDetail>,
   },
   settings: {
     getOverview: () =>

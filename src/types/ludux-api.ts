@@ -9,6 +9,7 @@ import type {
   DeleteAchievementInput,
   DeleteChronicleInput,
   DeleteDlcInput,
+  DeletePlaySessionInput,
   DeleteScreenshotInput,
   GameDetail,
   GameListItem,
@@ -20,6 +21,7 @@ import type {
   UpdateChronicleInput,
   UpdateDlcInput,
   UpdateGameInput,
+  UpdatePlaySessionInput,
   UpdateReviewInput,
   UpdateScreenshotInput,
 } from './game'
@@ -61,6 +63,8 @@ export interface LuduxApi {
     updateChronicle: (input: UpdateChronicleInput) => Promise<GameDetail>
     deleteChronicle: (input: DeleteChronicleInput) => Promise<GameDetail>
     createPlaySession: (input: CreatePlaySessionInput) => Promise<GameDetail>
+    updatePlaySession: (input: UpdatePlaySessionInput) => Promise<GameDetail>
+    deletePlaySession: (input: DeletePlaySessionInput) => Promise<GameDetail>
   }
   settings: {
     getOverview: () => Promise<SettingsOverview>

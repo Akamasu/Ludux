@@ -333,3 +333,17 @@ export interface CreatePlaySessionInput {
   note?: string
   platformName?: string
 }
+
+export interface UpdatePlaySessionInput {
+  gameId: string
+  id: string
+  start?: string
+  durationMinutes?: number
+  note?: string | null
+  platformName?: string | null
+}
+
+export interface DeletePlaySessionInput {
+  gameId: string
+  id: string
+}
