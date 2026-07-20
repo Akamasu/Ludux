@@ -43,6 +43,7 @@ function detailFromListItem(game: GameListItem): GameDetail {
     publisher: null,
     releaseDate: null,
     website: null,
+    metadataSources: [],
     review: null,
     dlcs: [],
     achievements: [],

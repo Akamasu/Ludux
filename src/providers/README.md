@@ -39,9 +39,18 @@ La v0.22.0 stabilise Steam avant l'ajout de providers de metadonnees :
 - erreurs Steam lisibles ;
 - tests unitaires du parsing et des refus API.
 
+La v0.23.0 ajoute le premier provider de metadonnees actif avec RAWG :
+
+- recherche d'un jeu par titre via `src/providers/rawg.ts` ;
+- lecture des details RAWG pour description, jaquette, date, developpeur, editeur et site officiel ;
+- enrichissement manuel depuis les parametres ;
+- preservation des champs deja renseignes dans Ludux ;
+- liens persistants dans `ExternalGame` pour memoriser les correspondances RAWG.
+
 Les prochaines integrations reseau devront rester optionnelles et passer par un adaptateur dedie avant de proposer une importation dans la base locale.
 
 Guides de preparation :
 
 - `docs/providers/PLATFORM_REQUIREMENTS.md`
 - `docs/providers/STEAM_SETUP.md`
+- `docs/providers/RAWG_SETUP.md`

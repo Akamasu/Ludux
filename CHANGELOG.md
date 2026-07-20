@@ -26,6 +26,17 @@ Le projet suit des versions de developpement simples :
 - `v0.20.x` : fichiers de configuration et guides plateformes.
 - `v0.21.x` : synchronisation automatique et secrets masques.
 - `v0.22.x` : stabilisation du connecteur Steam.
+- `v0.23.x` : enrichissement des metadonnees via RAWG.
+
+## v0.23.0 - 2026-07-20
+
+- Ajout du provider RAWG avec recherche par titre et lecture des details de jeu.
+- Ajout de l'enrichissement manuel des fiches locales depuis les parametres.
+- Ajout des metadonnees manquantes : description, jaquette, date de sortie, developpeur, editeur et site officiel.
+- Conservation des champs deja renseignes manuellement dans Ludux.
+- Ajout de liens `ExternalGame` RAWG pour memoriser les correspondances.
+- Ajout des tests Vitest du provider RAWG.
+- Ajout du guide `docs/providers/RAWG_SETUP.md`.
 
 ## v0.22.6 - 2026-07-20
 

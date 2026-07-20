@@ -22,6 +22,14 @@ Steam est le premier provider actif :
 - import des jeux, jaquettes, plateforme Steam et temps total.
 - validation SteamID64 et erreurs reseau explicites.
 
+RAWG est le premier provider de metadonnees actif :
+
+- connexion locale avec une cle API RAWG ou fallback `RAWG_API_KEY` ;
+- enrichissement manuel depuis les parametres ;
+- ajout des champs manquants : description, jaquette, date, developpeur, editeur et site officiel ;
+- preservation des donnees deja saisies dans Ludux ;
+- pas d'auto-sync en v0.23.0 pour eviter de consommer le quota API sans action explicite.
+
 Les autres providers restent au stade de preparation tant qu'un acces officiel exploitable n'est pas branche.
 
 ## Strategie Publique
@@ -45,7 +53,7 @@ Pour une v1 publique, Ludux ne doit pas embarquer une cle Steam commune dans l'a
 | Xbox | Microsoft/Xbox Services | Acces contraint par programme developpeur | Attendre acces officiel |
 | PlayStation | PlayStation Partners | Acces partenaire | Attendre acces officiel |
 | Nintendo | Nintendo Developer Portal | Acces partenaire | Attendre acces officiel |
-| RAWG | Cle API | Metadonnees publiques, pas compte joueur | Bon candidat metadata |
+| RAWG | Cle API | Metadonnees publiques, pas compte joueur | Actif manuel |
 | IGDB | Twitch OAuth app token | Metadonnees publiques, pas compte joueur | Bon candidat metadata |
 
 ## Architecture Cible
@@ -65,6 +73,7 @@ Compte utilisateur
 1. Tester Steam avec une vraie cle utilisateur et un vrai profil visible.
 2. Ajouter une file de synchronisation plus visible dans l'interface.
 3. Preparer Ludux Connect pour eviter les cles Steam utilisateur dans la v1 publique.
-4. Ajouter RAWG ou IGDB pour enrichir les jeux importes avec genres, studios et dates.
-5. Creer un ecran de resolution des correspondances quand un jeu externe ressemble a un jeu local.
-6. Brancher Epic, GOG, Xbox, PlayStation ou Nintendo uniquement lorsqu'un acces officiel exploitable est obtenu.
+4. Creer un ecran de resolution des correspondances quand un jeu externe ressemble a un jeu local.
+5. Etendre RAWG avec genres, screenshots, boutiques et attribution visible si necessaire.
+6. Comparer IGDB pour les jaquettes/studios/genres avant de le brancher.
+7. Brancher Epic, GOG, Xbox, PlayStation ou Nintendo uniquement lorsqu'un acces officiel exploitable est obtenu.

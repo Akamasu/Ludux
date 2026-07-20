@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.22.6`
+Version courante : `v0.23.0`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
@@ -41,7 +41,7 @@ utilisables sont déjà en place :
 - Musée des jeux terminés et terminés à 100 %.
 - Livre de Vie avec chronologie globale des sessions et chroniques.
 - Tableau de bord statistique.
-- Paramètres locaux avec sauvegarde SQLite, export JSON, préférences et synchronisation Steam automatique.
+- Paramètres locaux avec sauvegarde SQLite, export JSON, préférences, synchronisation Steam automatique et enrichissement RAWG manuel.
 - Stockage local SQLite via Prisma.
 - IPC Electron sécurisé entre le renderer et le main process.
 - Identité visuelle Ludux avec palette sombre, violet et bleu électrique.
@@ -53,13 +53,14 @@ utilisables sont déjà en place :
 Ajoutez les jeux qui composent votre parcours, filtrez-les par statut ou
 plateforme, puis ouvrez chaque fiche pour enrichir son histoire.
 
-### Fiches de jeux
+### Fiches de Jeux
 
 Chaque jeu peut recevoir :
 
 - un statut de progression ;
 - une note personnelle ;
 - une évaluation détaillée avec note, avis, points forts/faibles et souvenir principal ;
+- des métadonnées enrichies via RAWG quand elles sont manquantes : description, jaquette, date de sortie, développeur, éditeur et site officiel ;
 - des DLC avec possession et complétion ;
 - des succès avec suivi du déverrouillage ;
 - des captures et souvenirs visuels liés aux chroniques, importables dans le dossier local Ludux ;
@@ -98,8 +99,8 @@ Le tableau de bord calcule localement :
 
 Les paramètres donnent accès aux chemins locaux, à une sauvegarde de la base
 SQLite, à un export JSON complet, au choix de la page d'ouverture, à la
-synchronisation Steam automatique et aux jeux archivés, restaurables ou supprimables
-définitivement.
+synchronisation Steam automatique, à l'enrichissement RAWG manuel et aux jeux
+archivés, restaurables ou supprimables définitivement.
 
 ## Stack Technique
 
@@ -190,6 +191,7 @@ Guides disponibles :
 
 - `docs/providers/PLATFORM_REQUIREMENTS.md` : fichiers, clés et accès à récupérer.
 - `docs/providers/STEAM_SETUP.md` : configuration de la synchronisation Steam.
+- `docs/providers/RAWG_SETUP.md` : configuration de l'enrichissement RAWG.
 - `docs/providers/AUTO_SYNC_STRATEGY.md` : stratégie de synchronisation automatique.
 
 ## Structure du Projet
@@ -202,6 +204,7 @@ Ludux/
 |-- src/
 |   |-- database/           # Client Prisma
 |   |-- main/               # Processus principal Electron, preload et IPC
+|   |-- providers/          # Adaptateurs Steam, RAWG et futurs providers
 |   |-- renderer/           # Interface React
 |   |   |-- components/     # Composants UI et layout
 |   |   |-- hooks/          # Hooks de chargement et mutations
@@ -248,6 +251,7 @@ Tags principaux :
 - `v0.22.4` : activation du preload ESM hors sandbox.
 - `v0.22.5` : cleanup du preload, des données locales et de la stratégie Steam publique.
 - `v0.22.6` : affichage de la vraie version applicative et simplification des paramètres.
+- `v0.23.0` : enrichissement manuel des métadonnées via RAWG.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.
@@ -256,7 +260,8 @@ Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 
 Prochaines pistes naturelles :
 
-- Bibliothèque enrichie avec genres, développeur, éditeur et date de sortie.
+- Résolution manuelle des correspondances quand plusieurs jeux externes ressemblent au même titre.
+- Enrichissement plus fin avec genres, screenshots, magasins et crédits.
 - Préparation du packaging et des releases installables.
 
 La vision produit détaillée est synthétisée dans `docs/PRODUCT_VISION.md`.

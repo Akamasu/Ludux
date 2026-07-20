@@ -7,6 +7,10 @@ import {
   normalizeSteamId,
   type SteamOwnedGame,
 } from '../providers/steam'
+import {
+  fetchRawgGameMetadata,
+  type RawgGameMetadata,
+} from '../providers/rawg'
 import { EXTERNAL_PROVIDER_VALUES } from '../types/settings'
 import type {
   DeleteProviderConnectionInput,
@@ -27,6 +31,8 @@ const backupDirectory = join(userDataDirectory, 'backups')
 const steamProvider: ExternalProvider = 'STEAM'
 const steamPlatformName = 'Steam'
 const steamTotalSessionNote = 'Temps total Steam synchronise.'
+const rawgProvider: ExternalProvider = 'RAWG'
+const rawgExternalId = 'catalogue'
 const defaultAutoSyncIntervalMinutes = 120
 
 interface SteamImportStats {
@@ -34,6 +40,34 @@ interface SteamImportStats {
   linkedGames: number
   updatedGames: number
   syncedSessions: number
+}
+
+interface RawgEnrichmentStats {
+  scannedGames: number
+  enrichedGames: number
+  linkedGames: number
+  notFoundGames: number
+  fieldsUpdated: number
+}
+
+interface LocalGameMetadata {
+  id: string
+  title: string
+  description: string | null
+  coverUrl: string | null
+  releaseDate: Date | null
+  developer: string | null
+  publisher: string | null
+  website: string | null
+}
+
+interface GameMetadataUpdateData {
+  description?: string
+  coverUrl?: string
+  releaseDate?: Date
+  developer?: string
+  publisher?: string
+  website?: string
 }
 
 function createTimestamp() {
@@ -126,7 +160,8 @@ function decryptSecret(value: string | null | undefined) {
 function hasProviderToken(provider: ExternalProvider, tokenHint: string | null) {
   return (
     Boolean(trimOptional(tokenHint ?? undefined)) ||
-    (provider === steamProvider && Boolean(readEnvValue('STEAM_WEB_API_KEY')))
+    (provider === steamProvider && Boolean(readEnvValue('STEAM_WEB_API_KEY'))) ||
+    (provider === rawgProvider && Boolean(readEnvValue('RAWG_API_KEY')))
   )
 }
 
@@ -136,6 +171,30 @@ function isExternalProvider(value: string): value is ExternalProvider {
 
 function normalizeTitle(value: string) {
   return value.trim().toLocaleLowerCase('fr-FR')
+}
+
+function resolveProviderExternalId(input: UpsertProviderConnectionInput) {
+  if (input.provider === steamProvider) {
+    return normalizeSteamId(input.externalId)
+  }
+
+  if (input.provider === rawgProvider) {
+    return trimOptional(input.externalId) ?? rawgExternalId
+  }
+
+  return input.externalId.trim()
+}
+
+function createProviderReadyMessage(provider: ExternalProvider) {
+  if (provider === steamProvider) {
+    return 'Compte Steam pret pour la synchronisation automatique.'
+  }
+
+  if (provider === rawgProvider) {
+    return 'Catalogue RAWG pret pour enrichir les metadonnees.'
+  }
+
+  return 'Compte reference localement. Synchronisation reseau non active.'
 }
 
 function createSteamSyncMessage(stats: SteamImportStats, totalRemoteGames: number) {
@@ -150,6 +209,64 @@ function createSteamSyncMessage(stats: SteamImportStats, totalRemoteGames: numbe
     `${stats.updatedGames} deja connus`,
     `${stats.syncedSessions} temps de jeu synchronises`,
   ].join(' / ')
+}
+
+function createRawgSyncMessage(stats: RawgEnrichmentStats) {
+  if (stats.scannedGames === 0) {
+    return 'Aucun jeu actif a enrichir avec RAWG.'
+  }
+
+  return [
+    `${stats.scannedGames} jeux analyses`,
+    `${stats.enrichedGames} enrichis`,
+    `${stats.linkedGames} relies a RAWG`,
+    `${stats.notFoundGames} introuvables`,
+    `${stats.fieldsUpdated} champs ajoutes`,
+  ].join(' / ')
+}
+
+function parseRawgReleaseDate(value: string | null) {
+  if (!value) {
+    return undefined
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`)
+
+  return Number.isNaN(date.getTime()) ? undefined : date
+}
+
+function buildRawgUpdateData(
+  game: LocalGameMetadata,
+  metadata: RawgGameMetadata,
+): GameMetadataUpdateData {
+  const releaseDate = parseRawgReleaseDate(metadata.releaseDate)
+  const data: GameMetadataUpdateData = {}
+
+  if (!game.description && metadata.description) {
+    data.description = metadata.description
+  }
+
+  if (!game.coverUrl && metadata.coverUrl) {
+    data.coverUrl = metadata.coverUrl
+  }
+
+  if (!game.releaseDate && releaseDate) {
+    data.releaseDate = releaseDate
+  }
+
+  if (!game.developer && metadata.developer) {
+    data.developer = metadata.developer
+  }
+
+  if (!game.publisher && metadata.publisher) {
+    data.publisher = metadata.publisher
+  }
+
+  if (!game.website && metadata.website) {
+    data.website = metadata.website
+  }
+
+  return data
 }
 
 async function recordProviderSync(
@@ -526,6 +643,118 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
   return stats
 }
 
+async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentStats> {
+  const stats: RawgEnrichmentStats = {
+    scannedGames: 0,
+    enrichedGames: 0,
+    linkedGames: 0,
+    notFoundGames: 0,
+    fieldsUpdated: 0,
+  }
+  const games = await prisma.game.findMany({
+    where: {
+      archived: false,
+      OR: [
+        {
+          description: null,
+        },
+        {
+          coverUrl: null,
+        },
+        {
+          releaseDate: null,
+        },
+        {
+          developer: null,
+        },
+        {
+          publisher: null,
+        },
+        {
+          website: null,
+        },
+      ],
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      coverUrl: true,
+      releaseDate: true,
+      developer: true,
+      publisher: true,
+      website: true,
+    },
+    orderBy: {
+      title: 'asc',
+    },
+  })
+
+  stats.scannedGames = games.length
+
+  for (const game of games) {
+    const metadata = await fetchRawgGameMetadata({
+      apiKey,
+      title: game.title,
+    })
+
+    if (!metadata) {
+      stats.notFoundGames += 1
+      continue
+    }
+
+    const externalId = String(metadata.rawgId)
+    const existingLink = await prisma.externalGame.findUnique({
+      where: {
+        provider_externalId: {
+          provider: rawgProvider,
+          externalId,
+        },
+      },
+    })
+    const rawgGameData = {
+      sourceTitle: metadata.title,
+      sourceCoverUrl: metadata.coverUrl,
+      lastSyncedAt: new Date(),
+    }
+
+    if (!existingLink) {
+      await prisma.externalGame.create({
+        data: {
+          gameId: game.id,
+          provider: rawgProvider,
+          externalId,
+          ...rawgGameData,
+        },
+      })
+      stats.linkedGames += 1
+    } else if (existingLink.gameId === game.id) {
+      await prisma.externalGame.update({
+        where: {
+          id: existingLink.id,
+        },
+        data: rawgGameData,
+      })
+    }
+
+    const data = buildRawgUpdateData(game, metadata)
+    const updatedFieldCount = Object.keys(data).length
+
+    if (updatedFieldCount > 0) {
+      await prisma.game.update({
+        where: {
+          id: game.id,
+        },
+        data,
+      })
+      stats.enrichedGames += 1
+      stats.fieldsUpdated += updatedFieldCount
+    }
+  }
+
+  return stats
+}
+
 class SettingsService {
   private autoSyncTimer: NodeJS.Timeout | null = null
   private isAutoSyncRunning = false
@@ -605,10 +834,7 @@ class SettingsService {
       throw new Error('Provider invalide.')
     }
 
-    const externalId =
-      input.provider === steamProvider
-        ? normalizeSteamId(input.externalId)
-        : input.externalId.trim()
+    const externalId = resolveProviderExternalId(input)
 
     if (externalId.length === 0) {
       throw new Error('Identifiant externe obligatoire.')
@@ -643,10 +869,7 @@ class SettingsService {
         data: {
           provider: input.provider,
           status: 'READY',
-          message:
-            input.provider === steamProvider
-              ? 'Compte Steam pret pour la synchronisation automatique.'
-              : 'Compte reference localement. Synchronisation reseau non active.',
+          message: createProviderReadyMessage(input.provider),
         },
       }),
     ])
@@ -683,15 +906,7 @@ class SettingsService {
     return this.getOverview()
   }
 
-  async syncProvider(input: SyncProviderInput): Promise<SettingsActionResult> {
-    if (!isExternalProvider(input.provider)) {
-      throw new Error('Provider invalide.')
-    }
-
-    if (input.provider !== steamProvider) {
-      throw new Error('Seule la synchronisation Steam est disponible pour le moment.')
-    }
-
+  private async syncSteamProvider(): Promise<SettingsActionResult> {
     const account = await prisma.externalAccount.findFirst({
       where: {
         provider: steamProvider,
@@ -742,6 +957,71 @@ class SettingsService {
       await recordProviderSync(steamProvider, 'ERROR', message)
       throw caughtError
     }
+  }
+
+  private async syncRawgProvider(): Promise<SettingsActionResult> {
+    const account = await prisma.externalAccount.findFirst({
+      where: {
+        provider: rawgProvider,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    })
+    const apiKey = decryptSecret(account?.tokenHint) ?? readEnvValue('RAWG_API_KEY')
+
+    if (!account && !apiKey) {
+      throw new Error('Connexion RAWG introuvable.')
+    }
+
+    if (!apiKey) {
+      throw new Error('Cle API RAWG obligatoire pour enrichir les metadonnees.')
+    }
+
+    await recordProviderSync(
+      rawgProvider,
+      'SYNCING',
+      'Enrichissement RAWG en cours.',
+    )
+
+    try {
+      const stats = await enrichLocalGamesWithRawg(apiKey)
+      const syncedAt = new Date()
+      const message = createRawgSyncMessage(stats)
+
+      await recordProviderSync(rawgProvider, 'SYNCED', message, syncedAt)
+
+      return {
+        canceled: false,
+        path: null,
+        message,
+        createdAt: syncedAt.toISOString(),
+      }
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error ? caughtError.message : 'Erreur RAWG inconnue.'
+
+      await recordProviderSync(rawgProvider, 'ERROR', message)
+      throw caughtError
+    }
+  }
+
+  async syncProvider(input: SyncProviderInput): Promise<SettingsActionResult> {
+    if (!isExternalProvider(input.provider)) {
+      throw new Error('Provider invalide.')
+    }
+
+    if (input.provider === steamProvider) {
+      return this.syncSteamProvider()
+    }
+
+    if (input.provider === rawgProvider) {
+      return this.syncRawgProvider()
+    }
+
+    throw new Error(
+      'Seules les synchronisations Steam et RAWG sont disponibles pour le moment.',
+    )
   }
 
   async exportLibrary(): Promise<SettingsActionResult> {

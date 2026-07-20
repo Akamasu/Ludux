@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock3,
   Download,
+  ExternalLink,
   FolderOpen,
   ImagePlus,
   Pencil,
@@ -104,6 +105,18 @@ function screenshotSource(path: string) {
   return value
 }
 
+function externalHref(value: string) {
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`
+}
+
+function websiteLabel(value: string) {
+  try {
+    return new URL(externalHref(value)).hostname.replace(/^www\./, '')
+  } catch {
+    return 'Site officiel'
+  }
+}
+
 export function GameDetailPage({
   detail,
   error,
@@ -192,8 +205,68 @@ export function GameDetailPage({
             <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-400">
               {detail.description || 'Aucune note personnelle pour le moment.'}
             </p>
+            {detail.metadataSources.length > 0 ? (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {detail.metadataSources.map((source) => (
+                  <a
+                    key={source.provider}
+                    href={source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#181B23] px-2.5 py-1 text-xs text-zinc-300 transition hover:border-[#7C5CFF]/50 hover:text-white"
+                    title={
+                      source.lastSyncedAt
+                        ? `Synchronise le ${formatDate(source.lastSyncedAt)}`
+                        : undefined
+                    }
+                  >
+                    <ExternalLink size={13} aria-hidden="true" />
+                    Source {source.label}
+                  </a>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div className="grid gap-3 rounded-lg border border-white/10 bg-[#181B23] p-4">
+            {detail.releaseDate ? (
+              <div className="flex items-center justify-between gap-4 text-sm">
+                <span className="text-zinc-500">Sortie</span>
+                <span className="truncate font-medium text-white">
+                  {formatDate(detail.releaseDate)}
+                </span>
+              </div>
+            ) : null}
+            {detail.developer ? (
+              <div className="flex items-center justify-between gap-4 text-sm">
+                <span className="text-zinc-500">Developpeur</span>
+                <span className="truncate font-medium text-white" title={detail.developer}>
+                  {detail.developer}
+                </span>
+              </div>
+            ) : null}
+            {detail.publisher ? (
+              <div className="flex items-center justify-between gap-4 text-sm">
+                <span className="text-zinc-500">Editeur</span>
+                <span className="truncate font-medium text-white" title={detail.publisher}>
+                  {detail.publisher}
+                </span>
+              </div>
+            ) : null}
+            {detail.website ? (
+              <div className="flex items-center justify-between gap-4 text-sm">
+                <span className="text-zinc-500">Site</span>
+                <a
+                  href={externalHref(detail.website)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-w-0 items-center gap-1.5 truncate font-medium text-[#C9D6FF] transition hover:text-white"
+                  title={detail.website}
+                >
+                  <span className="truncate">{websiteLabel(detail.website)}</span>
+                  <ExternalLink size={13} aria-hidden="true" />
+                </a>
+              </div>
+            ) : null}
             <div className="flex items-center justify-between text-sm">
               <span className="text-zinc-500">Temps joue</span>
               <span className="font-medium text-white">{formatHours(detail.totalMinutes)}</span>

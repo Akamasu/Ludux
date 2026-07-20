@@ -105,6 +105,16 @@ async function fetchGameDetail(id: string) {
         },
       },
       review: true,
+      externalGames: {
+        select: {
+          provider: true,
+          externalId: true,
+          lastSyncedAt: true,
+        },
+        orderBy: {
+          provider: 'asc',
+        },
+      },
       chronicles: {
         orderBy: {
           date: 'desc',
@@ -141,6 +151,14 @@ function toGameDetail(game: GameDetailWithRelations): GameDetail {
     publisher: game.publisher,
     releaseDate: game.releaseDate?.toISOString() ?? null,
     website: game.website,
+    metadataSources: game.externalGames
+      .filter((externalGame) => externalGame.provider === 'RAWG')
+      .map((externalGame) => ({
+        provider: externalGame.provider,
+        label: 'RAWG',
+        url: 'https://rawg.io/',
+        lastSyncedAt: externalGame.lastSyncedAt?.toISOString() ?? null,
+      })),
     review: game.review
       ? {
           id: game.review.id,

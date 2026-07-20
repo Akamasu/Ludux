@@ -46,7 +46,7 @@ export const EXTERNAL_PROVIDER_DEFINITIONS: ExternalProviderDefinition[] = [
   {
     provider: 'RAWG',
     label: 'RAWG',
-    description: 'Metadonnees publiques et catalogue de reference.',
-    capabilities: ['Metadonnees', 'Catalogue'],
+    description: 'Metadonnees publiques pour enrichir les fiches locales.',
+    capabilities: ['Metadonnees', 'Jaquettes', 'Dates'],
   },
 ]

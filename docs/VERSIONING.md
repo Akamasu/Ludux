@@ -52,3 +52,4 @@ Le tag `v0.1.0` correspond au bootstrap initial de Ludux : socle Electron/React,
 - `v0.22.4` : activation du preload ESM hors sandbox.
 - `v0.22.5` : cleanup du preload, des donnees locales et de la strategie Steam publique.
 - `v0.22.6` : affichage de la vraie version applicative et simplification des parametres.
+- `v0.23.0` : enrichissement manuel des metadonnees via RAWG.

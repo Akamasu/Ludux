@@ -124,19 +124,63 @@ function providerStatusLabel(connection: ProviderConnection) {
 }
 
 function providerExternalIdLabel(provider: ProviderConnection) {
-  return provider.provider === 'STEAM' ? 'SteamID64' : 'Identifiant externe'
+  if (provider.provider === 'STEAM') {
+    return 'SteamID64'
+  }
+
+  if (provider.provider === 'RAWG') {
+    return 'Catalogue'
+  }
+
+  return 'Identifiant externe'
 }
 
 function providerExternalIdPlaceholder(provider: ProviderConnection) {
-  return provider.provider === 'STEAM'
-    ? '7656119...'
-    : 'SteamID, gamertag, pseudo, cle publique...'
+  if (provider.provider === 'STEAM') {
+    return '7656119...'
+  }
+
+  if (provider.provider === 'RAWG') {
+    return 'catalogue'
+  }
+
+  return 'SteamID, gamertag, pseudo, cle publique...'
 }
 
 function providerTokenLabel(provider: ProviderConnection) {
-  return provider.provider === 'STEAM'
-    ? 'Cle API Steam ou variable .env'
-    : 'Indice token'
+  if (provider.provider === 'STEAM') {
+    return 'Cle API Steam ou variable .env'
+  }
+
+  if (provider.provider === 'RAWG') {
+    return 'Cle API RAWG ou variable .env'
+  }
+
+  return 'Indice token'
+}
+
+function providerDefaultExternalId(provider: ProviderConnection) {
+  return provider.provider === 'RAWG' ? 'catalogue' : ''
+}
+
+function isSyncableProvider(provider: ProviderConnection | undefined) {
+  return provider?.provider === 'STEAM' || provider?.provider === 'RAWG'
+}
+
+function providerTokenPlaceholder(provider: ProviderConnection) {
+  if (provider.provider === 'STEAM') {
+    return provider.account?.hasToken
+      ? 'Laisser vide pour conserver la cle existante'
+      : 'Optionnel si STEAM_WEB_API_KEY est defini'
+  }
+
+  if (provider.provider === 'RAWG') {
+    return provider.account?.hasToken
+      ? 'Laisser vide pour conserver la cle existante'
+      : 'Optionnel si RAWG_API_KEY est defini'
+  }
+
+  return 'Optionnel'
 }
 
 function ProvidersPanel({
@@ -168,9 +212,14 @@ function ProvidersPanel({
   const [formError, setFormError] = useState<string | null>(null)
   const trimmedExternalId = externalId.trim()
   const isSteamProvider = selectedProvider?.provider === 'STEAM'
+  const isRawgProvider = selectedProvider?.provider === 'RAWG'
+  const selectedProviderCanSync = isSyncableProvider(selectedProvider)
 
   useEffect(() => {
-    setExternalId(selectedProvider?.account?.externalId ?? '')
+    setExternalId(
+      selectedProvider?.account?.externalId ??
+        (selectedProvider ? providerDefaultExternalId(selectedProvider) : ''),
+    )
     setUsername(selectedProvider?.account?.username ?? '')
     setTokenHint('')
     setFormError(null)
@@ -183,12 +232,17 @@ function ProvidersPanel({
       return
     }
 
-    if (trimmedExternalId.length === 0) {
+    const resolvedExternalId =
+      isRawgProvider && trimmedExternalId.length === 0
+        ? providerDefaultExternalId(selectedProvider)
+        : trimmedExternalId
+
+    if (resolvedExternalId.length === 0) {
       setFormError('Identifiant externe obligatoire.')
       return
     }
 
-    if (selectedProvider.provider === 'STEAM' && !/^\d{17}$/.test(trimmedExternalId)) {
+    if (selectedProvider.provider === 'STEAM' && !/^\d{17}$/.test(resolvedExternalId)) {
       setFormError('SteamID64 invalide : il doit contenir exactement 17 chiffres.')
       return
     }
@@ -197,7 +251,7 @@ function ProvidersPanel({
 
     await onUpsertProviderConnection({
       provider: selectedProvider.provider,
-      externalId: trimmedExternalId,
+      externalId: resolvedExternalId,
       username: username.trim(),
       tokenHint: tokenHint.trim(),
     })
@@ -219,7 +273,7 @@ function ProvidersPanel({
   }
 
   async function handleSyncProvider() {
-    if (!selectedProvider?.account || selectedProvider.provider !== 'STEAM') {
+    if (!selectedProvider?.account || !isSyncableProvider(selectedProvider)) {
       return
     }
 
@@ -342,6 +396,11 @@ function ProvidersPanel({
                     SteamID64 attendu : 17 chiffres.
                   </span>
                 ) : null}
+                {isRawgProvider ? (
+                  <span className="mt-2 block text-xs text-zinc-600">
+                    Catalogue RAWG public pour enrichir les fiches locales.
+                  </span>
+                ) : null}
               </label>
 
               <div className="grid gap-3 md:grid-cols-2">
@@ -361,19 +420,13 @@ function ProvidersPanel({
                     {providerTokenLabel(selectedProvider)}
                   </span>
                   <input
-                    type={isSteamProvider ? 'password' : 'text'}
+                    type={isSteamProvider || isRawgProvider ? 'password' : 'text'}
                     value={tokenHint}
                     onChange={(event) => {
                       setTokenHint(event.target.value)
                       setFormError(null)
                     }}
-                    placeholder={
-                      isSteamProvider
-                        ? selectedProvider.account?.hasToken
-                          ? 'Laisser vide pour conserver la cle existante'
-                          : 'Optionnel si STEAM_WEB_API_KEY est defini'
-                        : 'Optionnel'
-                    }
+                    placeholder={providerTokenPlaceholder(selectedProvider)}
                     className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
                   />
                   {selectedProvider.account?.hasToken ? (
@@ -386,7 +439,13 @@ function ProvidersPanel({
             </div>
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
-              <Button type="submit" disabled={isBusy || trimmedExternalId.length === 0}>
+              <Button
+                type="submit"
+                disabled={
+                  isBusy ||
+                  (!isRawgProvider && trimmedExternalId.length === 0)
+                }
+              >
                 <Link2 size={17} aria-hidden="true" />
                 {isBusy ? 'Enregistrement...' : 'Enregistrer'}
               </Button>
@@ -397,7 +456,7 @@ function ProvidersPanel({
                   onClick={handleSyncProvider}
                   disabled={
                     isBusy ||
-                    !isSteamProvider ||
+                    !selectedProviderCanSync ||
                     !selectedProvider.account.hasToken
                   }
                 >

@@ -116,6 +116,13 @@ export interface GameReview {
   updatedAt: string
 }
 
+export interface GameMetadataSource {
+  provider: string
+  label: string
+  url: string
+  lastSyncedAt: string | null
+}
+
 export type LifeBookEventKind = 'CHRONICLE' | 'SESSION'
 
 export interface LifeBookEvent {
@@ -139,6 +146,7 @@ export interface GameDetail extends GameListItem {
   publisher: string | null
   releaseDate: string | null
   website: string | null
+  metadataSources: GameMetadataSource[]
   review: GameReview | null
   dlcs: DlcListItem[]
   achievements: AchievementListItem[]
