@@ -17,4 +17,12 @@ Un provider retourne des donnees normalisees pour Ludux et ne modifie jamais la 
 
 La v0.15.0 ajoute la couche locale : le registre, les comptes externes references dans `ExternalAccount` et l'etat prepare dans `SyncData`.
 
-Les futures integrations reseau devront rester optionnelles et passer par un adaptateur dedie avant de proposer une importation dans la base locale.
+La v0.19.0 ajoute la premiere integration reseau reelle avec Steam :
+
+- appel manuel a `IPlayerService/GetOwnedGames` ;
+- cle API Steam et SteamID64 lus depuis la connexion locale ;
+- retour normalise par `src/providers/steam.ts` ;
+- import controle par `SettingsService` dans la base Ludux ;
+- liens persistants dans `ExternalGame` pour eviter les doublons.
+
+Les prochaines integrations reseau devront rester optionnelles et passer par un adaptateur dedie avant de proposer une importation dans la base locale.

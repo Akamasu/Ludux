@@ -4,6 +4,7 @@ import type {
   DeleteProviderConnectionInput,
   SettingsActionResult,
   SettingsOverview,
+  SyncProviderInput,
   UpsertProviderConnectionInput,
 } from '../../types/settings'
 
@@ -203,6 +204,24 @@ export function useSettings() {
     [],
   )
 
+  const syncProvider = useCallback(
+    async (input: SyncProviderInput) => {
+      const api = window.ludux
+
+      if (!api) {
+        setActionResult({
+          canceled: true,
+          path: null,
+          message: 'Synchronisation disponible dans la version Electron.',
+        })
+        return
+      }
+
+      await runAction(() => api.settings.syncProvider(input))
+    },
+    [runAction],
+  )
+
   useEffect(() => {
     void refresh()
   }, [refresh])
@@ -219,5 +238,6 @@ export function useSettings() {
     openDataFolder,
     upsertProviderConnection,
     deleteProviderConnection,
+    syncProvider,
   }
 }

@@ -47,6 +47,7 @@ model Game {
   sessions        PlaySession[]
   chronicles      Chronicle[]
   screenshots     Screenshot[]
+  externalGames   ExternalGame[]
   review          Review?
   collectionGames CollectionGame[]
 
@@ -136,6 +137,7 @@ model PlaySession {
 
   game     Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
   platform Platform? @relation(fields: [platformId], references: [id], onDelete: SetNull)
+  externalGames ExternalGame[]
 
   @@index([gameId])
   @@index([platformId])
@@ -259,6 +261,28 @@ model SyncData {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  @@index([provider])
+}
+
+model ExternalGame {
+  id                      String    @id @default(uuid())
+  gameId                  String
+  playSessionId           String?
+  provider                String
+  externalId              String
+  sourceTitle             String?
+  sourceCoverUrl          String?
+  lastPlaytimeMinutes     Int       @default(0)
+  lastSyncedAt            DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  game        Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  playSession PlaySession? @relation(fields: [playSessionId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, externalId])
+  @@index([gameId])
+  @@index([playSessionId])
   @@index([provider])
 }
 

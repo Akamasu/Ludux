@@ -2,6 +2,7 @@ import { app, dialog, shell } from 'electron'
 import { copyFile, mkdir, readdir, stat, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { getDatabaseFilePath, prisma } from '../database/client'
+import { fetchSteamOwnedGames, type SteamOwnedGame } from '../providers/steam'
 import { EXTERNAL_PROVIDER_VALUES } from '../types/settings'
 import type {
   DeleteProviderConnectionInput,
@@ -9,6 +10,7 @@ import type {
   ProviderOverview,
   SettingsActionResult,
   SettingsOverview,
+  SyncProviderInput,
   UpsertProviderConnectionInput,
 } from '../types/settings'
 import { EXTERNAL_PROVIDER_DEFINITIONS } from '../providers/registry'
@@ -17,6 +19,16 @@ import { libraryService } from './library.service'
 const userDataDirectory = resolve('userdata')
 const exportDirectory = join(userDataDirectory, 'exports')
 const backupDirectory = join(userDataDirectory, 'backups')
+const steamProvider: ExternalProvider = 'STEAM'
+const steamPlatformName = 'Steam'
+const steamTotalSessionNote = 'Temps total Steam synchronise.'
+
+interface SteamImportStats {
+  importedGames: number
+  linkedGames: number
+  updatedGames: number
+  syncedSessions: number
+}
 
 function createTimestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-')
@@ -59,6 +71,36 @@ function trimOptional(value: string | undefined) {
 
 function isExternalProvider(value: string): value is ExternalProvider {
   return EXTERNAL_PROVIDER_VALUES.includes(value as ExternalProvider)
+}
+
+function normalizeTitle(value: string) {
+  return value.trim().toLocaleLowerCase('fr-FR')
+}
+
+function createSteamSyncMessage(stats: SteamImportStats, totalRemoteGames: number) {
+  return [
+    `${totalRemoteGames} jeux lus depuis Steam`,
+    `${stats.importedGames} ajoutes`,
+    `${stats.linkedGames} relies`,
+    `${stats.updatedGames} deja connus`,
+    `${stats.syncedSessions} temps de jeu synchronises`,
+  ].join(' / ')
+}
+
+async function recordProviderSync(
+  provider: ExternalProvider,
+  status: string,
+  message: string,
+  lastSync?: Date,
+) {
+  await prisma.syncData.create({
+    data: {
+      provider,
+      status,
+      message,
+      lastSync,
+    },
+  })
 }
 
 async function buildProviderOverview(): Promise<ProviderOverview> {
@@ -195,6 +237,230 @@ async function buildExportSnapshot() {
   }
 }
 
+async function ensureSteamPlatform() {
+  return prisma.platform.upsert({
+    where: {
+      name: steamPlatformName,
+    },
+    update: {},
+    create: {
+      name: steamPlatformName,
+      manufacturer: 'Valve',
+    },
+  })
+}
+
+async function ensureSteamPlatformForGame(gameId: string, platformId: string) {
+  const existingPlatform = await prisma.gamePlatform.findFirst({
+    where: {
+      gameId,
+      platformId,
+      version: null,
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  if (existingPlatform) {
+    return
+  }
+
+  await prisma.gamePlatform.create({
+    data: {
+      gameId,
+      platformId,
+      owned: true,
+      played: true,
+    },
+  })
+}
+
+async function upsertSteamPlaySession({
+  gameId,
+  platformId,
+  playSessionId,
+  steamGame,
+}: {
+  gameId: string
+  platformId: string
+  playSessionId: string | null
+  steamGame: SteamOwnedGame
+}) {
+  if (steamGame.playtimeForeverMinutes <= 0) {
+    return playSessionId
+  }
+
+  const sessionData = {
+    start: steamGame.lastPlayedAt ? new Date(steamGame.lastPlayedAt) : new Date(),
+    durationMinutes: steamGame.playtimeForeverMinutes,
+    note: steamTotalSessionNote,
+    platformId,
+  }
+
+  if (playSessionId) {
+    const result = await prisma.playSession.updateMany({
+      where: {
+        id: playSessionId,
+        gameId,
+      },
+      data: sessionData,
+    })
+
+    if (result.count > 0) {
+      return playSessionId
+    }
+  }
+
+  const session = await prisma.playSession.create({
+    data: {
+      ...sessionData,
+      gameId,
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  return session.id
+}
+
+async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImportStats> {
+  const stats: SteamImportStats = {
+    importedGames: 0,
+    linkedGames: 0,
+    updatedGames: 0,
+    syncedSessions: 0,
+  }
+  const steamPlatform = await ensureSteamPlatform()
+  const localGames = await prisma.game.findMany({
+    where: {
+      archived: false,
+    },
+    select: {
+      id: true,
+      title: true,
+      coverUrl: true,
+    },
+  })
+  const gamesByTitle = new Map(
+    localGames.map((game) => [normalizeTitle(game.title), game]),
+  )
+
+  for (const steamGame of games) {
+    const externalId = String(steamGame.appid)
+    const existingLink = await prisma.externalGame.findUnique({
+      where: {
+        provider_externalId: {
+          provider: steamProvider,
+          externalId,
+        },
+      },
+    })
+    const matchedGame = existingLink
+      ? await prisma.game.findUnique({
+          where: {
+            id: existingLink.gameId,
+          },
+          select: {
+            id: true,
+            title: true,
+            coverUrl: true,
+          },
+        })
+      : (gamesByTitle.get(normalizeTitle(steamGame.title)) ?? null)
+    const localGame =
+      matchedGame ??
+      (await prisma.game.create({
+        data: {
+          title: steamGame.title,
+          coverUrl: steamGame.coverUrl,
+          status: steamGame.playtimeForeverMinutes > 0 ? 'PLAYING' : 'BACKLOG',
+          platforms: {
+            create: {
+              platform: {
+                connect: {
+                  id: steamPlatform.id,
+                },
+              },
+              owned: true,
+              played: steamGame.playtimeForeverMinutes > 0,
+            },
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          coverUrl: true,
+        },
+      }))
+
+    if (existingLink) {
+      stats.updatedGames += 1
+    } else if (matchedGame) {
+      stats.linkedGames += 1
+    } else {
+      stats.importedGames += 1
+      gamesByTitle.set(normalizeTitle(localGame.title), localGame)
+    }
+
+    if (matchedGame) {
+      await ensureSteamPlatformForGame(localGame.id, steamPlatform.id)
+    }
+
+    if (!localGame.coverUrl) {
+      await prisma.game.update({
+        where: {
+          id: localGame.id,
+        },
+        data: {
+          coverUrl: steamGame.coverUrl,
+        },
+      })
+    }
+
+    const playSessionId = await upsertSteamPlaySession({
+      gameId: localGame.id,
+      platformId: steamPlatform.id,
+      playSessionId: existingLink?.playSessionId ?? null,
+      steamGame,
+    })
+
+    if (steamGame.playtimeForeverMinutes > 0) {
+      stats.syncedSessions += 1
+    }
+
+    await prisma.externalGame.upsert({
+      where: {
+        provider_externalId: {
+          provider: steamProvider,
+          externalId,
+        },
+      },
+      update: {
+        gameId: localGame.id,
+        playSessionId,
+        sourceTitle: steamGame.title,
+        sourceCoverUrl: steamGame.coverUrl,
+        lastPlaytimeMinutes: steamGame.playtimeForeverMinutes,
+        lastSyncedAt: new Date(),
+      },
+      create: {
+        gameId: localGame.id,
+        playSessionId,
+        provider: steamProvider,
+        externalId,
+        sourceTitle: steamGame.title,
+        sourceCoverUrl: steamGame.coverUrl,
+        lastPlaytimeMinutes: steamGame.playtimeForeverMinutes,
+        lastSyncedAt: new Date(),
+      },
+    })
+  }
+
+  return stats
+}
+
 class SettingsService {
   async getOverview(): Promise<SettingsOverview> {
     const databasePath = getDatabaseFilePath()
@@ -241,7 +507,10 @@ class SettingsService {
         data: {
           provider: input.provider,
           status: 'READY',
-          message: 'Compte reference localement. Synchronisation reseau non active.',
+          message:
+            input.provider === steamProvider
+              ? 'Compte Steam pret pour une synchronisation manuelle.'
+              : 'Compte reference localement. Synchronisation reseau non active.',
         },
       }),
     ])
@@ -276,6 +545,66 @@ class SettingsService {
     })
 
     return this.getOverview()
+  }
+
+  async syncProvider(input: SyncProviderInput): Promise<SettingsActionResult> {
+    if (!isExternalProvider(input.provider)) {
+      throw new Error('Provider invalide.')
+    }
+
+    if (input.provider !== steamProvider) {
+      throw new Error('Seule la synchronisation Steam est disponible pour le moment.')
+    }
+
+    const account = await prisma.externalAccount.findFirst({
+      where: {
+        provider: steamProvider,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    })
+
+    if (!account) {
+      throw new Error('Connexion Steam introuvable.')
+    }
+
+    const apiKey = trimOptional(account.tokenHint ?? undefined)
+
+    if (!apiKey) {
+      throw new Error('Cle API Steam obligatoire pour synchroniser.')
+    }
+
+    await recordProviderSync(
+      steamProvider,
+      'SYNCING',
+      'Synchronisation Steam en cours.',
+    )
+
+    try {
+      const ownedGames = await fetchSteamOwnedGames({
+        apiKey,
+        steamId: account.externalId,
+      })
+      const stats = await importSteamOwnedGames(ownedGames.games)
+      const syncedAt = new Date()
+      const message = createSteamSyncMessage(stats, ownedGames.totalCount)
+
+      await recordProviderSync(steamProvider, 'SYNCED', message, syncedAt)
+
+      return {
+        canceled: false,
+        path: null,
+        message,
+        createdAt: syncedAt.toISOString(),
+      }
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error ? caughtError.message : 'Erreur Steam inconnue.'
+
+      await recordProviderSync(steamProvider, 'ERROR', message)
+      throw caughtError
+    }
   }
 
   async exportLibrary(): Promise<SettingsActionResult> {

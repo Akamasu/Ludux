@@ -4,6 +4,7 @@ import {
   EXTERNAL_PROVIDER_VALUES,
   type DeleteProviderConnectionInput,
   type ExternalProvider,
+  type SyncProviderInput,
   type UpsertProviderConnectionInput,
 } from '../../types/settings'
 import { logger } from '../../utils/logger'
@@ -62,6 +63,16 @@ function parseDeleteProviderConnectionInput(
   }
 }
 
+function parseSyncProviderInput(value: unknown): SyncProviderInput {
+  if (!isRecord(value) || !isExternalProvider(value['provider'])) {
+    throw new Error('Les donnees du provider sont invalides.')
+  }
+
+  return {
+    provider: value['provider'],
+  }
+}
+
 export function registerSettingsHandlers() {
   ipcMain.handle('settings:getOverview', async () => {
     try {
@@ -115,6 +126,15 @@ export function registerSettingsHandlers() {
       return await settingsService.deleteProviderConnection(
         parseDeleteProviderConnectionInput(input),
       )
+    } catch (error) {
+      logger.error('[SettingsIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('settings:syncProvider', async (_event, input: unknown) => {
+    try {
+      return await settingsService.syncProvider(parseSyncProviderInput(input))
     } catch (error) {
       logger.error('[SettingsIPC]', error)
       throw error

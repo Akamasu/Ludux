@@ -21,6 +21,7 @@ import type {
   ProviderConnection,
   SettingsActionResult,
   SettingsOverview,
+  SyncProviderInput,
   UpsertProviderConnectionInput,
 } from '../../types/settings'
 import type { AppView } from '../types/navigation'
@@ -43,6 +44,7 @@ interface SettingsPageProps {
   onOpenDataFolder: () => Promise<void>
   onRefresh: () => Promise<void>
   onRestoreGame: (gameId: string) => Promise<void>
+  onSyncProvider: (input: SyncProviderInput) => Promise<void>
   onUpsertProviderConnection: (input: UpsertProviderConnectionInput) => Promise<void>
 }
 
@@ -99,6 +101,18 @@ function providerStatusLabel(connection: ProviderConnection) {
     return 'Non configure'
   }
 
+  if (connection.sync?.status === 'SYNCED') {
+    return 'Synchronise'
+  }
+
+  if (connection.sync?.status === 'SYNCING') {
+    return 'En cours'
+  }
+
+  if (connection.sync?.status === 'ERROR') {
+    return 'Erreur'
+  }
+
   if (connection.sync?.status === 'READY') {
     return 'Pret'
   }
@@ -106,15 +120,31 @@ function providerStatusLabel(connection: ProviderConnection) {
   return connection.sync?.status ?? 'Local'
 }
 
+function providerExternalIdLabel(provider: ProviderConnection) {
+  return provider.provider === 'STEAM' ? 'SteamID64' : 'Identifiant externe'
+}
+
+function providerExternalIdPlaceholder(provider: ProviderConnection) {
+  return provider.provider === 'STEAM'
+    ? '7656119...'
+    : 'SteamID, gamertag, pseudo, cle publique...'
+}
+
+function providerTokenLabel(provider: ProviderConnection) {
+  return provider.provider === 'STEAM' ? 'Cle API Steam' : 'Indice token'
+}
+
 function ProvidersPanel({
   isBusy,
   overview,
   onDeleteProviderConnection,
+  onSyncProvider,
   onUpsertProviderConnection,
 }: {
   isBusy: boolean
   overview: SettingsOverview
   onDeleteProviderConnection: (input: DeleteProviderConnectionInput) => Promise<void>
+  onSyncProvider: (input: SyncProviderInput) => Promise<void>
   onUpsertProviderConnection: (input: UpsertProviderConnectionInput) => Promise<void>
 }) {
   const providers = overview.providerOverview.providers
@@ -161,6 +191,16 @@ function ProvidersPanel({
         accountId: selectedProvider.account.id,
       })
     }
+  }
+
+  async function handleSyncProvider() {
+    if (!selectedProvider?.account || selectedProvider.provider !== 'STEAM') {
+      return
+    }
+
+    await onSyncProvider({
+      provider: selectedProvider.provider,
+    })
   }
 
   return (
@@ -260,12 +300,12 @@ function ProvidersPanel({
             <div className="mt-5 grid gap-3">
               <label>
                 <span className="mb-2 block text-xs font-medium text-zinc-500">
-                  Identifiant externe
+                  {providerExternalIdLabel(selectedProvider)}
                 </span>
                 <input
                   value={externalId}
                   onChange={(event) => setExternalId(event.target.value)}
-                  placeholder="SteamID, gamertag, pseudo, cle publique..."
+                  placeholder={providerExternalIdPlaceholder(selectedProvider)}
                   className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
                 />
               </label>
@@ -284,9 +324,10 @@ function ProvidersPanel({
                 </label>
                 <label>
                   <span className="mb-2 block text-xs font-medium text-zinc-500">
-                    Indice token
+                    {providerTokenLabel(selectedProvider)}
                   </span>
                   <input
+                    type={selectedProvider.provider === 'STEAM' ? 'password' : 'text'}
                     value={tokenHint}
                     onChange={(event) => setTokenHint(event.target.value)}
                     placeholder="Optionnel"
@@ -301,6 +342,21 @@ function ProvidersPanel({
                 <Link2 size={17} aria-hidden="true" />
                 Enregistrer
               </Button>
+              {selectedProvider.account ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleSyncProvider}
+                  disabled={
+                    isBusy ||
+                    selectedProvider.provider !== 'STEAM' ||
+                    (selectedProvider.account.tokenHint?.trim().length ?? 0) === 0
+                  }
+                >
+                  <RefreshCw size={17} aria-hidden="true" />
+                  Synchroniser
+                </Button>
+              ) : null}
               {selectedProvider.account ? (
                 <Button
                   type="button"
@@ -437,6 +493,7 @@ export function SettingsPage({
   onOpenDataFolder,
   onRefresh,
   onRestoreGame,
+  onSyncProvider,
   onUpsertProviderConnection,
   overview,
 }: SettingsPageProps) {
@@ -601,6 +658,7 @@ export function SettingsPage({
         overview={overview}
         isBusy={isBusy}
         onDeleteProviderConnection={onDeleteProviderConnection}
+        onSyncProvider={onSyncProvider}
         onUpsertProviderConnection={onUpsertProviderConnection}
       />
 

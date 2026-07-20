@@ -124,7 +124,7 @@ Avant les fonctionnalités plus ambitieuses, Ludux doit permettre de :
 - rattacher des captures d'écran ;
 - copier les captures locales dans le dossier Ludux ;
 - préparer les comptes externes ;
-- connecter au moins une plateforme externe de façon optionnelle ;
+- connecter au moins une plateforme externe de façon optionnelle, avec Steam comme première intégration ;
 - lancer une première synchronisation réseau contrôlée ;
 - voir des statistiques simples ;
 - éviter les crashs bloquants.
@@ -146,6 +146,5 @@ Avant les fonctionnalités plus ambitieuses, Ludux doit permettre de :
 
 Les prochaines étapes les plus cohérentes avec le document de conception sont :
 
-- Providers : brancher une première intégration réseau optionnelle.
 - Bibliothèque : enrichir les fiches avec genres, développeur, éditeur et date de sortie.
 - Release : préparer le packaging et les versions installables.

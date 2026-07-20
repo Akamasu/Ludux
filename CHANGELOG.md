@@ -22,6 +22,7 @@ Le projet suit des versions de developpement simples :
 - `v0.16.x` : edition et suppression des chroniques.
 - `v0.17.x` : import et copie locale des captures.
 - `v0.18.x` : edition et suppression des sessions de jeu.
+- `v0.19.x` : synchronisation Steam manuelle.
 
 ## v0.1.0 - 2026-07-16
 
@@ -177,3 +178,14 @@ Le projet suit des versions de developpement simples :
 - Mise a jour des statistiques derivees apres changement de session.
 - Exposition des actions via le service game, l'IPC Electron et le preload securise.
 - Mise a jour de la vision produit pour une premiere version publique connectee.
+
+## v0.19.0 - 2026-07-20
+
+- Ajout d'une synchronisation Steam manuelle depuis les parametres.
+- Ajout d'un adaptateur Steam base sur `IPlayerService/GetOwnedGames`.
+- Import automatique des jeux Steam manquants avec jaquette Steam et plateforme Steam.
+- Liaison des jeux importes ou reconnus par titre avec leur AppID Steam.
+- Synchronisation du temps total Steam dans une session dediee par jeu.
+- Ajout du modele `ExternalGame` pour eviter les doublons lors des prochaines synchronisations.
+- Ajout des etats de synchronisation `SYNCING`, `SYNCED` et `ERROR`.
+- Rafraichissement de la bibliotheque, des statistiques et du Livre de Vie apres synchronisation.

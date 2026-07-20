@@ -29,6 +29,7 @@ import type {
   DeleteProviderConnectionInput,
   SettingsActionResult,
   SettingsOverview,
+  SyncProviderInput,
   UpsertProviderConnectionInput,
 } from './settings'
 
@@ -77,6 +78,7 @@ export interface LuduxApi {
     deleteProviderConnection: (
       input: DeleteProviderConnectionInput,
     ) => Promise<SettingsOverview>
+    syncProvider: (input: SyncProviderInput) => Promise<SettingsActionResult>
   }
 }
 

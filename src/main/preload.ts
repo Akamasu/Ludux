@@ -31,6 +31,7 @@ import type {
   DeleteProviderConnectionInput,
   SettingsActionResult,
   SettingsOverview,
+  SyncProviderInput,
   UpsertProviderConnectionInput,
 } from '../types/settings'
 
@@ -106,6 +107,8 @@ const api: LuduxApi = {
       ipcRenderer.invoke('settings:upsertProviderConnection', input) as Promise<SettingsOverview>,
     deleteProviderConnection: (input: DeleteProviderConnectionInput) =>
       ipcRenderer.invoke('settings:deleteProviderConnection', input) as Promise<SettingsOverview>,
+    syncProvider: (input: SyncProviderInput) =>
+      ipcRenderer.invoke('settings:syncProvider', input) as Promise<SettingsActionResult>,
   },
 }
 

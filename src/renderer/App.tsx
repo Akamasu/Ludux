@@ -77,6 +77,16 @@ export default function App() {
     await Promise.all([settingsState.refresh(), libraryState.refresh()])
   }
 
+  async function syncProvider(input: Parameters<typeof settingsState.syncProvider>[0]) {
+    await settingsState.syncProvider(input)
+    await Promise.all([
+      libraryState.refresh(),
+      chroniclesState.refresh(),
+      lifeBookState.refresh(),
+      statisticsState.refresh(),
+    ])
+  }
+
   function changeLaunchView(view: AppView) {
     setLaunchViewState(view)
 
@@ -174,6 +184,7 @@ export default function App() {
           onOpenDataFolder={settingsState.openDataFolder}
           onRefresh={refreshSettingsView}
           onRestoreGame={libraryState.restoreGame}
+          onSyncProvider={syncProvider}
           onUpsertProviderConnection={settingsState.upsertProviderConnection}
         />
       ) : null}

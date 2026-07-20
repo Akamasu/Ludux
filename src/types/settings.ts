@@ -77,3 +77,7 @@ export interface DeleteProviderConnectionInput {
   provider: ExternalProvider
   accountId: string
 }
+
+export interface SyncProviderInput {
+  provider: ExternalProvider
+}
