@@ -100,6 +100,299 @@ button:disabled {
   box-shadow: 0 18px 22px -24px rgba(201, 166, 70, 0.4);
 }
 
+.library-cabinet {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1rem, 2.6vw, 1.5rem);
+  border: 1px solid rgba(201, 166, 70, 0.2);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(201, 166, 70, 0.12), transparent 8rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 9rem),
+    repeating-linear-gradient(
+      90deg,
+      rgba(201, 166, 70, 0.035) 0,
+      rgba(201, 166, 70, 0.035) 1px,
+      transparent 1px,
+      transparent 34px
+    ),
+    #151922;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 22px 0 28px rgba(0, 0, 0, 0.24),
+    inset -22px 0 28px rgba(0, 0, 0, 0.22),
+    0 24px 46px -38px rgba(0, 0, 0, 0.95);
+}
+
+.library-cabinet::before,
+.library-cabinet::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+  pointer-events: none;
+  content: '';
+  background:
+    linear-gradient(90deg, rgba(201, 166, 70, 0.16), transparent),
+    rgba(0, 0, 0, 0.18);
+}
+
+.library-cabinet::before {
+  left: 0;
+}
+
+.library-cabinet::after {
+  right: 0;
+  transform: scaleX(-1);
+}
+
+.library-cabinet-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(201, 166, 70, 0.14);
+}
+
+.library-cabinet-nav {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.library-cabinet-nav:hover {
+  color: #ffffff;
+  background: rgba(124, 92, 255, 0.14);
+  border-color: rgba(124, 92, 255, 0.45);
+  transform: translateY(-1px);
+}
+
+.library-cabinet-nav:disabled {
+  color: rgba(166, 173, 187, 0.45);
+  background: rgba(255, 255, 255, 0.025);
+  border-color: rgba(255, 255, 255, 0.055);
+  transform: none;
+}
+
+.library-page-shell {
+  position: relative;
+  z-index: 1;
+  margin-top: 1rem;
+  perspective: 1200px;
+}
+
+.library-page-turn {
+  min-height: clamp(25rem, 46vw, 34rem);
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border: 1px solid color-mix(in srgb, var(--page-accent, #c9a646), transparent 72%);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--page-accent, #c9a646), transparent 91%), transparent 16rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 50%),
+    #10141d;
+  box-shadow:
+    inset 4px 0 0 color-mix(in srgb, var(--page-accent, #c9a646), transparent 48%),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.library-shelf-stack {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.genre-shelf {
+  position: relative;
+  display: flex;
+  min-height: clamp(10.5rem, 18vw, 14rem);
+  align-items: flex-end;
+  padding: 1.7rem 0.6rem 1.2rem;
+}
+
+.genre-shelf-heading {
+  position: absolute;
+  top: 0;
+  left: 0.25rem;
+  z-index: 2;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  color: #d9c98b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.genre-shelf::after {
+  position: absolute;
+  right: 0;
+  bottom: 0.55rem;
+  left: 0;
+  height: 0.72rem;
+  pointer-events: none;
+  content: '';
+  border: 1px solid rgba(201, 166, 70, 0.16);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent),
+    rgba(9, 11, 16, 0.82);
+  box-shadow: 0 14px 24px -20px rgba(0, 0, 0, 0.95);
+}
+
+.genre-book-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: flex-end;
+  gap: clamp(0.4rem, 1vw, 0.7rem);
+  overflow-x: auto;
+  padding: 0.25rem 0.2rem 0.55rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 166, 70, 0.45) transparent;
+}
+
+.library-book-spine {
+  position: relative;
+  display: flex;
+  flex: 0 0 var(--book-width);
+  width: var(--book-width);
+  height: clamp(7.8rem, 14vw, 10.8rem);
+  min-width: 2.65rem;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 0.75rem 0.35rem;
+  color: #ffffff;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.42), transparent 22%, rgba(255, 255, 255, 0.08) 50%, transparent 78%),
+    linear-gradient(180deg, color-mix(in srgb, var(--book-accent), white 10%), var(--book-color));
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 6px 6px 3px 3px;
+  box-shadow:
+    inset 5px 0 0 rgba(255, 255, 255, 0.08),
+    inset -4px 0 10px rgba(0, 0, 0, 0.22),
+    0 14px 18px -18px rgba(0, 0, 0, 0.95);
+  transition:
+    border-color 160ms ease,
+    filter 160ms ease,
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.library-book-spine::before,
+.library-book-spine::after {
+  position: absolute;
+  right: 0.45rem;
+  left: 0.45rem;
+  height: 1px;
+  content: '';
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.library-book-spine::before {
+  top: 0.7rem;
+}
+
+.library-book-spine::after {
+  bottom: 0.7rem;
+}
+
+.library-book-spine:hover {
+  border-color: color-mix(in srgb, var(--book-accent), white 22%);
+  filter: brightness(1.08);
+  transform: translateY(-0.35rem) rotate(-0.7deg);
+}
+
+.library-book-title {
+  display: block;
+  max-height: 7.2rem;
+  overflow: hidden;
+  font-size: clamp(0.72rem, 1.2vw, 0.84rem);
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: left;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.library-book-status,
+.library-book-time {
+  position: absolute;
+  left: 50%;
+  white-space: nowrap;
+  font-size: 0.62rem;
+  font-weight: 700;
+  opacity: 0.82;
+  transform: translateX(-50%);
+}
+
+.library-book-status {
+  top: 0.95rem;
+}
+
+.library-book-time {
+  bottom: 0.95rem;
+}
+
+.library-page-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: #a6adbb;
+  font-size: 0.78rem;
+}
+
+.library-page-tabs {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: thin;
+}
+
+.library-page-tab {
+  flex: 0 0 auto;
+  min-height: 2.15rem;
+  padding: 0.45rem 0.75rem;
+  color: #a6adbb;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.library-page-tab:hover,
+.library-page-tab-active {
+  color: #ffffff;
+  background: color-mix(in srgb, var(--tab-accent, #c9a646), transparent 84%);
+  border-color: color-mix(in srgb, var(--tab-accent, #c9a646), transparent 48%);
+}
+
 .game-book-spread {
   position: relative;
   box-shadow:
@@ -207,8 +500,61 @@ button:disabled {
   }
 }
 
+@keyframes library-page-next {
+  from {
+    opacity: 0;
+    transform: rotateY(-15deg) translateX(1.1rem) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: rotateY(0) translateX(0) scale(1);
+  }
+}
+
+@keyframes library-page-previous {
+  from {
+    opacity: 0;
+    transform: rotateY(15deg) translateX(-1.1rem) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: rotateY(0) translateX(0) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .view-transition {
     animation: view-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .library-page-turn[data-direction='next'] {
+    transform-origin: left center;
+    animation: library-page-next 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .library-page-turn[data-direction='previous'] {
+    transform-origin: right center;
+    animation: library-page-previous 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@media (max-width: 720px) {
+  .library-cabinet-header {
+    flex-direction: column;
+  }
+
+  .library-page-turn {
+    min-height: 27rem;
+  }
+
+  .genre-shelf {
+    min-height: 11.6rem;
+    padding-inline: 0;
+  }
+
+  .library-book-spine {
+    height: 8.7rem;
   }
 }

@@ -30,7 +30,7 @@ export function GameListRow({ game, onOpen }: GameListRowProps) {
       </div>
       <div className="flex items-center gap-2 text-sm text-zinc-400">
         <Star size={16} aria-hidden="true" />
-        {game.rating ? `${game.rating}/10` : 'Non note'}
+        {game.rating ? `${game.rating}/10` : 'Non noté'}
       </div>
       </button>
     </article>

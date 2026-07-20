@@ -72,7 +72,7 @@ function MuseumCard({
             </div>
             <div className="flex h-9 items-center gap-2 rounded-lg bg-white/5 px-3">
               <Star size={15} aria-hidden="true" />
-              {game.rating ? `${game.rating}/10` : 'Non note'}
+              {game.rating ? `${game.rating}/10` : 'Non noté'}
             </div>
           </div>
 
@@ -146,7 +146,7 @@ export function MuseumPage({ games, onOpenGame, onOpenLibrary }: MuseumPageProps
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">
           <div className="mb-5 flex items-center justify-between gap-4">
-            <p className="text-sm text-zinc-500">Termines</p>
+            <p className="text-sm text-zinc-500">Terminés</p>
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-[#7C5CFF] text-white">
               <Trophy size={18} aria-hidden="true" />
             </div>
@@ -211,8 +211,8 @@ export function MuseumPage({ games, onOpenGame, onOpenLibrary }: MuseumPageProps
             className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
           >
             <option value="ALL">Tous les accomplissements</option>
-            <option value="COMPLETED">Termines</option>
-            <option value="COMPLETED_100">Termines a 100 %</option>
+            <option value="COMPLETED">Terminés</option>
+            <option value="COMPLETED_100">Terminés à 100 %</option>
           </select>
         </label>
 
@@ -250,7 +250,7 @@ export function MuseumPage({ games, onOpenGame, onOpenLibrary }: MuseumPageProps
         </section>
       ) : filteredGames.length === 0 ? (
         <section className="rounded-lg border border-dashed border-white/15 bg-[#181B23] p-8">
-          <h2 className="text-lg font-semibold text-white">Aucune piece ne correspond.</h2>
+              <h2 className="text-lg font-semibold text-white">Aucune pièce ne correspond.</h2>
           <p className="mt-2 text-sm leading-6 text-zinc-500">
             Ajustez la recherche ou les filtres pour retrouver un jeu accompli.
           </p>

@@ -60,7 +60,7 @@ export function HomePage({
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatTile label="Jeux" value={String(overview.gamesOwned)} icon={Gamepad2} tone="violet" />
         <StatTile label="Heures" value={formatHours(overview.totalMinutes)} icon={Clock3} tone="blue" />
-        <StatTile label="Termines" value={String(overview.gamesCompleted)} icon={Trophy} tone="gold" />
+        <StatTile label="Terminés" value={String(overview.gamesCompleted)} icon={Trophy} tone="gold" />
         <StatTile label="Plateforme" value={overview.topPlatform ?? '-'} icon={BookOpen} tone="magenta" />
       </section>
 

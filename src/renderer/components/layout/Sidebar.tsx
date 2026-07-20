@@ -78,7 +78,7 @@ export function Sidebar({ activeView, onNavigate }: SidebarProps) {
       <div className="mt-auto hidden rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] lg:block">
         <p className="text-sm font-medium text-zinc-100">Archives locales</p>
         <p className="mt-1 text-xs leading-5 text-zinc-500">
-          Vos traces restent rangees sur cette machine.
+          Vos traces restent rangées sur cette machine.
         </p>
       </div>
     </aside>

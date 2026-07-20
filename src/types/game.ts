@@ -22,11 +22,11 @@ export const EMOTION_VALUES = [
 export type Emotion = (typeof EMOTION_VALUES)[number]
 
 export const GAME_STATUS_LABELS: Record<GameStatus, string> = {
-  BACKLOG: 'A jouer',
+  BACKLOG: 'À jouer',
   PLAYING: 'En cours',
-  COMPLETED: 'Termine',
-  COMPLETED_100: 'Termine a 100 %',
-  DROPPED: 'Abandonne',
+  COMPLETED: 'Terminé',
+  COMPLETED_100: 'Terminé à 100 %',
+  DROPPED: 'Abandonné',
   PAUSED: 'En pause',
 }
 
@@ -37,7 +37,7 @@ export const EMOTION_LABELS: Record<Emotion, string> = {
   FRUSTRATION: 'Frustration',
   SURPRISE: 'Surprise',
   SADNESS: 'Tristesse',
-  PRIDE: 'Fierte',
+  PRIDE: 'Fierté',
 }
 
 export interface GameListItem {

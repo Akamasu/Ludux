@@ -29,6 +29,15 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.5 - 2026-07-20
+
+- Ajout d'une vue `Armoire ancienne` dans la bibliothèque, activée par défaut.
+- Regroupement visuel des jeux en rayons thématiques avec livres verticaux et couleurs par genre.
+- Ajout d'une pagination animée entre les feuillets de rayons.
+- Conservation des vues grille et liste existantes via le sélecteur d'affichage.
+- Ajustements responsive pour garder l'armoire lisible en fenêtre compacte.
+- Nettoyage de libellés français visibles dans la bibliothèque, le musée, les statistiques et les archives.
+
 ## v0.24.4 - 2026-07-20
 
 - Ajout du bouton `Synchroniser tout` pour lancer tous les providers configurés en une action.

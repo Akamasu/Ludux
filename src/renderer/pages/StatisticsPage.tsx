@@ -251,7 +251,7 @@ export function StatisticsPage({ error, isLoading, statistics }: StatisticsPageP
           tone="blue"
         />
         <StatTile
-          label="Termines"
+          label="Terminés"
           value={String(statistics.gamesCompleted)}
           icon={Trophy}
           tone="gold"

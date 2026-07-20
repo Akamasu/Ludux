@@ -564,7 +564,7 @@ function ArchivedGamesPanel({
     <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-white">Jeux archives</h2>
+          <h2 className="text-lg font-semibold text-white">Jeux archivés</h2>
           <p className="mt-1 text-sm text-zinc-500">
             Les jeux archivés quittent la bibliothèque active sans perdre leurs données.
           </p>
@@ -574,7 +574,7 @@ function ArchivedGamesPanel({
 
       {archivedGames.length === 0 ? (
         <p className="rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
-          Aucun jeu archive pour le moment.
+          Aucun jeu archivé pour le moment.
         </p>
       ) : (
         <div className="space-y-3">
@@ -589,7 +589,7 @@ function ArchivedGamesPanel({
                   {game.platforms.join(', ') || 'Plateforme non renseignée'}
                 </p>
                 <p className="mt-2 text-xs text-zinc-600">
-                  Archive le {formatDate(game.updatedAt)} / {game.rating ? `${game.rating}/10` : 'Non note'}
+                  Archivé le {formatDate(game.updatedAt)} / {game.rating ? `${game.rating}/10` : 'Non noté'}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">

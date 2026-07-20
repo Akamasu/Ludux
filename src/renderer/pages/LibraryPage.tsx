@@ -1,4 +1,4 @@
-import { Grid3X3, List, Plus, Search } from 'lucide-react'
+import { BookOpen, Grid3X3, List, Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import {
   GAME_STATUS_LABELS,
@@ -11,12 +11,13 @@ import { AddGameForm } from '../components/library/AddGameForm'
 import { EmptyLibrary } from '../components/library/EmptyLibrary'
 import { GameCard } from '../components/library/GameCard'
 import { GameListRow } from '../components/library/GameListRow'
+import { LibraryBookcase } from '../components/library/LibraryBookcase'
 import { Button } from '../components/ui/Button'
 import { cn } from '../../utils/cn'
 
 type StatusFilter = 'ALL' | GameStatus
 type PlatformFilter = 'ALL' | string
-type ViewMode = 'grid' | 'list'
+type ViewMode = 'cabinet' | 'grid' | 'list'
 
 interface LibraryPageProps {
   games: GameListItem[]
@@ -40,7 +41,7 @@ export function LibraryPage({
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('ALL')
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [viewMode, setViewMode] = useState<ViewMode>('cabinet')
   const [isAddOpen, setIsAddOpen] = useState(false)
 
   const platforms = useMemo(() => {
@@ -167,7 +168,20 @@ export function LibraryPage({
               </select>
             </label>
 
-            <div className="grid h-11 grid-cols-2 rounded-lg border border-white/10 bg-[#0F1117] p-1">
+            <div className="grid h-11 grid-cols-3 rounded-lg border border-white/10 bg-[#0F1117] p-1">
+              <button
+                type="button"
+                aria-label="Vue armoire"
+                aria-pressed={viewMode === 'cabinet'}
+                title="Vue armoire"
+                onClick={() => setViewMode('cabinet')}
+                className={cn(
+                  'grid place-items-center rounded-md text-zinc-500 transition hover:text-white',
+                  viewMode === 'cabinet' && 'bg-white/10 text-white',
+                )}
+              >
+                <BookOpen size={17} aria-hidden="true" />
+              </button>
               <button
                 type="button"
                 aria-label="Vue grille"
@@ -210,6 +224,8 @@ export function LibraryPage({
                 Ajustez la recherche ou les filtres pour retrouver votre chapitre.
               </p>
             </section>
+          ) : viewMode === 'cabinet' ? (
+            <LibraryBookcase games={filteredGames} onOpen={onOpenGame} />
           ) : viewMode === 'grid' ? (
             <section className="library-shelf grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {filteredGames.map((game) => (

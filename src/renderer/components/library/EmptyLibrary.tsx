@@ -15,9 +15,9 @@ export function EmptyLibrary({ onCreateGame, isSaving }: EmptyLibraryProps) {
           <div className="mb-4 grid h-11 w-11 place-items-center rounded-lg bg-[#4F7CFF] text-white">
             <Sparkles size={21} aria-hidden="true" />
           </div>
-          <h2 className="text-xl font-semibold text-white">Votre bibliotheque est vide.</h2>
+          <h2 className="text-xl font-semibold text-white">Votre bibliothèque est vide.</h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
-            Ajoutez votre premier jeu et Ludux commencera a construire votre parcours.
+            Ajoutez votre premier jeu et Ludux commencera à construire votre parcours.
           </p>
         </div>
       </div>

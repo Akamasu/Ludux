@@ -38,7 +38,7 @@ export function GameCard({ game, onOpen }: GameCardProps) {
           </div>
           <div className="flex h-9 items-center gap-2 rounded-lg bg-white/5 px-3">
             <Star size={15} aria-hidden="true" />
-            {game.rating ? `${game.rating}/10` : 'Non note'}
+            {game.rating ? `${game.rating}/10` : 'Non noté'}
           </div>
         </div>
 

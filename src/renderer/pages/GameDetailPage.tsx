@@ -240,7 +240,7 @@ function GameArchiveHero({
             <div className="rounded-lg border border-white/10 bg-[#0F1117]/80 px-3 py-2">
               <p className="text-zinc-600">Note</p>
               <p className="mt-1 font-medium text-white">
-                {detail.review ? `${detail.review.rating}/10` : 'Non note'}
+                {detail.review ? `${detail.review.rating}/10` : 'Non noté'}
               </p>
             </div>
           </div>
@@ -784,7 +784,7 @@ function DlcPanel({
           <p className="mt-1 text-xl font-semibold text-white">{ownedCount}</p>
         </div>
         <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
-          <p className="text-xs text-zinc-500">Termines</p>
+          <p className="text-xs text-zinc-500">Terminés</p>
           <p className="mt-1 text-xl font-semibold text-white">{completedCount}</p>
         </div>
       </div>
