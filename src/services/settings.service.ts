@@ -4,7 +4,9 @@ import { dirname, join, resolve } from 'node:path'
 import { getDatabaseFilePath, prisma } from '../database/client'
 import {
   fetchSteamOwnedGames,
+  mergeSteamGames,
   normalizeSteamId,
+  readSteamLocalLibrary,
   type SteamOwnedGame,
 } from '../providers/steam'
 import {
@@ -40,6 +42,13 @@ interface SteamImportStats {
   linkedGames: number
   updatedGames: number
   syncedSessions: number
+}
+
+interface SteamSyncSources {
+  apiWarning: string | null
+  localActivityGames: number
+  localManifestGames: number
+  remoteGames: number
 }
 
 interface RawgEnrichmentStats {
@@ -197,18 +206,27 @@ function createProviderReadyMessage(provider: ExternalProvider) {
   return 'Compte reference localement. Synchronisation reseau non active.'
 }
 
-function createSteamSyncMessage(stats: SteamImportStats, totalRemoteGames: number) {
-  if (totalRemoteGames === 0) {
-    return 'Aucun jeu Steam recu. Verifiez le SteamID64, la cle API et la visibilite des details de jeux.'
+function createSteamSyncMessage(stats: SteamImportStats, sources: SteamSyncSources) {
+  if (sources.remoteGames === 0 && sources.localManifestGames === 0) {
+    return 'Aucun jeu Steam recu. Verifiez le SteamID64, la cle API, les details de jeux et le dossier Steam local.'
   }
 
-  return [
-    `${totalRemoteGames} jeux lus depuis Steam`,
+  const sourceParts = [
+    sources.remoteGames > 0 ? `${sources.remoteGames} jeux lus depuis Steam Web` : null,
+    sources.localManifestGames > 0
+      ? `${sources.localManifestGames} manifests locaux`
+      : null,
+    sources.localActivityGames > 0
+      ? `${sources.localActivityGames} activites locales`
+      : null,
     `${stats.importedGames} ajoutes`,
     `${stats.linkedGames} relies`,
     `${stats.updatedGames} deja connus`,
     `${stats.syncedSessions} temps de jeu synchronises`,
-  ].join(' / ')
+    sources.apiWarning ? `API Steam ignoree : ${sources.apiWarning}` : null,
+  ]
+
+  return sourceParts.filter((part): part is string => part !== null).join(' / ')
 }
 
 function createRawgSyncMessage(stats: RawgEnrichmentStats) {
@@ -551,13 +569,15 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
           },
         })
       : (gamesByTitle.get(normalizeTitle(steamGame.title)) ?? null)
+    const hasSteamPlayActivity =
+      steamGame.playtimeForeverMinutes > 0 || steamGame.lastPlayedAt !== null
     const localGame =
       matchedGame ??
       (await prisma.game.create({
         data: {
           title: steamGame.title,
           coverUrl: steamGame.coverUrl,
-          status: steamGame.playtimeForeverMinutes > 0 ? 'PLAYING' : 'BACKLOG',
+          status: hasSteamPlayActivity ? 'PLAYING' : 'BACKLOG',
           platforms: {
             create: {
               platform: {
@@ -566,7 +586,7 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
                 },
               },
               owned: true,
-              played: steamGame.playtimeForeverMinutes > 0,
+              played: hasSteamPlayActivity,
             },
           },
         },
@@ -923,10 +943,6 @@ class SettingsService {
     const apiKey =
       decryptSecret(account.tokenHint) ?? readEnvValue('STEAM_WEB_API_KEY')
 
-    if (!apiKey) {
-      throw new Error('Cle API Steam obligatoire pour synchroniser.')
-    }
-
     await recordProviderSync(
       steamProvider,
       'SYNCING',
@@ -934,13 +950,49 @@ class SettingsService {
     )
 
     try {
-      const ownedGames = await fetchSteamOwnedGames({
-        apiKey,
-        steamId: account.externalId,
+      const localLibrary = await readSteamLocalLibrary({
+        ownerSteamId: account.externalId,
       })
-      const stats = await importSteamOwnedGames(ownedGames.games)
+      let remoteGames: SteamOwnedGame[] = []
+      let remoteTotalCount = 0
+      let apiWarning: string | null = null
+
+      if (apiKey) {
+        try {
+          const ownedGames = await fetchSteamOwnedGames({
+            apiKey,
+            steamId: account.externalId,
+          })
+
+          remoteGames = ownedGames.games
+          remoteTotalCount = ownedGames.totalCount
+        } catch (caughtError) {
+          if (localLibrary.games.length === 0) {
+            throw caughtError
+          }
+
+          apiWarning =
+            caughtError instanceof Error ? caughtError.message : 'Erreur Steam inconnue.'
+        }
+      } else if (localLibrary.games.length === 0) {
+        throw new Error(
+          'Cle API Steam obligatoire ou bibliotheque Steam locale introuvable.',
+        )
+      }
+
+      const mergedGames = mergeSteamGames(
+        remoteGames,
+        localLibrary.games,
+        localLibrary.activities,
+      )
+      const stats = await importSteamOwnedGames(mergedGames)
       const syncedAt = new Date()
-      const message = createSteamSyncMessage(stats, ownedGames.totalCount)
+      const message = createSteamSyncMessage(stats, {
+        apiWarning,
+        localActivityGames: localLibrary.activities.length,
+        localManifestGames: localLibrary.games.length,
+        remoteGames: remoteTotalCount,
+      })
 
       await recordProviderSync(steamProvider, 'SYNCED', message, syncedAt)
 

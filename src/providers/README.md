@@ -39,6 +39,13 @@ La v0.22.0 stabilise Steam avant l'ajout de providers de metadonnees :
 - erreurs Steam lisibles ;
 - tests unitaires du parsing et des refus API.
 
+La v0.23.1 ajoute une source locale Steam pour completer l'API :
+
+- detection de `libraryfolders.vdf` ;
+- lecture des `appmanifest_*.acf` ;
+- lecture de `localconfig.vdf` pour l'activite locale quand disponible ;
+- fusion API + fichiers locaux avant import en base.
+
 La v0.23.0 ajoute le premier provider de metadonnees actif avec RAWG :
 
 - recherche d'un jeu par titre via `src/providers/rawg.ts` ;

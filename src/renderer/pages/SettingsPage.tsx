@@ -167,11 +167,19 @@ function isSyncableProvider(provider: ProviderConnection | undefined) {
   return provider?.provider === 'STEAM' || provider?.provider === 'RAWG'
 }
 
+function canSyncProvider(provider: ProviderConnection | undefined) {
+  if (!provider?.account || !isSyncableProvider(provider)) {
+    return false
+  }
+
+  return provider.provider === 'STEAM' || provider.account.hasToken
+}
+
 function providerTokenPlaceholder(provider: ProviderConnection) {
   if (provider.provider === 'STEAM') {
     return provider.account?.hasToken
       ? 'Laisser vide pour conserver la cle existante'
-      : 'Optionnel si STEAM_WEB_API_KEY est defini'
+      : 'Optionnel : manifests locaux ou STEAM_WEB_API_KEY'
   }
 
   if (provider.provider === 'RAWG') {
@@ -213,7 +221,7 @@ function ProvidersPanel({
   const trimmedExternalId = externalId.trim()
   const isSteamProvider = selectedProvider?.provider === 'STEAM'
   const isRawgProvider = selectedProvider?.provider === 'RAWG'
-  const selectedProviderCanSync = isSyncableProvider(selectedProvider)
+  const selectedProviderCanSync = canSyncProvider(selectedProvider)
 
   useEffect(() => {
     setExternalId(
@@ -456,8 +464,7 @@ function ProvidersPanel({
                   onClick={handleSyncProvider}
                   disabled={
                     isBusy ||
-                    !selectedProviderCanSync ||
-                    !selectedProvider.account.hasToken
+                    !selectedProviderCanSync
                   }
                 >
                   <RefreshCw size={17} aria-hidden="true" />

@@ -28,6 +28,16 @@ Le projet suit des versions de developpement simples :
 - `v0.22.x` : stabilisation du connecteur Steam.
 - `v0.23.x` : enrichissement des metadonnees via RAWG.
 
+## v0.23.1 - 2026-07-20
+
+- Ajout de la lecture locale des bibliotheques Steam via `libraryfolders.vdf`.
+- Ajout du parsing des manifests `appmanifest_*.acf` pour les jeux installes.
+- Ajout de la lecture de `localconfig.vdf` pour le dernier lancement et le temps local quand disponible.
+- Fusion des donnees Steam Web API avec les donnees locales avant import.
+- Synchronisation Steam manuelle possible sans cle API si des manifests locaux sont trouves.
+- Ajout des variables `LUDUX_STEAM_ROOT_PATH` et `LUDUX_STEAM_LIBRARY_PATHS`.
+- Ajout de tests Vitest pour les fichiers Steam locaux.
+
 ## v0.23.0 - 2026-07-20
 
 - Ajout du provider RAWG avec recherche par titre et lecture des details de jeu.

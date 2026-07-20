@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createSteamOwnedGamesUrl,
   fetchSteamOwnedGames,
+  mergeSteamGames,
   normalizeSteamId,
+  parseSteamAppManifest,
+  parseSteamLibraryFolders,
+  parseSteamLocalConfigApps,
   parseSteamOwnedGames,
 } from '../../src/providers/steam'
 
@@ -54,6 +58,134 @@ describe('steam provider', () => {
         playtimeForeverMinutes: 123,
         lastPlayedAt: '2023-11-14T22:13:20.000Z',
       },
+    ])
+  })
+
+  it('parses local Steam library folders', () => {
+    expect(
+      parseSteamLibraryFolders(`
+        "libraryfolders"
+        {
+          "0"
+          {
+            "path" "C:\\\\Program Files (x86)\\\\Steam"
+          }
+          "1"
+          {
+            "path" "E:\\\\SteamLibrary"
+          }
+        }
+      `),
+    ).toEqual(['C:\\Program Files (x86)\\Steam', 'E:\\SteamLibrary'])
+  })
+
+  it('parses app manifests from local Steam libraries', () => {
+    expect(
+      parseSteamAppManifest(
+        `
+          "AppState"
+          {
+            "appid" "1245620"
+            "name" "ELDEN RING"
+            "installdir" "ELDEN RING"
+            "LastUpdated" "1784199579"
+            "LastPlayed" "1784499547"
+            "SizeOnDisk" "71087081872"
+            "LastOwner" "76561198299460314"
+          }
+        `,
+        'E:\\SteamLibrary',
+      ),
+    ).toMatchObject({
+      appid: 1245620,
+      title: 'ELDEN RING',
+      coverUrl: 'https://cdn.akamai.steamstatic.com/steam/apps/1245620/header.jpg',
+      installed: true,
+      installPath: 'E:\\SteamLibrary\\steamapps\\common\\ELDEN RING',
+      lastPlayedAt: '2026-07-19T22:19:07.000Z',
+      lastUpdatedAt: '2026-07-16T10:59:39.000Z',
+      ownerSteamId: '76561198299460314',
+      sizeOnDiskBytes: 71_087_081_872,
+    })
+  })
+
+  it('parses local Steam app activity data', () => {
+    expect(
+      parseSteamLocalConfigApps(`
+        "UserLocalConfigStore"
+        {
+          "Software"
+          {
+            "Valve"
+            {
+              "Steam"
+              {
+                "apps"
+                {
+                  "730"
+                  {
+                    "LastPlayed" "1764031083"
+                    "Playtime" "14885"
+                  }
+                }
+              }
+            }
+          }
+        }
+      `),
+    ).toEqual([
+      {
+        appid: 730,
+        lastPlayedAt: '2025-11-25T00:38:03.000Z',
+        playtimeForeverMinutes: 14885,
+      },
+    ])
+  })
+
+  it('merges web API games with fresher local Steam data', () => {
+    const mergedGames = mergeSteamGames(
+      [
+        {
+          appid: 730,
+          title: 'Counter-Strike 2',
+          coverUrl: 'https://cdn.akamai.steamstatic.com/steam/apps/730/header.jpg',
+          iconUrl: 'https://example.com/icon.jpg',
+          playtimeForeverMinutes: 100,
+          lastPlayedAt: '2025-01-01T00:00:00.000Z',
+        },
+      ],
+      [
+        {
+          appid: 730,
+          title: 'Counter-Strike 2',
+          coverUrl: 'https://cdn.akamai.steamstatic.com/steam/apps/730/header.jpg',
+          iconUrl: null,
+          installed: true,
+          installPath: 'C:\\Steam\\steamapps\\common\\Counter-Strike Global Offensive',
+          lastPlayedAt: '2026-01-01T00:00:00.000Z',
+          lastUpdatedAt: '2026-01-02T00:00:00.000Z',
+          ownerSteamId: '76561198000000000',
+          playtimeForeverMinutes: 0,
+          sizeOnDiskBytes: 10,
+        },
+      ],
+      [
+        {
+          appid: 730,
+          lastPlayedAt: '2026-02-01T00:00:00.000Z',
+          playtimeForeverMinutes: 200,
+        },
+      ],
+    )
+
+    expect(mergedGames).toEqual([
+      expect.objectContaining({
+        appid: 730,
+        iconUrl: 'https://example.com/icon.jpg',
+        installed: true,
+        lastPlayedAt: '2026-02-01T00:00:00.000Z',
+        playtimeForeverMinutes: 200,
+      }),
     ])
   })
 

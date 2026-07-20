@@ -21,6 +21,7 @@ Steam est le premier provider actif :
 - synchronisation automatique au demarrage et a intervalle regulier ;
 - import des jeux, jaquettes, plateforme Steam et temps total.
 - validation SteamID64 et erreurs reseau explicites.
+- fallback local via `libraryfolders.vdf`, `appmanifest_*.acf` et `localconfig.vdf`.
 
 RAWG est le premier provider de metadonnees actif :
 
@@ -47,7 +48,7 @@ Pour une v1 publique, Ludux ne doit pas embarquer une cle Steam commune dans l'a
 
 | Plateforme | Connexion utilisateur | Bibliotheque utilisateur | Position Ludux |
 | --- | --- | --- | --- |
-| Steam | Cle Web API + SteamID64 | Oui si les details de jeux sont visibles | Actif |
+| Steam | Cle Web API + SteamID64 + fichiers locaux | Oui si les details de jeux sont visibles, avec fallback jeux installes | Actif |
 | Epic | OAuth/EOS selon projet | Pas de route publique simple pour toute la bibliotheque EGS | Attendre acces officiel |
 | GOG | GOG Galaxy SDK / acces developpeur | SDK oriente jeu, pas import universel simple | Attendre acces officiel |
 | Xbox | Microsoft/Xbox Services | Acces contraint par programme developpeur | Attendre acces officiel |

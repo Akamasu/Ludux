@@ -1,3 +1,7 @@
+import { readdir, readFile, stat } from 'node:fs/promises'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+
 export interface SteamOwnedGame {
   appid: number
   title: string
@@ -5,11 +9,37 @@ export interface SteamOwnedGame {
   iconUrl: string | null
   playtimeForeverMinutes: number
   lastPlayedAt: string | null
+  installed?: boolean
+  installPath?: string | null
+  lastUpdatedAt?: string | null
+  sizeOnDiskBytes?: number | null
+}
+
+export interface SteamInstalledGame extends SteamOwnedGame {
+  installed: true
+  installPath: string | null
+  lastUpdatedAt: string | null
+  ownerSteamId: string | null
+  sizeOnDiskBytes: number | null
 }
 
 export interface SteamOwnedGamesResult {
   totalCount: number
   games: SteamOwnedGame[]
+}
+
+export interface SteamLocalAppActivity {
+  appid: number
+  playtimeForeverMinutes: number
+  lastPlayedAt: string | null
+}
+
+export interface SteamLocalLibraryResult {
+  games: SteamInstalledGame[]
+  activities: SteamLocalAppActivity[]
+  libraryPaths: string[]
+  manifestCount: number
+  localConfigPath: string | null
 }
 
 interface FetchSteamOwnedGamesInput {
@@ -19,8 +49,21 @@ interface FetchSteamOwnedGamesInput {
   timeoutMs?: number
 }
 
+interface ReadSteamLocalLibraryInput {
+  ownerSteamId?: string
+  steamRootPath?: string
+  libraryPaths?: string[]
+}
+
+type SteamKeyValue = string | SteamKeyValueObject
+
+interface SteamKeyValueObject {
+  [key: string]: SteamKeyValue
+}
+
 const defaultSteamTimeoutMs = 15_000
 const steamId64Pattern = /^\d{17}$/
+const steamId64AccountIdOffset = 76_561_197_960_265_728n
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -32,6 +75,20 @@ function readNumber(value: unknown) {
 
 function readString(value: unknown) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
+}
+
+function readNumberLike(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const numberValue = Number(value.trim())
+
+  return Number.isFinite(numberValue) ? numberValue : null
 }
 
 function steamCoverUrl(appid: number) {
@@ -64,6 +121,24 @@ function normalizeSteamApiKey(value: string) {
   return apiKey
 }
 
+function unixTimestampToIso(value: unknown) {
+  const timestamp = readNumberLike(value)
+
+  return timestamp && timestamp > 0 ? new Date(timestamp * 1000).toISOString() : null
+}
+
+function latestIsoDate(left: string | null, right: string | null) {
+  if (!left) {
+    return right
+  }
+
+  if (!right) {
+    return left
+  }
+
+  return new Date(left).getTime() >= new Date(right).getTime() ? left : right
+}
+
 function createSteamErrorMessage(status: number) {
   if (status === 401 || status === 403) {
     return 'Steam a refuse la synchronisation. Verifiez la cle API Steam.'
@@ -84,6 +159,259 @@ function createSteamErrorMessage(status: number) {
   return `Steam a refuse la synchronisation (${status}).`
 }
 
+function tokenizeSteamKeyValues(content: string) {
+  const tokens: string[] = []
+  let index = 0
+
+  while (index < content.length) {
+    const character = content[index]
+
+    if (/\s/.test(character)) {
+      index += 1
+      continue
+    }
+
+    if (character === '/' && content[index + 1] === '/') {
+      index += 2
+
+      while (index < content.length && content[index] !== '\n') {
+        index += 1
+      }
+
+      continue
+    }
+
+    if (character === '{' || character === '}') {
+      tokens.push(character)
+      index += 1
+      continue
+    }
+
+    if (character === '"') {
+      let value = ''
+      index += 1
+
+      while (index < content.length) {
+        const current = content[index]
+
+        if (current === '\\' && index + 1 < content.length) {
+          value += content[index + 1]
+          index += 2
+          continue
+        }
+
+        if (current === '"') {
+          index += 1
+          break
+        }
+
+        value += current
+        index += 1
+      }
+
+      tokens.push(value)
+      continue
+    }
+
+    let value = ''
+
+    while (
+      index < content.length &&
+      !/\s/.test(content[index]) &&
+      content[index] !== '{' &&
+      content[index] !== '}'
+    ) {
+      value += content[index]
+      index += 1
+    }
+
+    if (value.length > 0) {
+      tokens.push(value)
+    }
+  }
+
+  return tokens
+}
+
+function readSteamKeyValueObject(tokens: string[], cursor: { index: number }) {
+  const object: SteamKeyValueObject = {}
+
+  while (cursor.index < tokens.length && tokens[cursor.index] !== '}') {
+    const key = tokens[cursor.index]
+    const next = tokens[cursor.index + 1]
+
+    if (!key || !next || key === '{') {
+      throw new Error('Fichier Steam invalide.')
+    }
+
+    cursor.index += 2
+
+    if (next === '{') {
+      object[key] = readSteamKeyValueObject(tokens, cursor)
+      continue
+    }
+
+    object[key] = next
+  }
+
+  if (tokens[cursor.index] === '}') {
+    cursor.index += 1
+  }
+
+  return object
+}
+
+function asSteamKeyValueObject(value: SteamKeyValue | undefined) {
+  return typeof value === 'object' && value !== null ? value : null
+}
+
+function accountIdFromSteamId64(steamId: string) {
+  const normalizedSteamId = normalizeSteamId(steamId)
+  const accountId = BigInt(normalizedSteamId) - steamId64AccountIdOffset
+
+  return accountId >= 0n ? accountId.toString() : null
+}
+
+function splitConfiguredPaths(value: string | undefined) {
+  return value
+    ?.split(';')
+    .map((path) => path.trim())
+    .filter((path) => path.length > 0) ?? []
+}
+
+function createCandidateSteamRootPaths(steamRootPath?: string) {
+  const homeDirectory = homedir()
+  const rootPaths = [
+    steamRootPath,
+    process.env['LUDUX_STEAM_ROOT_PATH'],
+    process.env['STEAM_PATH'],
+    'C:\\Program Files (x86)\\Steam',
+    'C:\\Program Files\\Steam',
+    join(homeDirectory, 'Library', 'Application Support', 'Steam'),
+    join(homeDirectory, '.steam', 'steam'),
+    join(homeDirectory, '.local', 'share', 'Steam'),
+  ]
+
+  return Array.from(
+    new Set(rootPaths.filter((path): path is string => Boolean(path?.trim()))),
+  )
+}
+
+async function pathExists(path: string) {
+  try {
+    await stat(path)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function readTextFileIfExists(path: string) {
+  try {
+    return await readFile(path, 'utf8')
+  } catch {
+    return null
+  }
+}
+
+export function parseSteamKeyValues(content: string): SteamKeyValueObject {
+  const cursor = {
+    index: 0,
+  }
+
+  return readSteamKeyValueObject(tokenizeSteamKeyValues(content), cursor)
+}
+
+export function parseSteamLibraryFolders(content: string) {
+  const root = parseSteamKeyValues(content)
+  const libraryFolders = asSteamKeyValueObject(root['libraryfolders'])
+
+  if (!libraryFolders) {
+    return []
+  }
+
+  return Object.values(libraryFolders)
+    .map((value) => readString(asSteamKeyValueObject(value)?.['path']))
+    .filter((path): path is string => path !== null)
+}
+
+export function parseSteamAppManifest(
+  content: string,
+  libraryPath: string | null = null,
+): SteamInstalledGame | null {
+  const root = parseSteamKeyValues(content)
+  const appState = asSteamKeyValueObject(root['AppState'])
+
+  if (!appState) {
+    return null
+  }
+
+  const appid = Math.trunc(readNumberLike(appState['appid']) ?? 0)
+  const title = readString(appState['name'])
+
+  if (appid <= 0 || !title) {
+    return null
+  }
+
+  const installDir = readString(appState['installdir'])
+  const lastPlayedAt = unixTimestampToIso(appState['LastPlayed'])
+  const installPath =
+    libraryPath && installDir
+      ? join(libraryPath, 'steamapps', 'common', installDir)
+      : null
+
+  return {
+    appid,
+    title,
+    coverUrl: steamCoverUrl(appid),
+    iconUrl: null,
+    installed: true,
+    installPath,
+    lastPlayedAt,
+    lastUpdatedAt: unixTimestampToIso(appState['LastUpdated']),
+    ownerSteamId: readString(appState['LastOwner']),
+    playtimeForeverMinutes: 0,
+    sizeOnDiskBytes: readNumberLike(appState['SizeOnDisk']),
+  }
+}
+
+export function parseSteamLocalConfigApps(content: string): SteamLocalAppActivity[] {
+  const root = parseSteamKeyValues(content)
+  const apps = asSteamKeyValueObject(
+    asSteamKeyValueObject(
+      asSteamKeyValueObject(
+        asSteamKeyValueObject(
+          asSteamKeyValueObject(root['UserLocalConfigStore'])?.['Software'],
+        )?.['Valve'],
+      )?.['Steam'],
+    )?.['apps'],
+  )
+
+  if (!apps) {
+    return []
+  }
+
+  return Object.entries(apps).flatMap(([appidValue, value]): SteamLocalAppActivity[] => {
+    const appid = Math.trunc(readNumberLike(appidValue) ?? 0)
+    const app = asSteamKeyValueObject(value)
+
+    if (appid <= 0 || !app) {
+      return []
+    }
+
+    return [
+      {
+        appid,
+        lastPlayedAt: unixTimestampToIso(app['LastPlayed']),
+        playtimeForeverMinutes: Math.max(
+          0,
+          Math.round(readNumberLike(app['Playtime']) ?? 0),
+        ),
+      },
+    ]
+  })
+}
+
 export function createSteamOwnedGamesUrl(apiKey: string, steamId: string) {
   const params = new URLSearchParams({
     key: normalizeSteamApiKey(apiKey),
@@ -94,6 +422,58 @@ export function createSteamOwnedGamesUrl(apiKey: string, steamId: string) {
   })
 
   return `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?${params}`
+}
+
+export function mergeSteamGames(
+  ownedGames: SteamOwnedGame[],
+  installedGames: SteamInstalledGame[],
+  localActivities: SteamLocalAppActivity[] = [],
+) {
+  const gamesByAppId = new Map<number, SteamOwnedGame>()
+
+  for (const game of ownedGames) {
+    gamesByAppId.set(game.appid, {
+      ...game,
+    })
+  }
+
+  for (const game of installedGames) {
+    const existingGame = gamesByAppId.get(game.appid)
+
+    gamesByAppId.set(game.appid, {
+      ...existingGame,
+      ...game,
+      coverUrl: existingGame?.coverUrl ?? game.coverUrl,
+      iconUrl: existingGame?.iconUrl ?? game.iconUrl,
+      lastPlayedAt: latestIsoDate(existingGame?.lastPlayedAt ?? null, game.lastPlayedAt),
+      playtimeForeverMinutes: Math.max(
+        existingGame?.playtimeForeverMinutes ?? 0,
+        game.playtimeForeverMinutes,
+      ),
+      title: game.title || existingGame?.title || String(game.appid),
+    })
+  }
+
+  for (const activity of localActivities) {
+    const existingGame = gamesByAppId.get(activity.appid)
+
+    if (!existingGame) {
+      continue
+    }
+
+    gamesByAppId.set(activity.appid, {
+      ...existingGame,
+      lastPlayedAt: latestIsoDate(existingGame.lastPlayedAt, activity.lastPlayedAt),
+      playtimeForeverMinutes: Math.max(
+        existingGame.playtimeForeverMinutes,
+        activity.playtimeForeverMinutes,
+      ),
+    })
+  }
+
+  return [...gamesByAppId.values()].sort((left, right) =>
+    left.title.localeCompare(right.title, 'fr-FR'),
+  )
 }
 
 export function parseSteamOwnedGames(payload: unknown): SteamOwnedGamesResult {
@@ -141,6 +521,103 @@ export function parseSteamOwnedGames(payload: unknown): SteamOwnedGamesResult {
   return {
     totalCount: readNumber(response['game_count']) ?? games.length,
     games,
+  }
+}
+
+export async function readSteamLocalLibrary({
+  libraryPaths = splitConfiguredPaths(process.env['LUDUX_STEAM_LIBRARY_PATHS']),
+  ownerSteamId,
+  steamRootPath,
+}: ReadSteamLocalLibraryInput = {}): Promise<SteamLocalLibraryResult> {
+  const steamRootPaths = createCandidateSteamRootPaths(steamRootPath)
+  const discoveredLibraryPaths = new Set<string>(libraryPaths)
+  const existingSteamRootPaths: string[] = []
+
+  for (const rootPath of steamRootPaths) {
+    if (!(await pathExists(rootPath))) {
+      continue
+    }
+
+    existingSteamRootPaths.push(rootPath)
+    discoveredLibraryPaths.add(rootPath)
+
+    const libraryFoldersContent = await readTextFileIfExists(
+      join(rootPath, 'steamapps', 'libraryfolders.vdf'),
+    )
+
+    if (libraryFoldersContent) {
+      for (const libraryPath of parseSteamLibraryFolders(libraryFoldersContent)) {
+        discoveredLibraryPaths.add(libraryPath)
+      }
+    }
+  }
+
+  const normalizedOwnerSteamId = ownerSteamId ? normalizeSteamId(ownerSteamId) : null
+  const localGamesByAppId = new Map<number, SteamInstalledGame>()
+  let manifestCount = 0
+
+  for (const libraryPath of discoveredLibraryPaths) {
+    const steamAppsPath = join(libraryPath, 'steamapps')
+
+    let files: string[]
+
+    try {
+      files = await readdir(steamAppsPath)
+    } catch {
+      continue
+    }
+
+    for (const file of files) {
+      if (!/^appmanifest_\d+\.acf$/i.test(file)) {
+        continue
+      }
+
+      const content = await readTextFileIfExists(join(steamAppsPath, file))
+      const game = content ? parseSteamAppManifest(content, libraryPath) : null
+
+      if (!game) {
+        continue
+      }
+
+      manifestCount += 1
+
+      if (
+        normalizedOwnerSteamId &&
+        game.ownerSteamId &&
+        game.ownerSteamId !== normalizedOwnerSteamId
+      ) {
+        continue
+      }
+
+      localGamesByAppId.set(game.appid, game)
+    }
+  }
+
+  const accountId = ownerSteamId ? accountIdFromSteamId64(ownerSteamId) : null
+  let activities: SteamLocalAppActivity[] = []
+  let localConfigPath: string | null = null
+
+  if (accountId) {
+    for (const rootPath of existingSteamRootPaths) {
+      const candidatePath = join(rootPath, 'userdata', accountId, 'config', 'localconfig.vdf')
+      const content = await readTextFileIfExists(candidatePath)
+
+      if (!content) {
+        continue
+      }
+
+      activities = parseSteamLocalConfigApps(content)
+      localConfigPath = candidatePath
+      break
+    }
+  }
+
+  return {
+    games: mergeSteamGames([], [...localGamesByAppId.values()], activities) as SteamInstalledGame[],
+    activities,
+    libraryPaths: [...discoveredLibraryPaths],
+    localConfigPath,
+    manifestCount,
   }
 }
 

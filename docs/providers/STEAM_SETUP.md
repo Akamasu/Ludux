@@ -2,12 +2,20 @@
 
 Steam est la premiere integration reseau active de Ludux.
 
+Depuis `v0.23.1`, Steam combine deux sources :
+
+- Steam Web API quand une cle est disponible ;
+- fichiers locaux Steam quand Ludux trouve une installation Steam sur la machine.
+
 ## Fichiers
 
 - `.env.example` : modele a copier en `.env` si tu veux stocker la cle hors interface.
 - `.env` : fichier local ignore par Git.
 - `src/providers/steam.ts` : adaptateur qui appelle Steam et normalise les jeux.
 - `src/services/settings.service.ts` : import dans la base locale Ludux.
+- `steamapps/libraryfolders.vdf` : liste des bibliotheques Steam locales.
+- `steamapps/appmanifest_*.acf` : jeux installes, dossier, taille, dernier lancement et mise a jour.
+- `userdata/<compte>/config/localconfig.vdf` : activite locale par AppID quand Steam l'a ecrite.
 
 ## Informations a Recuperer
 
@@ -40,6 +48,25 @@ STEAM_ID_64="7656119..."
 Dans Ludux, il faut quand meme enregistrer une connexion Steam avec le SteamID64.
 La cle peut rester vide dans l'interface si `STEAM_WEB_API_KEY` est defini.
 
+## Option C : Fichiers Locaux Steam
+
+Si Steam est installe sur la machine, Ludux essaie de detecter automatiquement :
+
+- `C:\Program Files (x86)\Steam`
+- `C:\Program Files\Steam`
+- les bibliotheques declarees dans `steamapps/libraryfolders.vdf`
+
+Il est possible de forcer les chemins dans `.env` :
+
+```env
+LUDUX_STEAM_ROOT_PATH="C:\Program Files (x86)\Steam"
+LUDUX_STEAM_LIBRARY_PATHS="E:\SteamLibrary;D:\SteamLibrary"
+```
+
+Le mode local permet de synchroniser les jeux installes meme sans cle API Steam.
+Une cle reste utile pour recuperer toute la bibliotheque du compte, y compris les
+jeux non installes.
+
 ## Cle API et Version Publique
 
 En developpement local, chaque testeur peut saisir sa propre cle Steam Web API.
@@ -59,6 +86,8 @@ Depuis `v0.21.0`, Ludux synchronise Steam automatiquement :
 - puis periodiquement toutes les 120 minutes par defaut ;
 - uniquement si une connexion Steam et une cle API sont disponibles.
 
+La synchronisation manuelle peut utiliser les fichiers locaux Steam sans cle API.
+
 L'intervalle peut etre ajuste dans `.env` :
 
 ```env
@@ -74,6 +103,8 @@ La valeur minimale acceptee est 15 minutes.
 - Plateforme `Steam`.
 - Lien `ExternalGame` entre AppID Steam et jeu Ludux.
 - Temps total Steam dans une session dediee.
+- Dernier lancement local quand il est present dans les manifests ou `localconfig.vdf`.
+- Jeux installes detectes depuis les manifests locaux.
 
 ## Limites Actuelles
 
@@ -81,11 +112,14 @@ La valeur minimale acceptee est 15 minutes.
 - La correspondance automatique par titre peut se tromper si deux jeux ont un nom identique.
 - Les succes Steam ne sont pas encore importes.
 - Les jeux masques par la confidentialite Steam peuvent ne pas remonter.
+- Les manifests locaux ne contiennent que les jeux installes.
+- Le temps total local depend de `localconfig.vdf` ; si Steam ne l'a pas ecrit, l'API reste la meilleure source.
 
 ## Diagnostic
 
 - `SteamID64 invalide` : verifier que l'identifiant contient 17 chiffres.
 - `Verifiez la cle API Steam` : la cle est absente, incorrecte ou refusee.
+- `bibliotheque Steam locale introuvable` : verifier `LUDUX_STEAM_ROOT_PATH` ou `LUDUX_STEAM_LIBRARY_PATHS`.
 - `Steam limite temporairement les requetes` : attendre avant de relancer.
 - `Aucun jeu Steam recu` : verifier le SteamID64 et la visibilite des details de jeux.
 - `Providers disponibles dans la version Electron` : utiliser la fenetre Electron ouverte par `npm run dev`, pas l'URL Vite dans le navigateur. Si le message apparait dans Electron, lancer `npm run smoke:electron-preload`.

@@ -29,7 +29,7 @@ les souvenirs qui donnent du sens au parcours.
 
 ## État du projet
 
-Version courante : `v0.23.0`
+Version courante : `v0.23.1`
 
 Ludux est en développement actif. Les fondations techniques et plusieurs écrans
 utilisables sont déjà en place :
@@ -41,7 +41,7 @@ utilisables sont déjà en place :
 - Musée des jeux terminés et terminés à 100 %.
 - Livre de Vie avec chronologie globale des sessions et chroniques.
 - Tableau de bord statistique.
-- Paramètres locaux avec sauvegarde SQLite, export JSON, préférences, synchronisation Steam automatique et enrichissement RAWG manuel.
+- Paramètres locaux avec sauvegarde SQLite, export JSON, préférences, synchronisation Steam automatique, fallback Steam local et enrichissement RAWG manuel.
 - Stockage local SQLite via Prisma.
 - IPC Electron sécurisé entre le renderer et le main process.
 - Identité visuelle Ludux avec palette sombre, violet et bleu électrique.
@@ -252,6 +252,7 @@ Tags principaux :
 - `v0.22.5` : cleanup du preload, des données locales et de la stratégie Steam publique.
 - `v0.22.6` : affichage de la vraie version applicative et simplification des paramètres.
 - `v0.23.0` : enrichissement manuel des métadonnées via RAWG.
+- `v0.23.1` : lecture locale des manifests Steam et fusion avec l'API.
 
 Plus de détails dans `docs/VERSIONING.md`, `CHANGELOG.md` et
 `docs/PRODUCT_VISION.md`.

@@ -21,6 +21,8 @@ Pour la v1 publique, Ludux devra eviter toute cle API commune dans le client des
 | --- | --- | --- | --- |
 | `STEAM_WEB_API_KEY` | Steam | Cle Web API pour lire la bibliotheque possedee | Actif |
 | `STEAM_ID_64` | Steam | Identifiant du compte a connecter | Optionnel, saisie UI possible |
+| `LUDUX_STEAM_ROOT_PATH` | Steam | Chemin racine Steam local si la detection automatique echoue | Optionnel |
+| `LUDUX_STEAM_LIBRARY_PATHS` | Steam | Bibliotheques Steam locales separees par `;` | Optionnel |
 | `LUDUX_AUTO_SYNC_INTERVAL_MINUTES` | Ludux | Intervalle de synchronisation automatique | Actif |
 | `RAWG_API_KEY` | RAWG | Metadonnees publiques de jeux | Actif manuel |
 | `IGDB_CLIENT_ID` | IGDB | Authentification Twitch/IGDB | A venir |
@@ -40,7 +42,7 @@ Pour la v1 publique, Ludux devra eviter toute cle API commune dans le client des
 
 | Plateforme | Donnees visees | Ce qu'il faut recuperer | Source officielle | Decision Ludux |
 | --- | --- | --- | --- | --- |
-| Steam | Bibliotheque, temps de jeu, jaquettes | Web API key, SteamID64, details de jeux visibles | Steam Web API, IPlayerService | Integration active en sync automatique |
+| Steam | Bibliotheque, temps de jeu, jaquettes, jeux installes | Web API key, SteamID64, details de jeux visibles, dossier Steam local | Steam Web API, IPlayerService, fichiers Steam locaux | Integration active avec fallback local |
 | RAWG | Metadonnees catalogue | Cle API RAWG | RAWG API docs | Integration active en enrichissement manuel |
 | IGDB | Metadonnees catalogue | Twitch Client ID, Client Secret, token OAuth app | IGDB API docs, Twitch OAuth | Bon candidat pour jaquettes/studios/genres |
 | Xbox | Succes, activite, profil | Acces Microsoft/Xbox Services autorise | Microsoft Learn Xbox Services | A garder pour plus tard, acces plus contraint |
