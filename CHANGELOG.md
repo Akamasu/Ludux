@@ -29,6 +29,12 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.26 - 2026-07-22
+
+- Synchronisation globale réordonnée : Steam, Epic et GOG importent les jeux avant RAWG et IGDB.
+- Les nouveaux jeux locaux peuvent être enrichis dès le même `Synchroniser tout`.
+- Ajout de tests pour verrouiller l'ordre des providers et éviter les doublons dans la file de synchronisation.
+
 ## v0.24.25 - 2026-07-22
 
 - Protection IGDB contre les correspondances trop éloignées.

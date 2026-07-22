@@ -45,6 +45,7 @@ import {
 import { libraryService } from './library.service'
 import { logger } from '../utils/logger'
 import { shouldPreferFrenchText } from '../utils/frenchText'
+import { sortConfiguredSyncProviders } from './provider-sync-order'
 import {
   createSteamDlcDisplayName,
   filterSteamDlcCatalogDuplicates,
@@ -2097,7 +2098,7 @@ class SettingsService {
       providers.push(gogProvider)
     }
 
-    return providers
+    return sortConfiguredSyncProviders(providers)
   }
 
   private async runConfiguredProviderSyncs() {
