@@ -12,6 +12,8 @@ import {
 } from '../types/game'
 import { gameService } from './game.service'
 
+const steamTotalSessionNote = 'Temps total Steam synchronisé.'
+
 function findTopPlatform(games: GameListItem[]) {
   const platformCounts = new Map<string, number>()
 
@@ -336,7 +338,10 @@ class LibraryService {
       ...sessions.map((session): LifeBookEvent => ({
         id: `session-${session.id}`,
         kind: 'SESSION',
-        title: 'Session de jeu',
+        title:
+          session.note === steamTotalSessionNote
+            ? 'Temps Steam synchronisé'
+            : 'Session de jeu',
         description: session.note,
         date: session.start.toISOString(),
         gameId: session.gameId,

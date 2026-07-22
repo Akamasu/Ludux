@@ -120,7 +120,7 @@ export function LibraryPage({
         <EmptyLibrary onCreateGame={createGame} isSaving={isSaving} />
       ) : (
         <>
-          <section className="grid gap-3 rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] xl:grid-cols-[1.2fr_0.8fr_0.8fr_auto]">
+          <section className="grid gap-3 rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] lg:grid-cols-2 2xl:grid-cols-[minmax(280px,1.2fr)_minmax(180px,0.8fr)_minmax(220px,0.8fr)_minmax(9rem,auto)]">
             <label className="relative block">
               <span className="sr-only">Rechercher</span>
               <Search
@@ -168,7 +168,7 @@ export function LibraryPage({
               </select>
             </label>
 
-            <div className="grid h-11 grid-cols-3 rounded-lg border border-white/10 bg-[#0F1117] p-1">
+            <div className="grid h-11 min-w-36 grid-cols-3 rounded-lg border border-white/10 bg-[#0F1117] p-1 lg:justify-self-end 2xl:justify-self-stretch">
               <button
                 type="button"
                 aria-label="Vue armoire"
@@ -176,7 +176,7 @@ export function LibraryPage({
                 title="Vue armoire"
                 onClick={() => setViewMode('cabinet')}
                 className={cn(
-                  'grid place-items-center rounded-md text-zinc-500 transition hover:text-white',
+                  'grid min-w-10 place-items-center rounded-md text-zinc-500 transition hover:text-white',
                   viewMode === 'cabinet' && 'bg-white/10 text-white',
                 )}
               >
@@ -189,7 +189,7 @@ export function LibraryPage({
                 title="Vue grille"
                 onClick={() => setViewMode('grid')}
                 className={cn(
-                  'grid place-items-center rounded-md text-zinc-500 transition hover:text-white',
+                  'grid min-w-10 place-items-center rounded-md text-zinc-500 transition hover:text-white',
                   viewMode === 'grid' && 'bg-white/10 text-white',
                 )}
               >
@@ -202,7 +202,7 @@ export function LibraryPage({
                 title="Vue liste"
                 onClick={() => setViewMode('list')}
                 className={cn(
-                  'grid place-items-center rounded-md text-zinc-500 transition hover:text-white',
+                  'grid min-w-10 place-items-center rounded-md text-zinc-500 transition hover:text-white',
                   viewMode === 'list' && 'bg-white/10 text-white',
                 )}
               >

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  createCandidateSteamRootPaths,
   createSteamAppDetailsUrl,
   createSteamAchievementSchemaUrl,
   createSteamDlcForAppUrl,
@@ -25,6 +26,7 @@ import {
   parseSteamLocalConfigApps,
   parseSteamOwnedGames,
   parseSteamPlayerAchievements,
+  parseWindowsRegistryStringValue,
 } from '../../src/providers/steam'
 
 describe('steam provider', () => {
@@ -79,6 +81,24 @@ describe('steam provider', () => {
     expect(schemaUrl).toContain('l=french')
     expect(playerUrl).toContain('/ISteamUserStats/GetPlayerAchievements/v1/')
     expect(playerUrl).toContain('steamid=76561198000000000')
+  })
+
+  it('parses Steam paths from Windows registry output', () => {
+    expect(
+      parseWindowsRegistryStringValue(
+        `
+HKEY_CURRENT_USER\\Software\\Valve\\Steam
+    SteamPath    REG_SZ    c:/program files (x86)/steam
+        `,
+        'SteamPath',
+      ),
+    ).toBe('c:\\program files (x86)\\steam')
+  })
+
+  it('keeps explicit and discovered Steam roots as candidates', () => {
+    expect(
+      createCandidateSteamRootPaths('D:\\Games\\Steam', ['E:\\SteamLibrary']),
+    ).toEqual(expect.arrayContaining(['D:\\Games\\Steam', 'E:\\SteamLibrary']))
   })
 
   it('normalizes owned games payloads', () => {

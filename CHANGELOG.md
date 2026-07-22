@@ -29,6 +29,15 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.8 - 2026-07-22
+
+- Découverte automatique du dossier Steam via le registre Windows, les variables système et les chemins standards.
+- Conservation des chemins Steam `.env` comme overrides optionnels, plus comme configuration obligatoire.
+- Élargissement du conteneur principal pour éviter les grands vides latéraux sur les fenêtres larges.
+- Barre de filtres de la bibliothèque plus souple, avec sélecteur de vue moins comprimé.
+- Rafraîchissement de la bibliothèque, du Livre de Vie et des statistiques après `Synchroniser tout` et après la synchronisation automatique au démarrage.
+- Clarification des résumés Steam dans le Livre de Vie sous le titre `Temps Steam synchronisé`.
+
 ## v0.24.7 - 2026-07-20
 
 - Lecture des collections Steam modernes depuis `cloud-storage-namespace-1.json`.

@@ -225,7 +225,7 @@ export function LifeBookPage({
           </p>
         </div>
         <div className="w-full rounded-lg border border-[#C9A646]/15 bg-[#181B23] px-4 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:w-auto sm:text-right">
-          <p className="text-xs text-zinc-500">Moments</p>
+          <p className="text-xs text-zinc-500">Entrées</p>
           <p className="mt-1 text-sm font-medium text-zinc-100">
             {isLoading ? 'Chargement' : events.length}
           </p>
@@ -241,7 +241,7 @@ export function LifeBookPage({
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">
           <div className="mb-5 flex items-center justify-between gap-4">
-            <p className="text-sm text-zinc-500">Moments</p>
+            <p className="text-sm text-zinc-500">Entrées</p>
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-[#7C5CFF] text-white">
               <CalendarDays size={18} aria-hidden="true" />
             </div>
@@ -268,7 +268,7 @@ export function LifeBookPage({
         </article>
         <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">
           <div className="mb-5 flex items-center justify-between gap-4">
-            <p className="text-sm text-zinc-500">Temps joue</p>
+            <p className="text-sm text-zinc-500">Temps joué</p>
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-[#C9A646] text-[#0F1117]">
               <Clock3 size={18} aria-hidden="true" />
             </div>
@@ -340,7 +340,7 @@ export function LifeBookPage({
 
       <section className="flex flex-1 flex-col gap-6">
         <div className="flex items-center justify-between gap-4 text-sm text-zinc-500">
-          <span>{filteredEvents.length} moments affiches</span>
+          <span>{filteredEvents.length} entrées affichées</span>
         </div>
 
         {filteredEvents.length === 0 ? (
@@ -350,10 +350,10 @@ export function LifeBookPage({
                 <CalendarDays size={22} aria-hidden="true" />
               </div>
               <h2 className="mt-4 text-lg font-semibold text-white">
-                Aucun moment trouve
+                Aucune entrée trouvée
               </h2>
               <p className="mt-2 max-w-md text-sm leading-6 text-zinc-500">
-                Les sessions et chroniques creees depuis les fiches de jeux formeront
+                Les sessions et chroniques créées depuis les fiches de jeux formeront
                 cette chronologie.
               </p>
             </div>

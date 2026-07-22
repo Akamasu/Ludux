@@ -1,6 +1,8 @@
+import { execFile } from 'node:child_process'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { join, normalize } from 'node:path'
+import { promisify } from 'node:util'
 
 export interface SteamOwnedGame {
   appid: number
@@ -120,6 +122,7 @@ interface SteamKeyValueObject {
 const defaultSteamTimeoutMs = 15_000
 const steamId64Pattern = /^\d{17}$/
 const steamId64AccountIdOffset = 76_561_197_960_265_728n
+const execFileAsync = promisify(execFile)
 const steamStoreHeaders = {
   Accept: 'application/json,text/plain,*/*',
   'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.5',
@@ -424,21 +427,117 @@ function splitConfiguredPaths(value: string | undefined) {
     .filter((path) => path.length > 0) ?? []
 }
 
-function createCandidateSteamRootPaths(steamRootPath?: string) {
+function uniqueExistingTextValues(values: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(
+      values
+        .map((value) => value?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  )
+}
+
+export function parseWindowsRegistryStringValue(output: string, valueName: string) {
+  const escapedValueName = valueName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = output.match(
+    new RegExp(`\\s${escapedValueName}\\s+REG_(?:SZ|EXPAND_SZ)\\s+(.+)`, 'i'),
+  )
+  const value = readString(match?.[1])
+
+  return value ? normalize(value.replaceAll('/', '\\')) : null
+}
+
+async function queryWindowsRegistryStringValue(registryPath: string, valueName: string) {
+  if (process.platform !== 'win32') {
+    return null
+  }
+
+  try {
+    const { stdout } = await execFileAsync(
+      'reg',
+      ['query', registryPath, '/v', valueName],
+      {
+        encoding: 'utf8',
+        timeout: 2_000,
+        windowsHide: true,
+      },
+    )
+
+    return parseWindowsRegistryStringValue(stdout, valueName)
+  } catch {
+    return null
+  }
+}
+
+async function readWindowsRegistrySteamRootPaths() {
+  if (process.platform !== 'win32') {
+    return []
+  }
+
+  const registryEntries = [
+    ['HKCU\\Software\\Valve\\Steam', 'SteamPath'],
+    ['HKCU\\Software\\Valve\\Steam', 'InstallPath'],
+    ['HKLM\\SOFTWARE\\WOW6432Node\\Valve\\Steam', 'InstallPath'],
+    ['HKLM\\SOFTWARE\\Valve\\Steam', 'InstallPath'],
+  ] as const
+
+  return uniqueExistingTextValues(
+    await Promise.all(
+      registryEntries.map(([registryPath, valueName]) =>
+        queryWindowsRegistryStringValue(registryPath, valueName),
+      ),
+    ),
+  )
+}
+
+function createWindowsDriveSteamCandidates() {
+  if (process.platform !== 'win32') {
+    return []
+  }
+
+  return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').flatMap((driveLetter) => {
+    const driveRoot = `${driveLetter}:\\`
+
+    return [
+      join(driveRoot, 'Steam'),
+      join(driveRoot, 'SteamLibrary'),
+      join(driveRoot, 'Games', 'Steam'),
+      join(driveRoot, 'Games', 'SteamLibrary'),
+    ]
+  })
+}
+
+export function createCandidateSteamRootPaths(
+  steamRootPath?: string,
+  discoveredRootPaths: string[] = [],
+) {
   const homeDirectory = homedir()
   const rootPaths = [
     steamRootPath,
     process.env['LUDUX_STEAM_ROOT_PATH'],
     process.env['STEAM_PATH'],
+    process.env['STEAM_COMPAT_CLIENT_INSTALL_PATH'],
+    process.env['ProgramFiles(x86)']
+      ? join(process.env['ProgramFiles(x86)'], 'Steam')
+      : null,
+    process.env['ProgramFiles'] ? join(process.env['ProgramFiles'], 'Steam') : null,
+    process.env['LOCALAPPDATA'] ? join(process.env['LOCALAPPDATA'], 'Steam') : null,
+    ...discoveredRootPaths,
     'C:\\Program Files (x86)\\Steam',
     'C:\\Program Files\\Steam',
+    ...createWindowsDriveSteamCandidates(),
     join(homeDirectory, 'Library', 'Application Support', 'Steam'),
     join(homeDirectory, '.steam', 'steam'),
     join(homeDirectory, '.local', 'share', 'Steam'),
   ]
 
-  return Array.from(
-    new Set(rootPaths.filter((path): path is string => Boolean(path?.trim()))),
+  return uniqueExistingTextValues(rootPaths)
+}
+
+async function discoverSteamRootPaths(steamRootPath?: string) {
+  return createCandidateSteamRootPaths(
+    steamRootPath,
+    await readWindowsRegistrySteamRootPaths(),
   )
 }
 
@@ -1450,7 +1549,7 @@ export async function readSteamLocalLibrary({
   ownerSteamId,
   steamRootPath,
 }: ReadSteamLocalLibraryInput = {}): Promise<SteamLocalLibraryResult> {
-  const steamRootPaths = createCandidateSteamRootPaths(steamRootPath)
+  const steamRootPaths = await discoverSteamRootPaths(steamRootPath)
   const discoveredLibraryPaths = new Set<string>(libraryPaths)
   const existingSteamRootPaths: string[] = []
 

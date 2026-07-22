@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { AppShell } from './components/layout/AppShell'
 import { useChronicles } from './hooks/useChronicles'
 import { useGameDetail } from './hooks/useGameDetail'
@@ -49,6 +49,11 @@ export default function App() {
   const lifeBookState = useLifeBook(libraryState.games)
   const statisticsState = useLibraryStatistics(libraryState.games)
   const settingsState = useSettings()
+  const refreshChronicles = chroniclesState.refresh
+  const refreshLibrary = libraryState.refresh
+  const refreshLifeBook = lifeBookState.refresh
+  const refreshSettings = settingsState.refresh
+  const refreshStatistics = statisticsState.refresh
   const selectedListItem =
     libraryState.games.find((game) => game.id === selectedGameId) ?? null
   const gameDetailState = useGameDetail(
@@ -73,19 +78,46 @@ export default function App() {
     setActiveView('library')
   }
 
+  const refreshContent = useCallback(async () => {
+    await Promise.all([
+      refreshLibrary(),
+      refreshChronicles(),
+      refreshLifeBook(),
+      refreshStatistics(),
+    ])
+  }, [
+    refreshChronicles,
+    refreshLibrary,
+    refreshLifeBook,
+    refreshStatistics,
+  ])
+
   async function refreshSettingsView() {
-    await Promise.all([settingsState.refresh(), libraryState.refresh()])
+    await Promise.all([refreshSettings(), refreshContent()])
   }
 
   async function syncProvider(input: Parameters<typeof settingsState.syncProvider>[0]) {
     await settingsState.syncProvider(input)
-    await Promise.all([
-      libraryState.refresh(),
-      chroniclesState.refresh(),
-      lifeBookState.refresh(),
-      statisticsState.refresh(),
-    ])
+    await refreshContent()
   }
+
+  async function syncAllProviders() {
+    await settingsState.syncAllProviders()
+    await refreshContent()
+  }
+
+  useEffect(() => {
+    const refreshDelays = [8_000, 25_000]
+    const timers = refreshDelays.map((delay) =>
+      window.setTimeout(() => {
+        void Promise.all([refreshSettings(), refreshContent()])
+      }, delay),
+    )
+
+    return () => {
+      timers.forEach(window.clearTimeout)
+    }
+  }, [refreshContent, refreshSettings])
 
   function changeLaunchView(view: AppView) {
     setLaunchViewState(view)
@@ -194,7 +226,7 @@ export default function App() {
         onOpenDataFolder={settingsState.openDataFolder}
         onRefresh={refreshSettingsView}
         onRestoreGame={libraryState.restoreGame}
-        onSyncAllProviders={settingsState.syncAllProviders}
+        onSyncAllProviders={syncAllProviders}
         onSyncProvider={syncProvider}
         onUpsertProviderConnection={settingsState.upsertProviderConnection}
       />
