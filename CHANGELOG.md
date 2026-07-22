@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.13 - 2026-07-22
+
+- Affichage des genres sur les cartes, les lignes et les fiches de jeu.
+- Ajout d'un champ `Genres` dans les informations personnelles d'une fiche.
+- Protection des corrections manuelles contre les futures synchronisations RAWG.
+- Validation IPC des listes de genres envoyées depuis l'interface.
+
 ## v0.24.12 - 2026-07-22
 
 - Ajout de genres structurés dans la base locale avec liaison aux jeux.

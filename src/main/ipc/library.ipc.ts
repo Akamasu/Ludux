@@ -82,6 +82,24 @@ function readOptionalBoolean(value: unknown, message: string) {
   return value
 }
 
+function readOptionalStringArray(value: unknown, message: string) {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (!Array.isArray(value)) {
+    throw new Error(message)
+  }
+
+  return value.map((item) => {
+    if (typeof item !== 'string') {
+      throw new Error(message)
+    }
+
+    return item
+  })
+}
+
 function parseCreateGameInput(value: unknown): CreateGameInput {
   if (!isRecord(value) || typeof value['title'] !== 'string') {
     throw new Error('Les données du jeu sont invalides.')
@@ -124,6 +142,7 @@ function parseUpdateGameInput(value: unknown): UpdateGameInput {
     developer: readOptionalString(value['developer']),
     publisher: readOptionalString(value['publisher']),
     website: readOptionalString(value['website']),
+    genres: readOptionalStringArray(value['genres'], 'Genres invalides.'),
   }
 }
 

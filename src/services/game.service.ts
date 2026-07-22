@@ -32,6 +32,7 @@ import type {
 
 const screenshotMediaDirectory = resolve('userdata', 'media', 'screenshots')
 const steamProvider = 'STEAM'
+const manualGenreSource = 'MANUAL'
 
 interface ImportScreenshotFileData extends ImportScreenshotFileInput {
   sourcePath: string
@@ -264,6 +265,16 @@ function normalizeLookupText(value: string) {
   return value.trim().toLocaleLowerCase('fr-FR')
 }
 
+function normalizeGameGenres(value: string[] | undefined) {
+  return Array.from(
+    new Set(
+      value
+        ?.map((genre) => genre.trim().replace(/\s+/g, ' '))
+        .filter((genre) => genre.length > 0) ?? [],
+    ),
+  ).sort((left, right) => left.localeCompare(right, 'fr-FR'))
+}
+
 function parseNullableDate(value: string | null | undefined) {
   if (value === undefined) {
     return undefined
@@ -307,6 +318,41 @@ async function requireGameDetail(id: string) {
   }
 
   return game
+}
+
+async function replaceGameGenres(gameId: string, genreNames: string[]) {
+  const genres = normalizeGameGenres(genreNames)
+
+  await prisma.$transaction(async (transaction) => {
+    await transaction.gameGenre.deleteMany({
+      where: {
+        gameId,
+      },
+    })
+
+    for (const genreName of genres) {
+      const genre = await transaction.genre.upsert({
+        where: {
+          name: genreName,
+        },
+        update: {},
+        create: {
+          name: genreName,
+        },
+        select: {
+          id: true,
+        },
+      })
+
+      await transaction.gameGenre.create({
+        data: {
+          gameId,
+          genreId: genre.id,
+          source: manualGenreSource,
+        },
+      })
+    }
+  })
 }
 
 async function requireChronicleForGame(gameId: string, chronicleId: string) {
@@ -493,6 +539,10 @@ class GameService {
         website: trimOptional(input.website),
       },
     })
+
+    if (input.genres !== undefined) {
+      await replaceGameGenres(input.id, input.genres)
+    }
 
     return toGameDetail(await requireGameDetail(input.id))
   }

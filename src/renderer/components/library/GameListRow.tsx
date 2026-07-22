@@ -1,6 +1,7 @@
 import { Clock3, Star } from 'lucide-react'
 import { GAME_STATUS_LABELS, type GameListItem } from '../../../types/game'
 import { formatHours } from '../../utils/formatters'
+import { GameGenreChips } from './GameGenreChips'
 
 interface GameListRowProps {
   game: GameListItem
@@ -20,6 +21,7 @@ export function GameListRow({ game, onOpen }: GameListRowProps) {
         <p className="mt-1 text-sm text-zinc-500">
           {game.platforms.join(', ') || 'Plateforme non renseignée'}
         </p>
+        <GameGenreChips className="mt-2" compact genres={game.genres} maxVisible={3} />
       </div>
       <span className="w-fit rounded-lg bg-white/5 px-3 py-1 text-xs text-zinc-300">
         {GAME_STATUS_LABELS[game.status]}

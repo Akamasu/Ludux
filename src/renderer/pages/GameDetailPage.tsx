@@ -56,6 +56,7 @@ import {
   type UpdateScreenshotInput,
 } from '../../types/game'
 import { GameCover } from '../components/library/GameCover'
+import { GameGenreChips } from '../components/library/GameGenreChips'
 import { Button } from '../components/ui/Button'
 import {
   formatGameDescription,
@@ -130,6 +131,26 @@ function websiteLabel(value: string) {
   } catch {
     return 'Site officiel'
   }
+}
+
+function normalizeGenreValues(genres: string[]) {
+  return Array.from(
+    new Set(
+      genres
+        .map((genre) => genre.trim().replace(/\s+/g, ' '))
+        .filter((genre) => genre.length > 0),
+    ),
+  ).sort((left, right) => left.localeCompare(right, 'fr-FR'))
+}
+
+function parseGenreText(value: string) {
+  return normalizeGenreValues(value.split(/[,;\n]/))
+}
+
+function genreSignature(genres: string[]) {
+  return normalizeGenreValues(genres)
+    .map((genre) => genre.toLocaleLowerCase('fr-FR'))
+    .join('|')
 }
 
 function GameDescription({ description }: { description: string | null }) {
@@ -256,6 +277,7 @@ function GameArchiveHero({
               <h1 className="mt-4 break-words text-3xl font-semibold text-white sm:text-4xl">
                 {detail.title}
               </h1>
+              <GameGenreChips className="mt-4" genres={detail.genres} maxVisible={6} />
               <GameDescription description={detail.description} />
 
               {detail.metadataSources.length > 0 ? (
@@ -491,22 +513,28 @@ function GameEditPanel({
 }) {
   const [title, setTitle] = useState(detail.title)
   const [status, setStatus] = useState<GameStatus>(detail.status)
+  const [genresText, setGenresText] = useState(detail.genres.join(', '))
   const [personalNote, setPersonalNote] = useState(detail.personalNote ?? '')
 
   useEffect(() => {
     setTitle(detail.title)
     setStatus(detail.status)
+    setGenresText(detail.genres.join(', '))
     setPersonalNote(detail.personalNote ?? '')
   }, [detail])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
+    const nextGenres = parseGenreText(genresText)
+    const genresChanged = genreSignature(nextGenres) !== genreSignature(detail.genres)
+
     await onUpdateGame({
       id: detail.id,
       title,
       status,
       personalNote,
+      ...(genresChanged ? { genres: nextGenres } : {}),
     })
   }
 
@@ -535,6 +563,19 @@ function GameEditPanel({
               </option>
             ))}
           </select>
+        </label>
+        <label>
+          <span className="mb-2 block text-xs font-medium text-zinc-500">Genres</span>
+          <input
+            value={genresText}
+            onChange={(event) => setGenresText(event.target.value)}
+            placeholder="Action, RPG, Aventure..."
+            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+          />
+          <p className="mt-2 text-xs leading-5 text-zinc-600">
+            Séparez les genres par une virgule. Une modification manuelle protège ces genres des futures synchronisations RAWG.
+          </p>
+          <GameGenreChips className="mt-3" compact genres={parseGenreText(genresText)} maxVisible={6} />
         </label>
         <label>
           <span className="mb-2 block text-xs font-medium text-zinc-500">Note personnelle</span>

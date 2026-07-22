@@ -240,6 +240,7 @@ export interface UpdateGameInput {
   developer?: string
   publisher?: string
   website?: string
+  genres?: string[]
 }
 
 export interface UpdateReviewInput {

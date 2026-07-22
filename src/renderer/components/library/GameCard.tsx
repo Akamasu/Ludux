@@ -2,6 +2,7 @@ import { Clock3, Star } from 'lucide-react'
 import { GAME_STATUS_LABELS, type GameListItem } from '../../../types/game'
 import { formatHours } from '../../utils/formatters'
 import { GameCover } from './GameCover'
+import { GameGenreChips } from './GameGenreChips'
 
 interface GameCardProps {
   game: GameListItem
@@ -30,6 +31,7 @@ export function GameCard({ game, onOpen }: GameCardProps) {
         <p className="mt-2 truncate text-sm text-zinc-500">
           {game.platforms.join(', ') || 'Plateforme non renseignée'}
         </p>
+        <GameGenreChips className="mt-3" compact genres={game.genres} maxVisible={3} />
 
         <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-zinc-400">
           <div className="flex h-9 items-center gap-2 rounded-lg bg-white/5 px-3">

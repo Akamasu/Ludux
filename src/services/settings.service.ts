@@ -43,6 +43,7 @@ const steamCollectionDescription = 'Catégorie Steam synchronisée.'
 const steamTotalSessionNote = 'Temps total Steam synchronisé.'
 const rawgProvider: ExternalProvider = 'RAWG'
 const rawgExternalId = 'catalogue'
+const manualGenreSource = 'MANUAL'
 const defaultAutoSyncIntervalMinutes = 120
 const defaultSteamAchievementSyncLimit = 80
 const legacySteamCoverPattern =
@@ -676,6 +677,17 @@ async function syncSteamGameCollections(gameId: string, steamGame: SteamOwnedGam
 }
 
 async function syncGameGenres(gameId: string, genreNames: string[], source: ExternalProvider) {
+  const manualGenreCount = await prisma.gameGenre.count({
+    where: {
+      gameId,
+      source: manualGenreSource,
+    },
+  })
+
+  if (manualGenreCount > 0) {
+    return 0
+  }
+
   const genres = normalizeGameGenres(genreNames)
 
   if (genres.length === 0) {
