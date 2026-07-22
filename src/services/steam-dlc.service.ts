@@ -13,7 +13,9 @@ interface DlcBundleMergeCandidate {
   name: string
   releaseDate: Date | string | null
   owned: boolean
+  ownedAt?: Date | string | null
   completed: boolean
+  completedAt?: Date | string | null
 }
 
 export function createSteamDlcDisplayName(detail: SteamAppDetails) {
@@ -127,7 +129,9 @@ export function mergeSteamDlcBundleDuplicates<TDlc extends DlcBundleMergeCandida
     }
 
     baseDlc.owned = baseDlc.owned || dlc.owned
+    baseDlc.ownedAt = baseDlc.ownedAt ?? dlc.ownedAt
     baseDlc.completed = baseDlc.completed || dlc.completed
+    baseDlc.completedAt = baseDlc.completedAt ?? dlc.completedAt
     baseDlc.releaseDate = baseDlc.releaseDate ?? dlc.releaseDate
     hiddenBundleNames.add(normalizeDlcLookupText(dlc.name))
   }

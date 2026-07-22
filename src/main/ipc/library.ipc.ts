@@ -256,8 +256,10 @@ function parseCreateDlcInput(value: unknown): CreateDlcInput {
     gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
     name: readRequiredString(value['name'], 'Le nom du DLC est obligatoire.'),
     releaseDate: readOptionalString(value['releaseDate']),
-    owned: readOptionalBoolean(value['owned'], 'Etat de possession invalide.'),
+    owned: readOptionalBoolean(value['owned'], 'État de possession invalide.'),
+    ownedAt: readNullableString(value['ownedAt'], "Date d'obtention invalide."),
     completed: readOptionalBoolean(value['completed'], 'État de complétion invalide.'),
+    completedAt: readNullableString(value['completedAt'], 'Date de complétion invalide.'),
   }
 }
 
@@ -271,8 +273,10 @@ function parseUpdateDlcInput(value: unknown): UpdateDlcInput {
     id: readRequiredString(value['id'], 'Identifiant de DLC invalide.'),
     name: readOptionalString(value['name']),
     releaseDate: readNullableString(value['releaseDate'], 'Date de sortie invalide.'),
-    owned: readOptionalBoolean(value['owned'], 'Etat de possession invalide.'),
+    owned: readOptionalBoolean(value['owned'], 'État de possession invalide.'),
+    ownedAt: readNullableString(value['ownedAt'], "Date d'obtention invalide."),
     completed: readOptionalBoolean(value['completed'], 'État de complétion invalide.'),
+    completedAt: readNullableString(value['completedAt'], 'Date de complétion invalide.'),
   }
 }
 

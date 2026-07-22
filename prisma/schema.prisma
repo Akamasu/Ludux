@@ -104,7 +104,9 @@ model Dlc {
   name        String
   releaseDate DateTime?
   owned       Boolean   @default(false)
+  ownedAt     DateTime?
   completed   Boolean   @default(false)
+  completedAt DateTime?
   provider    String?
   externalId  String?
 

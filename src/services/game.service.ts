@@ -218,7 +218,9 @@ function toGameDetail(game: GameDetailWithRelations): GameDetail {
       name: dlc.name,
       releaseDate: dlc.releaseDate?.toISOString() ?? null,
       owned: dlc.owned,
+      ownedAt: dlc.ownedAt?.toISOString() ?? null,
       completed: dlc.completed,
+      completedAt: dlc.completedAt?.toISOString() ?? null,
     })),
     achievements: game.achievements.map((achievement) => ({
       id: achievement.id,
@@ -404,7 +406,9 @@ async function reconcileExistingSteamDlcCatalog(
       provider: true,
       externalId: true,
       owned: true,
+      ownedAt: true,
       completed: true,
+      completedAt: true,
     },
   })
 
@@ -433,7 +437,9 @@ async function reconcileExistingSteamDlcCatalog(
         provider: steamProvider,
         externalId: String(detail.appid),
         owned: mergedDlcs.some((dlc) => dlc.owned),
+        ownedAt: mergedDlcs.find((dlc) => dlc.ownedAt)?.ownedAt ?? null,
         completed: mergedDlcs.some((dlc) => dlc.completed),
+        completedAt: mergedDlcs.find((dlc) => dlc.completedAt)?.completedAt ?? null,
       },
     })
 
@@ -464,7 +470,9 @@ async function reconcileExistingSteamDlcCatalog(
         provider: steamProvider,
         externalId: String(detail.appid),
         owned: mergedDlcs.some((dlc) => dlc.owned),
+        ownedAt: mergedDlcs.find((dlc) => dlc.ownedAt)?.ownedAt ?? null,
         completed: mergedDlcs.some((dlc) => dlc.completed),
+        completedAt: mergedDlcs.find((dlc) => dlc.completedAt)?.completedAt ?? null,
       }
     }
   }
@@ -668,6 +676,8 @@ class GameService {
 
   async createDlc(input: CreateDlcInput): Promise<GameDetail> {
     const name = input.name.trim()
+    const owned = input.completed ? true : input.owned ?? false
+    const completed = input.completed ?? false
 
     if (name.length === 0) {
       throw new Error('Le nom du DLC est obligatoire.')
@@ -678,8 +688,10 @@ class GameService {
         gameId: input.gameId,
         name,
         releaseDate: parseNullableDate(input.releaseDate),
-        owned: input.completed ? true : input.owned ?? false,
-        completed: input.completed ?? false,
+        owned,
+        ownedAt: owned ? parseNullableDate(input.ownedAt) : null,
+        completed,
+        completedAt: completed ? parseNullableDate(input.completedAt) : null,
       },
     })
 
@@ -719,7 +731,7 @@ class GameService {
     const steamAppId = readSteamAppId(game.externalGames[0]?.externalId)
 
     if (!steamAppId) {
-      throw new Error("Ce jeu n'est pas relie a Steam.")
+      throw new Error("Ce jeu n'est pas relié à Steam.")
     }
 
     const catalog = await fetchSteamDlcCatalog({
@@ -809,6 +821,11 @@ class GameService {
     const name = trimOptional(input.name)
     const owned = input.completed ? true : input.owned
     const completed = input.owned === false ? false : input.completed
+    const ownedAt = input.owned === false ? null : parseNullableDate(input.ownedAt)
+    const completedAt =
+      input.completed === false || input.owned === false
+        ? null
+        : parseNullableDate(input.completedAt)
     const result = await prisma.dlc.updateMany({
       where: {
         id: input.id,
@@ -818,7 +835,9 @@ class GameService {
         name,
         releaseDate: parseNullableDate(input.releaseDate),
         owned,
+        ownedAt,
         completed,
+        completedAt,
       },
     })
 

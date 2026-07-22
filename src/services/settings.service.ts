@@ -843,7 +843,9 @@ async function upsertSteamDlc({
       provider: true,
       externalId: true,
       owned: true,
+      ownedAt: true,
       completed: true,
+      completedAt: true,
     },
   })
   const existingSyncedDlc = existingDlcs.find(
@@ -870,7 +872,9 @@ async function upsertSteamDlc({
         provider: steamProvider,
         externalId,
         owned: mergedDlcs.some((dlc) => dlc.owned),
+        ownedAt: mergedDlcs.find((dlc) => dlc.ownedAt)?.ownedAt ?? null,
         completed: mergedDlcs.some((dlc) => dlc.completed),
+        completedAt: mergedDlcs.find((dlc) => dlc.completedAt)?.completedAt ?? null,
       },
     })
 

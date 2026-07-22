@@ -356,6 +356,9 @@ export function useGameDetail(
 
       try {
         if (!api) {
+          const owned = input.completed ? true : input.owned ?? false
+          const completed = input.completed ?? false
+
           setDetail((current) =>
             current
               ? {
@@ -366,8 +369,10 @@ export function useGameDetail(
                       id: crypto.randomUUID(),
                       name: input.name,
                       releaseDate: input.releaseDate ?? null,
-                      owned: input.completed ? true : input.owned ?? false,
-                      completed: input.completed ?? false,
+                      owned,
+                      ownedAt: owned ? input.ownedAt ?? null : null,
+                      completed,
+                      completedAt: completed ? input.completedAt ?? null : null,
                     },
                   ],
                 }
@@ -431,8 +436,20 @@ export function useGameDetail(
                             ? dlc.releaseDate
                             : input.releaseDate,
                         owned: input.completed ? true : input.owned ?? dlc.owned,
+                        ownedAt:
+                          input.owned === false
+                            ? null
+                            : input.ownedAt === undefined
+                              ? dlc.ownedAt
+                              : input.ownedAt,
                         completed:
                           input.owned === false ? false : input.completed ?? dlc.completed,
+                        completedAt:
+                          input.completed === false || input.owned === false
+                            ? null
+                            : input.completedAt === undefined
+                              ? dlc.completedAt
+                              : input.completedAt,
                       }
                     : dlc,
                 ),

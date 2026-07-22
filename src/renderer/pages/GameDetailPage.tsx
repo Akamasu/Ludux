@@ -6,6 +6,7 @@ import {
   Bookmark,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Download,
   ExternalLink,
@@ -20,7 +21,7 @@ import {
   Trash2,
   Trophy,
 } from 'lucide-react'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import {
   EMOTION_LABELS,
   EMOTION_VALUES,
@@ -729,6 +730,427 @@ function ReviewPanel({
   )
 }
 
+type DlcCategoryId = 'expansion' | 'cosmetic' | 'pack' | 'media' | 'item' | 'other'
+
+interface DlcCategoryDefinition {
+  id: DlcCategoryId
+  label: string
+  description: string
+}
+
+const dlcCategoryDefinitions: DlcCategoryDefinition[] = [
+  {
+    id: 'expansion',
+    label: 'Extensions et quêtes',
+    description: 'Contenu jouable, chapitres, missions et campagnes.',
+  },
+  {
+    id: 'cosmetic',
+    label: 'Cosmétiques',
+    description: 'Skins, costumes, apparences, gestes, voix et décorations.',
+  },
+  {
+    id: 'pack',
+    label: 'Packs et bonus',
+    description: 'Bundles, kits, pass, bonus et éditions spéciales.',
+  },
+  {
+    id: 'media',
+    label: 'Bandes-son et artbooks',
+    description: 'Musiques, OST, livres numériques et contenus media.',
+  },
+  {
+    id: 'item',
+    label: 'Objets',
+    description: 'Objets, armes, armures, matériaux et consommables.',
+  },
+  {
+    id: 'other',
+    label: 'Autres',
+    description: 'DLC non classés automatiquement.',
+  },
+]
+
+function normalizeDlcCategoryText(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLocaleLowerCase('fr-FR')
+}
+
+function categorizeDlcName(name: string): DlcCategoryId {
+  const value = normalizeDlcCategoryText(name)
+
+  if (
+    /\b(expansion|extension|quest|quete|mission|scenario|story|chapter|chapitre|campaign|campagne|iceborne|sunbreak|erdtree)\b/.test(
+      value,
+    )
+  ) {
+    return 'expansion'
+  }
+
+  if (/\b(soundtrack|ost|music|musique|artbook|art book|wallpaper|bande[- ]son)\b/.test(value)) {
+    return 'media'
+  }
+
+  if (
+    /\b(layered|costume|skin|outfit|hairstyle|coiffure|sticker|gesture|emote|pose|voice|voix|pendant|face paint|makeup|decor|decoration|stamp|avatar|profile|palico|handler)\b/.test(
+      value,
+    )
+  ) {
+    return 'cosmetic'
+  }
+
+  if (/\b(bundle|pack|kit|deluxe|pass|voucher|bonus|edition)\b/.test(value)) {
+    return 'pack'
+  }
+
+  if (/\b(item|objet|weapon|arme|armor|armure|material|materiau|charm|consumable|supply)\b/.test(value)) {
+    return 'item'
+  }
+
+  return 'other'
+}
+
+function groupDlcByCategory<TDlc extends { name: string }>(dlcs: TDlc[]) {
+  const groups = new Map<DlcCategoryId, TDlc[]>()
+
+  for (const dlc of dlcs) {
+    const category = categorizeDlcName(dlc.name)
+    groups.set(category, [...(groups.get(category) ?? []), dlc])
+  }
+
+  return dlcCategoryDefinitions
+    .map((definition) => ({
+      definition,
+      items: (groups.get(definition.id) ?? []).sort((left, right) =>
+        left.name.localeCompare(right.name, 'fr-FR'),
+      ),
+    }))
+    .filter((group) => group.items.length > 0)
+}
+
+function createDefaultExpandedDlcCategories(
+  groups: ReturnType<typeof groupDlcByCategory>,
+  totalCount: number,
+) {
+  if (totalCount > 8) {
+    return new Set<DlcCategoryId>()
+  }
+
+  return new Set(groups.map((group) => group.definition.id))
+}
+
+function dateInputValue(value: string | null) {
+  return value ? value.slice(0, 10) : ''
+}
+
+function DlcDisclosure({
+  badge,
+  children,
+  count,
+  description,
+  isOpen,
+  onToggle,
+  title,
+}: {
+  badge?: ReactNode
+  children: ReactNode
+  count: number
+  description: string
+  isOpen: boolean
+  onToggle: () => void
+  title: string
+}) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-[#0F1117]">
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-4 p-3 text-left"
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          <ChevronDown
+            size={17}
+            aria-hidden="true"
+            className={`shrink-0 text-zinc-500 transition ${isOpen ? '' : '-rotate-90'}`}
+          />
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold text-white">{title}</span>
+            <span className="mt-1 block truncate text-xs text-zinc-500">{description}</span>
+          </span>
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          {badge}
+          <span className="rounded-lg bg-white/7 px-2.5 py-1 text-xs font-medium text-zinc-300">
+            {count}
+          </span>
+        </span>
+      </button>
+      {isOpen ? <div className="border-t border-white/10 p-3">{children}</div> : null}
+    </div>
+  )
+}
+
+function AvailableDlcRow({
+  dlc,
+  isDisabled,
+  onAdd,
+}: {
+  dlc: AvailableDlcListItem
+  isDisabled: boolean
+  onAdd: (dlc: AvailableDlcListItem) => void
+}) {
+  return (
+    <article className="grid grid-cols-[56px_1fr] gap-3 rounded-lg border border-white/10 bg-[#121620] p-2.5 sm:grid-cols-[64px_1fr_auto]">
+      <div className="h-11 overflow-hidden rounded-md border border-white/10 bg-[#181B23]">
+        <GameCover title={dlc.name} coverUrl={dlc.coverUrl} initialClassName="text-xl" />
+      </div>
+      <div className="min-w-0">
+        <h4 className="truncate text-sm font-medium text-white">{dlc.name}</h4>
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+          <span>Steam</span>
+          {dlc.releaseDate ? <span>{formatDate(dlc.releaseDate)}</span> : null}
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant={dlc.added ? 'secondary' : 'primary'}
+        onClick={() => onAdd(dlc)}
+        disabled={isDisabled || dlc.added}
+        className="col-span-2 h-9 px-3 sm:col-span-1"
+      >
+        {dlc.added ? <CheckCircle2 size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
+        {dlc.added ? 'Ajouté' : 'Ajouter'}
+      </Button>
+    </article>
+  )
+}
+
+function TrackedDlcRow({
+  dlc,
+  isSaving,
+  onDelete,
+  onUpdate,
+}: {
+  dlc: DlcListItem
+  isSaving: boolean
+  onDelete: (dlc: DlcListItem) => void
+  onUpdate: (input: UpdateDlcInput) => Promise<void>
+}) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [name, setName] = useState(dlc.name)
+  const [releaseDate, setReleaseDate] = useState(dateInputValue(dlc.releaseDate))
+  const [owned, setOwned] = useState(dlc.owned)
+  const [ownedAt, setOwnedAt] = useState(dateInputValue(dlc.ownedAt))
+  const [completed, setCompleted] = useState(dlc.completed)
+  const [completedAt, setCompletedAt] = useState(dateInputValue(dlc.completedAt))
+
+  useEffect(() => {
+    setName(dlc.name)
+    setReleaseDate(dateInputValue(dlc.releaseDate))
+    setOwned(dlc.owned)
+    setOwnedAt(dateInputValue(dlc.ownedAt))
+    setCompleted(dlc.completed)
+    setCompletedAt(dateInputValue(dlc.completedAt))
+  }, [dlc])
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    const nextOwned = completed ? true : owned
+    await onUpdate({
+      gameId: '',
+      id: dlc.id,
+      name,
+      releaseDate: releaseDate || null,
+      owned: nextOwned,
+      ownedAt: nextOwned ? ownedAt || null : null,
+      completed,
+      completedAt: completed ? completedAt || null : null,
+    })
+    setIsEditing(false)
+  }
+
+  async function quickUpdate(patch: Pick<UpdateDlcInput, 'owned' | 'ownedAt' | 'completed' | 'completedAt'>) {
+    await onUpdate({
+      gameId: '',
+      id: dlc.id,
+      ...patch,
+    })
+  }
+
+  if (isEditing) {
+    return (
+      <article className="rounded-lg border border-[#7C5CFF]/35 bg-[#121620] p-3">
+        <form className="grid gap-3" onSubmit={handleSubmit}>
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_150px_150px_150px]">
+            <label>
+              <span className="mb-1.5 block text-xs text-zinc-500">Nom</span>
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className="h-10 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+              />
+            </label>
+            <label>
+              <span className="mb-1.5 block text-xs text-zinc-500">Sortie</span>
+              <input
+                type="date"
+                value={releaseDate}
+                onChange={(event) => setReleaseDate(event.target.value)}
+                className="h-10 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+              />
+            </label>
+            <label>
+              <span className="mb-1.5 block text-xs text-zinc-500">Obtention</span>
+              <input
+                type="date"
+                value={ownedAt}
+                onChange={(event) => setOwnedAt(event.target.value)}
+                disabled={!owned && !completed}
+                className="h-10 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition disabled:text-zinc-600 focus:border-[#7C5CFF]"
+              />
+            </label>
+            <label>
+              <span className="mb-1.5 block text-xs text-zinc-500">Terminé le</span>
+              <input
+                type="date"
+                value={completedAt}
+                onChange={(event) => setCompletedAt(event.target.value)}
+                disabled={!completed}
+                className="h-10 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition disabled:text-zinc-600 focus:border-[#7C5CFF]"
+              />
+            </label>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={owned}
+                onChange={(event) => {
+                  setOwned(event.target.checked)
+
+                  if (!event.target.checked) {
+                    setOwnedAt('')
+                    setCompleted(false)
+                    setCompletedAt('')
+                  }
+                }}
+                className="accent-[#7C5CFF]"
+              />
+              Possédé
+            </label>
+            <label className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={completed}
+                onChange={(event) => {
+                  setCompleted(event.target.checked)
+
+                  if (event.target.checked) {
+                    setOwned(true)
+                  } else {
+                    setCompletedAt('')
+                  }
+                }}
+                className="accent-[#7C5CFF]"
+              />
+              Terminé
+            </label>
+            <Button type="submit" disabled={isSaving || name.trim().length === 0} className="h-10">
+              <Save size={16} aria-hidden="true" />
+              Enregistrer
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setIsEditing(false)} disabled={isSaving} className="h-10">
+              Annuler
+            </Button>
+          </div>
+        </form>
+      </article>
+    )
+  }
+
+  return (
+    <article className="grid gap-3 rounded-lg border border-white/10 bg-[#121620] p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      <div className="min-w-0">
+        <h3 className="truncate text-sm font-medium text-white">{dlc.name}</h3>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+          {dlc.releaseDate ? (
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/7 px-2.5 py-1 text-zinc-300">
+              <CalendarDays size={14} aria-hidden="true" />
+              Sortie {formatDate(dlc.releaseDate)}
+            </span>
+          ) : null}
+          {dlc.owned ? (
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#4F7CFF]/10 px-2.5 py-1 text-[#C9D6FF]">
+              <Download size={14} aria-hidden="true" />
+              {dlc.ownedAt ? `Obtenu ${formatDate(dlc.ownedAt)}` : 'Possédé'}
+            </span>
+          ) : null}
+          {dlc.completed ? (
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#7C5CFF]/10 px-2.5 py-1 text-[#D8D0FF]">
+              <CheckCircle2 size={14} aria-hidden="true" />
+              {dlc.completedAt ? `Terminé ${formatDate(dlc.completedAt)}` : 'Terminé'}
+            </span>
+          ) : null}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-2.5 text-sm text-zinc-300">
+          <input
+            type="checkbox"
+            checked={dlc.owned}
+            onChange={(event) =>
+              quickUpdate({
+                owned: event.target.checked,
+                ownedAt: event.target.checked ? dlc.ownedAt : null,
+                ...(event.target.checked ? {} : { completed: false, completedAt: null }),
+              })
+            }
+            disabled={isSaving}
+            className="accent-[#7C5CFF]"
+          />
+          Possédé
+        </label>
+        <label className="flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-2.5 text-sm text-zinc-300">
+          <input
+            type="checkbox"
+            checked={dlc.completed}
+            onChange={(event) =>
+              quickUpdate({
+                completed: event.target.checked,
+                completedAt: event.target.checked ? dlc.completedAt : null,
+                ...(event.target.checked ? { owned: true } : {}),
+              })
+            }
+            disabled={isSaving}
+            className="accent-[#7C5CFF]"
+          />
+          Terminé
+        </label>
+        <Button type="button" variant="secondary" aria-label={`Modifier ${dlc.name}`} title="Modifier" onClick={() => setIsEditing(true)} disabled={isSaving} className="h-9 px-3">
+          <Pencil size={15} aria-hidden="true" />
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          aria-label={`Supprimer ${dlc.name}`}
+          title="Supprimer"
+          onClick={() => onDelete(dlc)}
+          disabled={isSaving}
+          className="h-9 border-rose-400/30 bg-rose-400/10 px-3 text-rose-100 hover:border-rose-300/60 hover:bg-rose-400/15"
+        >
+          <Trash2 size={15} aria-hidden="true" />
+        </Button>
+      </div>
+    </article>
+  )
+}
+
 function DlcPanel({
   availableDlc,
   detail,
@@ -751,37 +1173,86 @@ function DlcPanel({
   const [name, setName] = useState('')
   const [releaseDate, setReleaseDate] = useState('')
   const [owned, setOwned] = useState(false)
+  const [ownedAt, setOwnedAt] = useState('')
   const [completed, setCompleted] = useState(false)
+  const [completedAt, setCompletedAt] = useState('')
+  const [isAvailableOpen, setIsAvailableOpen] = useState(false)
+  const [isManualFormOpen, setIsManualFormOpen] = useState(false)
+  const trackedDlcGroups = useMemo(() => groupDlcByCategory(detail.dlcs), [detail.dlcs])
+  const availableDlcGroups = useMemo(() => groupDlcByCategory(availableDlc), [availableDlc])
+  const [expandedTrackedCategories, setExpandedTrackedCategories] = useState(
+    () => createDefaultExpandedDlcCategories(trackedDlcGroups, detail.dlcs.length),
+  )
+  const [expandedAvailableCategories, setExpandedAvailableCategories] = useState(
+    () => createDefaultExpandedDlcCategories(availableDlcGroups, availableDlc.length),
+  )
   const completedCount = detail.dlcs.filter((dlc) => dlc.completed).length
   const ownedCount = detail.dlcs.filter((dlc) => dlc.owned).length
+  const trackedDateCount = detail.dlcs.filter((dlc) => dlc.ownedAt || dlc.completedAt).length
   const availableToAddCount = availableDlc.filter((dlc) => !dlc.added).length
+
+  useEffect(() => {
+    setExpandedTrackedCategories(
+      createDefaultExpandedDlcCategories(trackedDlcGroups, detail.dlcs.length),
+    )
+  }, [detail.dlcs.length, detail.id, trackedDlcGroups])
+
+  useEffect(() => {
+    setIsAvailableOpen(availableDlc.length > 0 && availableDlc.length <= 4)
+    setExpandedAvailableCategories(
+      createDefaultExpandedDlcCategories(availableDlcGroups, availableDlc.length),
+    )
+  }, [availableDlc.length, availableDlcGroups, detail.id])
+
+  function toggleTrackedCategory(categoryId: DlcCategoryId) {
+    setExpandedTrackedCategories((current) => {
+      const next = new Set(current)
+
+      if (next.has(categoryId)) {
+        next.delete(categoryId)
+      } else {
+        next.add(categoryId)
+      }
+
+      return next
+    })
+  }
+
+  function toggleAvailableCategory(categoryId: DlcCategoryId) {
+    setExpandedAvailableCategories((current) => {
+      const next = new Set(current)
+
+      if (next.has(categoryId)) {
+        next.delete(categoryId)
+      } else {
+        next.add(categoryId)
+      }
+
+      return next
+    })
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
+    const nextOwned = completed ? true : owned
     await onCreateDlc({
       gameId: detail.id,
       name,
       releaseDate: releaseDate || undefined,
-      owned,
+      owned: nextOwned,
+      ownedAt: nextOwned ? ownedAt || null : null,
       completed,
+      completedAt: completed ? completedAt || null : null,
     })
 
     setName('')
     setReleaseDate('')
     setOwned(false)
+    setOwnedAt('')
     setCompleted(false)
-  }
-
-  async function updateDlcState(
-    dlc: DlcListItem,
-    patch: Pick<UpdateDlcInput, 'owned' | 'completed'>,
-  ) {
-    await onUpdateDlc({
-      gameId: detail.id,
-      id: dlc.id,
-      ...patch,
-    })
+    setCompletedAt('')
+    setIsManualFormOpen(false)
   }
 
   async function handleDeleteDlc(dlc: DlcListItem) {
@@ -803,13 +1274,20 @@ function DlcPanel({
     })
   }
 
+  async function handleUpdateDlc(input: UpdateDlcInput) {
+    await onUpdateDlc({
+      ...input,
+      gameId: detail.id,
+    })
+  }
+
   return (
     <section className="archive-panel deferred-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">DLC</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Extensions détectées via Steam ou suivies manuellement.
+            Extensions détectées via Steam, classées par type et suivies manuellement.
           </p>
         </div>
         <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#7C5CFF]/10 text-[#D8D0FF]">
@@ -817,7 +1295,7 @@ function DlcPanel({
         </div>
       </div>
 
-      <div className="mb-5 grid gap-3 md:grid-cols-3">
+      <div className="mb-5 grid gap-3 md:grid-cols-4">
         <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
           <p className="text-xs text-zinc-500">DLC</p>
           <p className="mt-1 text-xl font-semibold text-white">{detail.dlcs.length}</p>
@@ -830,18 +1308,34 @@ function DlcPanel({
           <p className="text-xs text-zinc-500">Terminés</p>
           <p className="mt-1 text-xl font-semibold text-white">{completedCount}</p>
         </div>
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Dates suivies</p>
+          <p className="mt-1 text-xl font-semibold text-white">{trackedDateCount}</p>
+        </div>
       </div>
 
-      <div className="mb-5 rounded-lg border border-white/10 bg-[#121620] p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="font-semibold text-white">DLC disponibles</h3>
-            <p className="mt-1 text-sm text-zinc-500">
-              {availableToAddCount > 0
-                ? `${availableToAddCount} extension(s) a ajouter depuis Steam Store.`
-                : 'Catalogue Steam Store pour cette fiche.'}
-            </p>
-          </div>
+      <div className="mb-5 rounded-lg border border-white/10 bg-[#121620]">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <button
+            type="button"
+            aria-expanded={isAvailableOpen}
+            onClick={() => setIsAvailableOpen((current) => !current)}
+            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          >
+            <ChevronDown
+              size={18}
+              aria-hidden="true"
+              className={`shrink-0 text-zinc-500 transition ${isAvailableOpen ? '' : '-rotate-90'}`}
+            />
+            <span className="min-w-0">
+              <span className="block font-semibold text-white">DLC disponibles</span>
+              <span className="mt-1 block truncate text-sm text-zinc-500">
+                {availableToAddCount > 0
+                  ? `${availableToAddCount} à ajouter sur ${availableDlc.length} détecté(s).`
+                  : `${availableDlc.length} détecté(s) depuis Steam Store.`}
+              </span>
+            </span>
+          </button>
           <Button
             type="button"
             variant="secondary"
@@ -859,195 +1353,234 @@ function DlcPanel({
           </Button>
         </div>
 
-        {isLoadingAvailableDlc ? (
-          <p className="mt-4 rounded-lg border border-dashed border-white/15 bg-[#0F1117] p-4 text-sm text-zinc-500">
-            Recherche des DLC Steam...
-          </p>
-        ) : availableDlc.length === 0 ? (
-          <p className="mt-4 rounded-lg border border-dashed border-white/15 bg-[#0F1117] p-4 text-sm text-zinc-500">
-            Aucun DLC Steam disponible pour cette fiche.
-          </p>
-        ) : (
-          <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            {availableDlc.map((dlc) => (
-              <article
-                key={`${dlc.provider}-${dlc.externalId}`}
-                className="grid grid-cols-[72px_1fr] gap-3 rounded-lg border border-white/10 bg-[#0F1117] p-3 sm:grid-cols-[80px_1fr_auto]"
-              >
-                <div className="h-12 overflow-hidden rounded-md border border-white/10 bg-[#181B23]">
-                  <GameCover
-                    title={dlc.name}
-                    coverUrl={dlc.coverUrl}
-                    initialClassName="text-xl"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <h4 className="truncate text-sm font-medium text-white">{dlc.name}</h4>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-                    <span>Steam</span>
-                    {dlc.releaseDate ? <span>{formatDate(dlc.releaseDate)}</span> : null}
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant={dlc.added ? 'secondary' : 'primary'}
-                  onClick={() => handleAddAvailableDlc(dlc)}
-                  disabled={isSaving || isLoadingAvailableDlc || dlc.added}
-                  className="col-span-2 h-10 px-3 sm:col-span-1"
-                >
-                  {dlc.added ? (
-                    <CheckCircle2 size={16} aria-hidden="true" />
-                  ) : (
-                    <Plus size={16} aria-hidden="true" />
-                  )}
-                  {dlc.added ? 'Ajouté' : 'Ajouter'}
-                </Button>
-              </article>
-            ))}
+        {isAvailableOpen ? (
+          <div className="border-t border-white/10 p-4">
+            {isLoadingAvailableDlc ? (
+              <p className="rounded-lg border border-dashed border-white/15 bg-[#0F1117] p-4 text-sm text-zinc-500">
+                Recherche des DLC Steam...
+              </p>
+            ) : availableDlc.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-white/15 bg-[#0F1117] p-4 text-sm text-zinc-500">
+                Aucun DLC Steam disponible pour cette fiche.
+              </p>
+            ) : (
+              <div className="grid gap-3">
+                {availableDlcGroups.map((group) => (
+                  <DlcDisclosure
+                    key={group.definition.id}
+                    count={group.items.length}
+                    description={group.definition.description}
+                    isOpen={expandedAvailableCategories.has(group.definition.id)}
+                    onToggle={() => toggleAvailableCategory(group.definition.id)}
+                    title={group.definition.label}
+                  >
+                    <div className="grid gap-2 lg:grid-cols-2">
+                      {group.items.map((dlc) => (
+                        <AvailableDlcRow
+                          key={`${dlc.provider}-${dlc.externalId}`}
+                          dlc={dlc}
+                          isDisabled={isSaving || isLoadingAvailableDlc}
+                          onAdd={handleAddAvailableDlc}
+                        />
+                      ))}
+                    </div>
+                  </DlcDisclosure>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        ) : null}
       </div>
 
-      <form className="grid gap-3 xl:grid-cols-[1fr_180px_auto]" onSubmit={handleSubmit}>
-        <label>
-          <span className="sr-only">Nom du DLC</span>
-          <input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Nom du DLC"
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
-          />
-        </label>
-        <label>
-          <span className="sr-only">Date de sortie du DLC</span>
-          <input
-            type="date"
-            value={releaseDate}
-            onChange={(event) => setReleaseDate(event.target.value)}
-            className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
-          />
-        </label>
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex h-11 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
-            <input
-              type="checkbox"
-              checked={owned}
-              onChange={(event) => {
-                setOwned(event.target.checked)
-
-                if (!event.target.checked) {
-                  setCompleted(false)
-                }
-              }}
-              className="accent-[#7C5CFF]"
+      <div className="mb-5 rounded-lg border border-white/10 bg-[#121620]">
+        <button
+          type="button"
+          aria-expanded={isManualFormOpen}
+          onClick={() => setIsManualFormOpen((current) => !current)}
+          className="flex w-full items-center justify-between gap-4 p-4 text-left"
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <ChevronDown
+              size={18}
+              aria-hidden="true"
+              className={`shrink-0 text-zinc-500 transition ${isManualFormOpen ? '' : '-rotate-90'}`}
             />
-            Possédé
-          </label>
-          <label className="flex h-11 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
-            <input
-              type="checkbox"
-              checked={completed}
-              onChange={(event) => {
-                setCompleted(event.target.checked)
+            <span>
+              <span className="block font-semibold text-white">Ajouter un DLC manuel</span>
+              <span className="mt-1 block text-sm text-zinc-500">
+                Nom, date de sortie, date d'obtention et date de complétion.
+              </span>
+            </span>
+          </span>
+          <Plus size={17} className="shrink-0 text-[#D8D0FF]" aria-hidden="true" />
+        </button>
 
-                if (event.target.checked) {
-                  setOwned(true)
+        {isManualFormOpen ? (
+          <form className="grid gap-3 border-t border-white/10 p-4" onSubmit={handleSubmit}>
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1.4fr)_150px_150px_150px]">
+              <label>
+                <span className="sr-only">Nom du DLC</span>
+                <input
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Nom du DLC"
+                  className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+                />
+              </label>
+              <label>
+                <span className="sr-only">Date de sortie du DLC</span>
+                <input
+                  type="date"
+                  value={releaseDate}
+                  onChange={(event) => setReleaseDate(event.target.value)}
+                  className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition focus:border-[#7C5CFF]"
+                />
+              </label>
+              <label>
+                <span className="sr-only">Date d'obtention du DLC</span>
+                <input
+                  type="date"
+                  value={ownedAt}
+                  onChange={(event) => setOwnedAt(event.target.value)}
+                  disabled={!owned && !completed}
+                  className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition disabled:text-zinc-600 focus:border-[#7C5CFF]"
+                />
+              </label>
+              <label>
+                <span className="sr-only">Date de complétion du DLC</span>
+                <input
+                  type="date"
+                  value={completedAt}
+                  onChange={(event) => setCompletedAt(event.target.value)}
+                  disabled={!completed}
+                  className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition disabled:text-zinc-600 focus:border-[#7C5CFF]"
+                />
+              </label>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="flex h-11 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={owned}
+                  onChange={(event) => {
+                    setOwned(event.target.checked)
+
+                    if (!event.target.checked) {
+                      setOwnedAt('')
+                      setCompleted(false)
+                      setCompletedAt('')
+                    }
+                  }}
+                  className="accent-[#7C5CFF]"
+                />
+                Possédé
+              </label>
+              <label className="flex h-11 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={completed}
+                  onChange={(event) => {
+                    setCompleted(event.target.checked)
+
+                    if (event.target.checked) {
+                      setOwned(true)
+                    } else {
+                      setCompletedAt('')
+                    }
+                  }}
+                  className="accent-[#7C5CFF]"
+                />
+                Terminé
+              </label>
+              <Button type="submit" disabled={isSaving || name.trim().length === 0}>
+                <Download size={17} aria-hidden="true" />
+                Ajouter
+              </Button>
+            </div>
+          </form>
+        ) : null}
+      </div>
+
+      <div className="mt-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-semibold text-white">DLC suivis</h3>
+            <p className="mt-1 text-sm text-zinc-500">
+              Catégories simples, lignes compactes et édition complète par DLC.
+            </p>
+          </div>
+          {detail.dlcs.length > 8 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  setExpandedTrackedCategories(
+                    new Set(trackedDlcGroups.map((group) => group.definition.id)),
+                  )
                 }
-              }}
-              className="accent-[#7C5CFF]"
-            />
-            Terminé
-          </label>
-          <Button type="submit" disabled={isSaving || name.trim().length === 0}>
-            <Download size={17} aria-hidden="true" />
-            Ajouter
-          </Button>
+                className="h-9 px-3"
+              >
+                Tout ouvrir
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setExpandedTrackedCategories(new Set())}
+                className="h-9 px-3"
+              >
+                Tout fermer
+              </Button>
+            </div>
+          ) : null}
         </div>
-      </form>
 
-      <div className="mt-5 space-y-3">
         {detail.dlcs.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
+          <p className="mt-4 rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
             Aucun DLC détecté ou renseigné pour ce jeu.
           </p>
         ) : (
-          detail.dlcs.map((dlc) => (
-            <article
-              key={dlc.id}
-              className="grid gap-4 rounded-lg border border-white/10 bg-[#121620] p-4 xl:grid-cols-[1fr_auto]"
-            >
-              <div className="min-w-0">
-                <h3 className="truncate font-medium text-white">{dlc.name}</h3>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-                  {dlc.releaseDate ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/7 px-2.5 py-1 text-zinc-300">
-                      <CalendarDays size={14} aria-hidden="true" />
-                      {formatDate(dlc.releaseDate)}
-                    </span>
-                  ) : null}
-                  {dlc.owned ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#4F7CFF]/10 px-2.5 py-1 text-[#C9D6FF]">
-                      <Download size={14} aria-hidden="true" />
-                      Possédé
-                    </span>
-                  ) : null}
-                  {dlc.completed ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#7C5CFF]/10 px-2.5 py-1 text-[#D8D0FF]">
-                      <CheckCircle2 size={14} aria-hidden="true" />
-                      Terminé
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
-                  <input
-                    type="checkbox"
-                    checked={dlc.owned}
-                    onChange={(event) =>
-                      updateDlcState(dlc, {
-                        owned: event.target.checked,
-                      })
-                    }
-                    disabled={isSaving}
-                    className="accent-[#7C5CFF]"
-                  />
-                  Possédé
-                </label>
-                <label className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-zinc-300">
-                  <input
-                    type="checkbox"
-                    checked={dlc.completed}
-                    onChange={(event) =>
-                      updateDlcState(dlc, {
-                        completed: event.target.checked,
-                      })
-                    }
-                    disabled={isSaving}
-                    className="accent-[#7C5CFF]"
-                  />
-                  Terminé
-                </label>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  aria-label={`Supprimer ${dlc.name}`}
-                  title="Supprimer"
-                  onClick={() => handleDeleteDlc(dlc)}
-                  disabled={isSaving}
-                  className="h-10 border-rose-400/30 bg-rose-400/10 text-rose-100 hover:border-rose-300/60 hover:bg-rose-400/15"
+          <div className="mt-4 grid gap-3">
+            {trackedDlcGroups.map((group) => {
+              const groupOwnedCount = group.items.filter((dlc) => dlc.owned).length
+              const groupCompletedCount = group.items.filter((dlc) => dlc.completed).length
+
+              return (
+                <DlcDisclosure
+                  key={group.definition.id}
+                  badge={
+                    groupOwnedCount > 0 || groupCompletedCount > 0 ? (
+                      <span className="hidden rounded-lg bg-[#7C5CFF]/10 px-2.5 py-1 text-xs text-[#D8D0FF] sm:inline-flex">
+                        {groupOwnedCount} possede(s) / {groupCompletedCount} termine(s)
+                      </span>
+                    ) : null
+                  }
+                  count={group.items.length}
+                  description={group.definition.description}
+                  isOpen={expandedTrackedCategories.has(group.definition.id)}
+                  onToggle={() => toggleTrackedCategory(group.definition.id)}
+                  title={group.definition.label}
                 >
-                  <Trash2 size={16} aria-hidden="true" />
-                </Button>
-              </div>
-            </article>
-          ))
+                  <div className="grid gap-2">
+                    {group.items.map((dlc) => (
+                      <TrackedDlcRow
+                        key={dlc.id}
+                        dlc={dlc}
+                        isSaving={isSaving}
+                        onDelete={handleDeleteDlc}
+                        onUpdate={handleUpdateDlc}
+                      />
+                    ))}
+                  </div>
+                </DlcDisclosure>
+              )
+            })}
+          </div>
         )}
       </div>
     </section>
   )
 }
-
 function AchievementPanel({
   detail,
   isSaving,
@@ -1117,7 +1650,7 @@ function AchievementPanel({
         <div>
           <h2 className="text-lg font-semibold text-white">Succès</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Objectifs Steam synchronises ou accomplissements suivis manuellement.
+            Objectifs Steam synchronisés ou accomplissements suivis manuellement.
           </p>
         </div>
         <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#4F7CFF]/10 text-[#C9D6FF]">
@@ -1131,7 +1664,7 @@ function AchievementPanel({
           <p className="mt-1 text-xl font-semibold text-white">{detail.achievements.length}</p>
         </div>
         <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
-          <p className="text-xs text-zinc-500">Debloques</p>
+          <p className="text-xs text-zinc-500">Débloqués</p>
           <p className="mt-1 text-xl font-semibold text-white">{unlockedCount}</p>
         </div>
         <div className="rounded-lg border border-white/10 bg-[#121620] p-3">

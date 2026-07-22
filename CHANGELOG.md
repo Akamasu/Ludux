@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.17 - 2026-07-22
+
+- Affichage compact et repliable des DLC disponibles et suivis sur les fiches de jeu.
+- Catégorisation simple des DLC par extensions, cosmétiques, packs, médias, objets et autres.
+- Ajout des dates d'obtention et de complétion des DLC, modifiables depuis chaque ligne suivie.
+- Conservation des dates DLC lors des fusions et synchronisations Steam.
+
 ## v0.24.16 - 2026-07-22
 
 - Renommage automatique des DLC Steam restés en fallback `Steam DLC <id>` dès que le catalogue fournit le vrai nom.

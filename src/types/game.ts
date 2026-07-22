@@ -84,7 +84,9 @@ export interface DlcListItem {
   name: string
   releaseDate: string | null
   owned: boolean
+  ownedAt: string | null
   completed: boolean
+  completedAt: string | null
 }
 
 export interface AvailableDlcListItem {
@@ -258,7 +260,9 @@ export interface CreateDlcInput {
   name: string
   releaseDate?: string
   owned?: boolean
+  ownedAt?: string | null
   completed?: boolean
+  completedAt?: string | null
 }
 
 export interface UpdateDlcInput {
@@ -267,7 +271,9 @@ export interface UpdateDlcInput {
   name?: string
   releaseDate?: string | null
   owned?: boolean
+  ownedAt?: string | null
   completed?: boolean
+  completedAt?: string | null
 }
 
 export interface DeleteDlcInput {
