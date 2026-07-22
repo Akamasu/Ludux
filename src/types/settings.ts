@@ -35,6 +35,17 @@ interface ProviderSyncState {
   updatedAt: string
 }
 
+interface ProviderSyncActivityItem {
+  id: string
+  provider: ExternalProvider
+  providerLabel: string
+  status: string | null
+  message: string | null
+  lastSync: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 export interface ProviderConnection extends ExternalProviderDefinition {
   account: ExternalAccountItem | null
   sync: ProviderSyncState | null
@@ -46,6 +57,7 @@ export interface ProviderOverview {
   configuredCount: number
   totalProviders: number
   lastSyncAt: string | null
+  activity: ProviderSyncActivityItem[]
 }
 
 export interface LocalPlatformDetection {

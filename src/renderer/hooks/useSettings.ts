@@ -18,6 +18,7 @@ const BROWSER_PROVIDER_OVERVIEW = {
   configuredCount: 0,
   totalProviders: EXTERNAL_PROVIDER_DEFINITIONS.length,
   lastSyncAt: null,
+  activity: [],
 }
 
 const BROWSER_OVERVIEW: SettingsOverview = {

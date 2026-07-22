@@ -573,12 +573,33 @@ async function buildProviderOverview(): Promise<ProviderOverview> {
     .map((provider) => provider.sync?.lastSync)
     .filter((value): value is string => value !== null && value !== undefined)
     .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())
+  const providerLabels = new Map(
+    EXTERNAL_PROVIDER_DEFINITIONS.map((definition) => [
+      definition.provider,
+      definition.label,
+    ]),
+  )
+  const activity = syncRecords.slice(0, 12).map((sync) => {
+    const provider = sync.provider as ExternalProvider
+
+    return {
+      id: sync.id,
+      provider,
+      providerLabel: providerLabels.get(provider) ?? sync.provider,
+      status: sync.status,
+      message: sync.message,
+      lastSync: sync.lastSync?.toISOString() ?? null,
+      createdAt: sync.createdAt.toISOString(),
+      updatedAt: sync.updatedAt.toISOString(),
+    }
+  })
 
   return {
     providers,
     configuredCount: providers.filter((provider) => provider.configured).length,
     totalProviders: providers.length,
     lastSyncAt: syncDates[0] ?? null,
+    activity,
   }
 }
 

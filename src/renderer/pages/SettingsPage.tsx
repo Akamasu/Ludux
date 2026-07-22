@@ -1,5 +1,9 @@
 import {
+  Activity,
+  AlertTriangle,
   Archive,
+  CheckCircle2,
+  Clock3,
   Cloud,
   Database,
   Download,
@@ -61,6 +65,8 @@ const launchViewOptions: {
   { value: 'statistics', label: 'Statistiques' },
 ]
 
+const providerQueueOrder = ['STEAM', 'EPIC', 'GOG', 'RAWG', 'IGDB'] as const
+
 function formatBytes(bytes: number) {
   if (bytes === 0) {
     return '0 o'
@@ -75,6 +81,16 @@ function formatBytes(bytes: number) {
 
 function formatAppVersion(version: string) {
   return version === 'navigateur' ? version : `v${version}`
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(value))
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -228,6 +244,62 @@ function providerStatusLabel(connection: ProviderConnection) {
   return connection.sync?.status ?? 'Local'
 }
 
+function syncStatusLabel(status: string | null) {
+  if (status === 'SYNCED') {
+    return 'Synchronisé'
+  }
+
+  if (status === 'SYNCING') {
+    return 'En cours'
+  }
+
+  if (status === 'ERROR') {
+    return 'Erreur'
+  }
+
+  if (status === 'READY') {
+    return 'Prêt'
+  }
+
+  return status ?? 'En attente'
+}
+
+function syncStatusClassName(status: string | null) {
+  if (status === 'SYNCED') {
+    return 'border-emerald-400/25 bg-emerald-400/10 text-emerald-100'
+  }
+
+  if (status === 'SYNCING') {
+    return 'border-[#7C5CFF]/30 bg-[#7C5CFF]/10 text-[#D8D0FF]'
+  }
+
+  if (status === 'ERROR') {
+    return 'border-rose-400/30 bg-rose-400/10 text-rose-100'
+  }
+
+  if (status === 'READY') {
+    return 'border-[#4F7CFF]/25 bg-[#4F7CFF]/10 text-[#C9D6FF]'
+  }
+
+  return 'border-white/10 bg-white/7 text-zinc-400'
+}
+
+function SyncStatusIcon({ status }: { status: string | null }) {
+  if (status === 'SYNCED') {
+    return <CheckCircle2 size={16} aria-hidden="true" />
+  }
+
+  if (status === 'ERROR') {
+    return <AlertTriangle size={16} aria-hidden="true" />
+  }
+
+  if (status === 'SYNCING') {
+    return <RefreshCw size={16} aria-hidden="true" className="animate-spin" />
+  }
+
+  return <Clock3 size={16} aria-hidden="true" />
+}
+
 function providerExternalIdLabel(provider: ProviderConnection) {
   if (provider.provider === 'STEAM') {
     return 'SteamID64'
@@ -342,6 +414,112 @@ function providerTokenPlaceholder(provider: ProviderConnection) {
   }
 
   return 'Optionnel'
+}
+
+function SyncActivityPanel({ overview }: { overview: SettingsOverview }) {
+  const providersById = new Map(
+    overview.providerOverview.providers.map((provider) => [provider.provider, provider]),
+  )
+  const queueProviders = providerQueueOrder
+    .map((provider) => providersById.get(provider))
+    .filter((provider): provider is ProviderConnection => provider !== undefined)
+
+  return (
+    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Activité de synchronisation</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Ordre d'exécution et derniers événements des providers connectés.
+          </p>
+        </div>
+        <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#7C5CFF]/10 text-[#D8D0FF]">
+          <Activity size={18} aria-hidden="true" />
+        </div>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+        <div>
+          <h3 className="text-sm font-semibold text-white">File active</h3>
+          <div className="mt-3 grid gap-2">
+            {queueProviders.map((provider, index) => {
+              const canRun = canSyncProvider(provider, overview)
+              const status = provider.sync?.status ?? (canRun ? 'READY' : null)
+
+              return (
+                <article
+                  key={provider.provider}
+                  className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border border-white/10 bg-[#121620] p-3"
+                >
+                  <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#0F1117] text-xs font-semibold text-zinc-400">
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">
+                      {provider.label}
+                    </p>
+                    <p className="mt-1 truncate text-xs text-zinc-500">
+                      {provider.sync?.lastSync
+                        ? `Dernier passage : ${formatDateTime(provider.sync.lastSync)}`
+                        : canRun
+                          ? 'Prêt pour la prochaine synchronisation'
+                          : 'Non prêt'}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs ${syncStatusClassName(status)}`}
+                  >
+                    <SyncStatusIcon status={status} />
+                    {syncStatusLabel(status)}
+                  </span>
+                </article>
+              )
+            })}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-white">Derniers événements</h3>
+          {overview.providerOverview.activity.length === 0 ? (
+            <p className="mt-3 rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
+              Aucun événement de synchronisation enregistré pour le moment.
+            </p>
+          ) : (
+            <div className="mt-3 grid max-h-96 gap-2 overflow-y-auto pr-1">
+              {overview.providerOverview.activity.map((item) => (
+                <article
+                  key={item.id}
+                  className="rounded-lg border border-white/10 bg-[#121620] p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-white">
+                        {item.providerLabel}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        {formatDateTime(item.updatedAt)}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-1 text-xs ${syncStatusClassName(item.status)}`}
+                    >
+                      <SyncStatusIcon status={item.status} />
+                      {syncStatusLabel(item.status)}
+                    </span>
+                  </div>
+                  {item.message ? (
+                    <p className="mt-3 line-clamp-2 text-sm leading-5 text-zinc-400">
+                      {item.message}
+                    </p>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  )
 }
 
 function ProvidersPanel({
@@ -966,6 +1144,8 @@ export function SettingsPage({
         onSyncProvider={onSyncProvider}
         onUpsertProviderConnection={onUpsertProviderConnection}
       />
+
+      <SyncActivityPanel overview={overview} />
 
       <ArchivedGamesPanel
         archivedGames={archivedGames}

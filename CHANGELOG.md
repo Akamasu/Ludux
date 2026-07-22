@@ -29,6 +29,12 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.28 - 2026-07-22
+
+- Ajout d'un panneau d'activité de synchronisation dans les paramètres.
+- Affichage de la file active Steam, Epic, GOG, RAWG et IGDB dans l'ordre réel d'exécution.
+- Affichage des derniers événements de synchronisation enregistrés avec statut, message et heure.
+
 ## v0.24.27 - 2026-07-22
 
 - Cleanup général du code et des docs après les intégrations Steam, Epic, GOG, RAWG et IGDB.
