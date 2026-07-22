@@ -1372,12 +1372,15 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
   return stats
 }
 
+const AUTO_SYNC_STARTUP_DELAY_MS = 15_000
+
 class SettingsService {
   private autoSyncTimer: NodeJS.Timeout | null = null
+  private autoSyncStartupTimer: NodeJS.Timeout | null = null
   private isAutoSyncRunning = false
 
   startAutoSync() {
-    if (this.autoSyncTimer) {
+    if (this.autoSyncTimer || this.autoSyncStartupTimer) {
       return
     }
 
@@ -1385,18 +1388,25 @@ class SettingsService {
     const runSync = () => {
       void this.syncConfiguredProvidersAutomatically()
     }
+    const runStartupSync = () => {
+      this.autoSyncStartupTimer = null
+      runSync()
+    }
 
     this.autoSyncTimer = setInterval(runSync, intervalMs)
-    setTimeout(runSync, 3_000)
+    this.autoSyncStartupTimer = setTimeout(runStartupSync, AUTO_SYNC_STARTUP_DELAY_MS)
   }
 
   stopAutoSync() {
-    if (!this.autoSyncTimer) {
-      return
+    if (this.autoSyncTimer) {
+      clearInterval(this.autoSyncTimer)
+      this.autoSyncTimer = null
     }
 
-    clearInterval(this.autoSyncTimer)
-    this.autoSyncTimer = null
+    if (this.autoSyncStartupTimer) {
+      clearTimeout(this.autoSyncStartupTimer)
+      this.autoSyncStartupTimer = null
+    }
   }
 
   async syncConfiguredProvidersAutomatically() {

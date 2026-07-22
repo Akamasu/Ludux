@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { GameListItem, LifeBookEvent } from '../../types/game'
 
 function buildBrowserLifeEvents(games: GameListItem[]): LifeBookEvent[] {
@@ -47,6 +47,7 @@ function buildBrowserLifeEvents(games: GameListItem[]): LifeBookEvent[] {
 }
 
 export function useLifeBook(games: GameListItem[]) {
+  const gamesRef = useRef(games)
   const [events, setEvents] = useState<LifeBookEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -55,7 +56,7 @@ export function useLifeBook(games: GameListItem[]) {
     const api = window.ludux
 
     if (!api) {
-      setEvents(buildBrowserLifeEvents(games))
+      setEvents(buildBrowserLifeEvents(gamesRef.current))
       setError(null)
       setIsLoading(false)
       return
@@ -71,11 +72,19 @@ export function useLifeBook(games: GameListItem[]) {
     } finally {
       setIsLoading(false)
     }
-  }, [games])
+  }, [])
 
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  useEffect(() => {
+    gamesRef.current = games
+
+    if (!window.ludux) {
+      void refresh()
+    }
+  }, [games, refresh])
 
   return {
     events,

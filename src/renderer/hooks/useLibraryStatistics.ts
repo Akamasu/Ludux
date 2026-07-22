@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   EMOTION_VALUES,
   GAME_STATUS_VALUES,
@@ -87,6 +87,7 @@ function buildStatisticsFromGames(games: GameListItem[]): LibraryStatistics {
 }
 
 export function useLibraryStatistics(games: GameListItem[]) {
+  const gamesRef = useRef(games)
   const [statistics, setStatistics] = useState<LibraryStatistics>(createEmptyStatistics)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -95,7 +96,7 @@ export function useLibraryStatistics(games: GameListItem[]) {
     const api = window.ludux
 
     if (!api) {
-      setStatistics(buildStatisticsFromGames(games))
+      setStatistics(buildStatisticsFromGames(gamesRef.current))
       setIsLoading(false)
       return
     }
@@ -110,11 +111,19 @@ export function useLibraryStatistics(games: GameListItem[]) {
     } finally {
       setIsLoading(false)
     }
-  }, [games])
+  }, [])
 
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  useEffect(() => {
+    gamesRef.current = games
+
+    if (!window.ludux) {
+      void refresh()
+    }
+  }, [games, refresh])
 
   return {
     statistics,

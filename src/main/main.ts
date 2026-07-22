@@ -51,8 +51,8 @@ async function createWindow() {
 
 app.whenReady().then(async () => {
   Menu.setApplicationMenu(null)
-  settingsService.startAutoSync()
   await createWindow()
+  settingsService.startAutoSync()
 }).catch((error: unknown) => {
   logger.error('[ElectronMain]', error)
 })

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ChronicleTimelineItem, GameListItem } from '../../types/game'
 
 function buildBrowserChronicles(games: GameListItem[]): ChronicleTimelineItem[] {
@@ -19,6 +19,7 @@ function buildBrowserChronicles(games: GameListItem[]): ChronicleTimelineItem[] 
 }
 
 export function useChronicles(games: GameListItem[]) {
+  const gamesRef = useRef(games)
   const [chronicles, setChronicles] = useState<ChronicleTimelineItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -27,7 +28,7 @@ export function useChronicles(games: GameListItem[]) {
     const api = window.ludux
 
     if (!api) {
-      setChronicles(buildBrowserChronicles(games))
+      setChronicles(buildBrowserChronicles(gamesRef.current))
       setIsLoading(false)
       return
     }
@@ -42,11 +43,19 @@ export function useChronicles(games: GameListItem[]) {
     } finally {
       setIsLoading(false)
     }
-  }, [games])
+  }, [])
 
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  useEffect(() => {
+    gamesRef.current = games
+
+    if (!window.ludux) {
+      void refresh()
+    }
+  }, [games, refresh])
 
   return {
     chronicles,

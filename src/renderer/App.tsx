@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 import { AppShell } from './components/layout/AppShell'
 import { useChronicles } from './hooks/useChronicles'
 import { useGameDetail } from './hooks/useGameDetail'
@@ -105,19 +105,6 @@ export default function App() {
     await settingsState.syncAllProviders()
     await refreshContent()
   }
-
-  useEffect(() => {
-    const refreshDelays = [8_000, 25_000]
-    const timers = refreshDelays.map((delay) =>
-      window.setTimeout(() => {
-        void Promise.all([refreshSettings(), refreshContent()])
-      }, delay),
-    )
-
-    return () => {
-      timers.forEach(window.clearTimeout)
-    }
-  }, [refreshContent, refreshSettings])
 
   function changeLaunchView(view: AppView) {
     setLaunchViewState(view)

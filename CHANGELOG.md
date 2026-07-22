@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.14 - 2026-07-22
+
+- Suppression des rafraîchissements automatiques différés qui faisaient remonter les pages.
+- Stabilisation des hooks Chroniques, Livre de Vie et Statistiques pour éviter les refetchs en cascade en mode Electron.
+- Décalage de la synchronisation automatique après l'ouverture de la fenêtre pour alléger le chargement initial.
+- Réduction des états de chargement inutiles pendant les refreshs de bibliothèque.
+
 ## v0.24.13 - 2026-07-22
 
 - Affichage des genres sur les cartes, les lignes et les fiches de jeu.
