@@ -5,12 +5,18 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   detectEpicLocalPlatform,
   detectGogLocalPlatform,
+  parseEpicLauncherCacheFile,
+  parseEpicLauncherInstalledDatabase,
+  parseEpicManagedApp,
   parseEpicManifest,
   readEpicLocalLibrary,
 } from '../../src/providers/local-platforms'
 
 const originalProgramData = process.env['PROGRAMDATA']
+const originalLocalAppData = process.env['LOCALAPPDATA']
 const originalEpicManifestPaths = process.env['LUDUX_EPIC_MANIFEST_PATHS']
+const originalEpicManagedAppPaths = process.env['LUDUX_EPIC_MANAGED_APP_PATHS']
+const originalEpicWebcachePaths = process.env['LUDUX_EPIC_WEBCACHE_PATHS']
 const originalGogDbPath = process.env['LUDUX_GOG_GALAXY_DB_PATH']
 const originalGogLibraryPaths = process.env['LUDUX_GOG_LIBRARY_PATHS']
 const tempRoots: string[] = []
@@ -30,9 +36,35 @@ async function createTempRoot() {
   return root
 }
 
+function createEpicCacheField(field: string, value: Buffer | string | true) {
+  const marker = Buffer.concat([
+    Buffer.from([0x22, Buffer.byteLength(field)]),
+    Buffer.from(field),
+  ])
+
+  if (value === true) {
+    return Buffer.concat([marker, Buffer.from('T')])
+  }
+
+  if (Buffer.isBuffer(value)) {
+    return Buffer.concat([marker, value])
+  }
+
+  const text = Buffer.from(value, 'utf8')
+
+  return Buffer.concat([marker, Buffer.from([text.byteLength]), text])
+}
+
+function createEpicCacheRecord(fields: Array<[string, Buffer | string | true]>) {
+  return Buffer.concat(fields.map(([field, value]) => createEpicCacheField(field, value)))
+}
+
 afterEach(async () => {
   restoreEnv('PROGRAMDATA', originalProgramData)
+  restoreEnv('LOCALAPPDATA', originalLocalAppData)
   restoreEnv('LUDUX_EPIC_MANIFEST_PATHS', originalEpicManifestPaths)
+  restoreEnv('LUDUX_EPIC_MANAGED_APP_PATHS', originalEpicManagedAppPaths)
+  restoreEnv('LUDUX_EPIC_WEBCACHE_PATHS', originalEpicWebcachePaths)
   restoreEnv('LUDUX_GOG_GALAXY_DB_PATH', originalGogDbPath)
   restoreEnv('LUDUX_GOG_LIBRARY_PATHS', originalGogLibraryPaths)
 
@@ -59,11 +91,142 @@ describe('local platform detection', () => {
         'C:\\ProgramData\\Epic\\manifest.item',
       ),
     ).toEqual({
+      acquiredAt: null,
+      coverUrl: null,
       externalId: 'catalog-alan-wake-2',
-      title: 'Alan Wake 2',
       installPath: 'D:\\Epic\\AlanWake2',
       manifestPath: 'C:\\ProgramData\\Epic\\manifest.item',
+      source: 'manifest',
+      title: 'Alan Wake 2',
     })
+  })
+
+  it('parses the Epic launcher installed database', () => {
+    expect(
+      parseEpicLauncherInstalledDatabase(
+        JSON.stringify({
+          InstallationList: [
+            {
+              AppName: 'AlanWake2',
+              CatalogItemId: 'catalog-alan-wake-2',
+              DisplayName: 'Alan Wake 2',
+              InstallLocation: 'D:\\Epic\\AlanWake2',
+            },
+          ],
+        }),
+        'C:\\ProgramData\\Epic\\LauncherInstalled.dat',
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        externalId: 'catalog-alan-wake-2',
+        installPath: 'D:\\Epic\\AlanWake2',
+        source: 'launcher-installation',
+        title: 'Alan Wake 2',
+      }),
+    ])
+  })
+
+  it('parses Epic managed app files with clean third-party titles', () => {
+    expect(
+      parseEpicManagedApp(
+        JSON.stringify({
+          AppName: 'StarWarsBattlefrontII',
+          CatalogID: 'catalog-star-wars-battlefront-2',
+          Title: 'STAR WARS™ Battlefront™ II: Celebration Edition',
+        }),
+        'C:\\ProgramData\\Epic\\ThirPartyManagedApps\\battlefront.json',
+      ),
+    ).toEqual(
+      expect.objectContaining({
+        externalId: 'catalog-star-wars-battlefront-2',
+        source: 'managed-app',
+        title: 'STAR WARS™ Battlefront™ II: Celebration Edition',
+      }),
+    )
+  })
+
+  it('reads UTF-16 Epic managed app files from local detection', async () => {
+    const root = await createTempRoot()
+    const managedAppDirectory = join(
+      root,
+      'Epic',
+      'EpicGamesLauncher',
+      'Data',
+      'ThirPartyManagedApps',
+    )
+    await mkdir(managedAppDirectory, {
+      recursive: true,
+    })
+    await writeFile(
+      join(managedAppDirectory, 'sims.json'),
+      Buffer.concat([
+        Buffer.from([0xff, 0xfe]),
+        Buffer.from(
+          JSON.stringify({
+            AppName: 'huddle',
+            CatalogID: 'catalog-sims-4',
+            Title: 'Les Sims™ 4',
+          }),
+          'utf16le',
+        ),
+      ]),
+    )
+    process.env['PROGRAMDATA'] = root
+    process.env['LOCALAPPDATA'] = root
+    process.env['LUDUX_EPIC_MANIFEST_PATHS'] = ''
+    process.env['LUDUX_EPIC_MANAGED_APP_PATHS'] = ''
+    process.env['LUDUX_EPIC_WEBCACHE_PATHS'] = ''
+
+    await expect(readEpicLocalLibrary()).resolves.toMatchObject({
+      games: [
+        expect.objectContaining({
+          externalId: 'catalog-sims-4',
+          source: 'managed-app',
+          title: 'Les Sims™ 4',
+        }),
+      ],
+      manifestCount: 1,
+    })
+  })
+
+  it('parses owned Epic games from the launcher webcache', () => {
+    const cache = createEpicCacheRecord([
+      ['catalogItemId', 'catalog-alan-wake-2'],
+      ['namespace', 'remedy'],
+      ['appName', 'AlanWake2'],
+      ['acquisitionDate', '2024-01-02T00:00:00.000Z'],
+      ['title', 'Alan Wake 2'],
+      ['url', 'https://cdn1.epicgames.com/alan-wide.jpg'],
+      ['url', 'https://cdn1.epicgames.com/alan-tall-1200x1600.jpg'],
+      ['path', 'store'],
+      ['path', 'games'],
+      ['owned', true],
+    ])
+
+    expect(parseEpicLauncherCacheFile(cache, 'webcache')).toEqual([
+      expect.objectContaining({
+        acquiredAt: '2024-01-02T00:00:00.000Z',
+        coverUrl: 'https://cdn1.epicgames.com/alan-tall-1200x1600.jpg',
+        externalId: 'catalog-alan-wake-2',
+        source: 'launcher-cache',
+        title: 'Alan Wake 2',
+      }),
+    ])
+  })
+
+  it('ignores Epic cache entries that are add-ons instead of games', () => {
+    const cache = createEpicCacheRecord([
+      ['catalogItemId', 'ark-crystal-isles'],
+      ['namespace', 'ark'],
+      ['appName', 'ArkCrystalIslesDLC'],
+      ['title', 'ARK: Crystal Isles Expansion Map'],
+      ['path', 'store'],
+      ['path', 'games'],
+      ['path', 'addons'],
+      ['owned', true],
+    ])
+
+    expect(parseEpicLauncherCacheFile(cache, 'webcache')).toEqual([])
   })
 
   it('detects Epic manifests and install locations', async () => {
@@ -81,7 +244,10 @@ describe('local platform detection', () => {
       }),
     )
     process.env['PROGRAMDATA'] = root
+    process.env['LOCALAPPDATA'] = root
     process.env['LUDUX_EPIC_MANIFEST_PATHS'] = ''
+    process.env['LUDUX_EPIC_MANAGED_APP_PATHS'] = ''
+    process.env['LUDUX_EPIC_WEBCACHE_PATHS'] = ''
 
     await expect(detectEpicLocalPlatform()).resolves.toMatchObject({
       provider: 'EPIC',

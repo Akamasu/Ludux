@@ -25,6 +25,8 @@ Pour la v1 publique, Ludux devra éviter toute clé API commune dans le client d
 | `LUDUX_STEAM_LIBRARY_PATHS` | Steam | Bibliothèques Steam locales séparées par `;` | Optionnel |
 | `LUDUX_AUTO_SYNC_INTERVAL_MINUTES` | Ludux | Intervalle de synchronisation automatique | Actif |
 | `LUDUX_EPIC_MANIFEST_PATHS` | Epic | Dossiers de manifests `.item` Epic séparés par `;` si la détection automatique échoue | Optionnel |
+| `LUDUX_EPIC_MANAGED_APP_PATHS` | Epic | Dossiers d'apps gérées Epic séparés par `;` si la détection automatique échoue | Optionnel |
+| `LUDUX_EPIC_WEBCACHE_PATHS` | Epic | Dossiers `webcache*` Epic Launcher séparés par `;` si la détection automatique échoue | Optionnel |
 | `RAWG_API_KEY` | RAWG | Métadonnées publiques de jeux | Actif manuel |
 | `IGDB_CLIENT_ID` | IGDB | Authentification Twitch/IGDB | A venir |
 | `IGDB_CLIENT_SECRET` | IGDB | Authentification Twitch/IGDB | A venir |
@@ -50,7 +52,7 @@ Pour la v1 publique, Ludux devra éviter toute clé API commune dans le client d
 | PlayStation | Trophées, profil, activité | Accès PlayStation Partners si accepté | PlayStation Partners | À garder pour plus tard, pas de route publique simple |
 | Nintendo | Catalogue/profil Switch | Accès Nintendo Developer Portal si accepté | Nintendo Developer Portal | À garder pour plus tard, pas de route publique simple |
 | GOG | Succès/stats Galaxy | Accès GOG Galaxy SDK ou route officielle exploitable | GOG Developer Docs | À étudier après Steam/métadonnées |
-| Epic | Jeux installés, future connexion compte | Manifests `.item` locaux, puis client Epic/EOS OAuth avec consentement | Epic Online Services docs | Diagnostic et import local actifs, OAuth/EOS à étudier pour la connexion publique |
+| Epic | Jeux possédés/installés, future connexion compte | Manifests `.item`, `LauncherInstalled.dat`, apps gérées, cache local du launcher, puis client Epic/EOS OAuth avec consentement | Epic Online Services docs | Import local actif avec fallback cache, OAuth/EOS à étudier pour la connexion publique |
 
 ## Ordre Recommandé
 

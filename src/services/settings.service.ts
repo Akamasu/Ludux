@@ -315,11 +315,11 @@ function createRawgSyncMessage(stats: RawgEnrichmentStats) {
 
 function createEpicSyncMessage(stats: EpicImportStats) {
   if (stats.scannedManifests === 0) {
-    return 'Aucun manifest Epic local détecté.'
+    return 'Aucun fichier Epic local exploitable détecté.'
   }
 
   return [
-    `${stats.scannedManifests} manifest(s) Epic analysé(s)`,
+    `${stats.scannedManifests} entrée(s) Epic locale(s) analysée(s)`,
     `${stats.importedGames} ajouté(s)`,
     `${stats.linkedGames} relié(s)`,
     `${stats.updatedGames} déjà connu(s)`,
@@ -1392,6 +1392,7 @@ async function importEpicInstalledGames(
       archived: false,
     },
     select: {
+      coverUrl: true,
       id: true,
       title: true,
     },
@@ -1419,6 +1420,7 @@ async function importEpicInstalledGames(
             id: existingLink.gameId,
           },
           select: {
+            coverUrl: true,
             id: true,
             title: true,
           },
@@ -1428,6 +1430,7 @@ async function importEpicInstalledGames(
       matchedGame ??
       (await prisma.game.create({
         data: {
+          coverUrl: epicGame.coverUrl,
           title: epicGame.title,
           status: 'BACKLOG',
           platforms: {
@@ -1443,6 +1446,7 @@ async function importEpicInstalledGames(
           },
         },
         select: {
+          coverUrl: true,
           id: true,
           title: true,
         },
@@ -1461,6 +1465,17 @@ async function importEpicInstalledGames(
       await ensureEpicPlatformForGame(localGame.id, epicPlatform.id)
     }
 
+    if (epicGame.coverUrl && !localGame.coverUrl) {
+      await prisma.game.update({
+        where: {
+          id: localGame.id,
+        },
+        data: {
+          coverUrl: epicGame.coverUrl,
+        },
+      })
+    }
+
     await prisma.externalGame.upsert({
       where: {
         provider_externalId: {
@@ -1472,7 +1487,7 @@ async function importEpicInstalledGames(
         gameId: localGame.id,
         playSessionId: null,
         sourceTitle: epicGame.title,
-        sourceCoverUrl: null,
+        sourceCoverUrl: epicGame.coverUrl,
         lastPlaytimeMinutes: 0,
         lastSyncedAt: new Date(),
       },
@@ -1481,7 +1496,7 @@ async function importEpicInstalledGames(
         provider: epicProvider,
         externalId,
         sourceTitle: epicGame.title,
-        sourceCoverUrl: null,
+        sourceCoverUrl: epicGame.coverUrl,
         lastPlaytimeMinutes: 0,
         lastSyncedAt: new Date(),
       },

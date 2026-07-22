@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.21 - 2026-07-22
+
+- Import de la bibliothèque Epic depuis le cache local du launcher quand les manifests `.item` sont absents.
+- Lecture de `LauncherInstalled.dat` et des apps gérées Epic pour récupérer des titres propres.
+- Récupération des jaquettes Epic disponibles dans le cache local.
+- Filtrage des DLC, add-ons, packs et outils Unreal/Epic pour éviter de polluer la bibliothèque.
+
 ## v0.24.20 - 2026-07-22
 
 - Import local Epic Games depuis les manifests `.item`.
