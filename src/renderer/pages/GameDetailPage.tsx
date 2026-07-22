@@ -1178,6 +1178,7 @@ function DlcPanel({
   const [completedAt, setCompletedAt] = useState('')
   const [isAvailableOpen, setIsAvailableOpen] = useState(false)
   const [isManualFormOpen, setIsManualFormOpen] = useState(false)
+  const [hasRequestedAvailableDlc, setHasRequestedAvailableDlc] = useState(false)
   const trackedDlcGroups = useMemo(() => groupDlcByCategory(detail.dlcs), [detail.dlcs])
   const availableDlcGroups = useMemo(() => groupDlcByCategory(availableDlc), [availableDlc])
   const [expandedTrackedCategories, setExpandedTrackedCategories] = useState(
@@ -1198,11 +1199,15 @@ function DlcPanel({
   }, [detail.dlcs.length, detail.id, trackedDlcGroups])
 
   useEffect(() => {
-    setIsAvailableOpen(availableDlc.length > 0 && availableDlc.length <= 4)
     setExpandedAvailableCategories(
       createDefaultExpandedDlcCategories(availableDlcGroups, availableDlc.length),
     )
-  }, [availableDlc.length, availableDlcGroups, detail.id])
+  }, [availableDlc.length, availableDlcGroups])
+
+  useEffect(() => {
+    setIsAvailableOpen(false)
+    setHasRequestedAvailableDlc(false)
+  }, [detail.id])
 
   function toggleTrackedCategory(categoryId: DlcCategoryId) {
     setExpandedTrackedCategories((current) => {
@@ -1274,6 +1279,20 @@ function DlcPanel({
     })
   }
 
+  async function requestAvailableDlc() {
+    setHasRequestedAvailableDlc(true)
+    await onRefreshAvailableDlc()
+  }
+
+  function toggleAvailableDlcPanel() {
+    const nextIsOpen = !isAvailableOpen
+    setIsAvailableOpen(nextIsOpen)
+
+    if (nextIsOpen && !hasRequestedAvailableDlc && !isLoadingAvailableDlc) {
+      void requestAvailableDlc()
+    }
+  }
+
   async function handleUpdateDlc(input: UpdateDlcInput) {
     await onUpdateDlc({
       ...input,
@@ -1319,7 +1338,7 @@ function DlcPanel({
           <button
             type="button"
             aria-expanded={isAvailableOpen}
-            onClick={() => setIsAvailableOpen((current) => !current)}
+            onClick={toggleAvailableDlcPanel}
             className="flex min-w-0 flex-1 items-center gap-3 text-left"
           >
             <ChevronDown
@@ -1339,7 +1358,7 @@ function DlcPanel({
           <Button
             type="button"
             variant="secondary"
-            onClick={onRefreshAvailableDlc}
+            onClick={() => void requestAvailableDlc()}
             disabled={isSaving || isLoadingAvailableDlc}
             aria-label="Rafraîchir les DLC disponibles"
             title="Rafraîchir"

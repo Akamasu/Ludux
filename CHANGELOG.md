@@ -29,6 +29,14 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.18 - 2026-07-22
+
+- Réduction massive des appels Steam Store grâce au batching des détails d'applications.
+- Suppression de la double requête DLC par jeu pendant la synchronisation Steam globale.
+- Chargement des DLC disponibles uniquement à l'ouverture du cadre ou via le bouton de rafraîchissement.
+- Protection contre les réponses Steam Store `429` avec cooldown, cache local et arrêt des fallbacks agressifs.
+- Ajout de tests pour le batching Steam Store et le comportement anti-rafale sur les DLC.
+
 ## v0.24.17 - 2026-07-22
 
 - Affichage compact et repliable des DLC disponibles et suivis sur les fiches de jeu.

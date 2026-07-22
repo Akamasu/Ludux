@@ -120,6 +120,10 @@ interface SteamKeyValueObject {
 }
 
 const defaultSteamTimeoutMs = 15_000
+const steamAppDetailsBatchSize = 50
+const steamStoreRequestSpacingMs = 750
+const steamStoreRateLimitCooldownMs = 5 * 60_000
+const steamDlcCatalogCacheTtlMs = 12 * 60 * 60_000
 const steamId64Pattern = /^\d{17}$/
 const steamId64AccountIdOffset = 76_561_197_960_265_728n
 const execFileAsync = promisify(execFile)
@@ -127,6 +131,25 @@ const steamStoreHeaders = {
   Accept: 'application/json,text/plain,*/*',
   'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.5',
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Ludux/0.24.4',
+}
+let lastSteamStoreRequestAt = 0
+let steamStoreCooldownUntil = 0
+let steamStoreRequestQueue = Promise.resolve()
+const steamDlcCatalogCache = new Map<
+  number,
+  { expiresAt: number; value: SteamAppDetails[] }
+>()
+const steamDlcCatalogInFlight = new Map<number, Promise<SteamAppDetails[]>>()
+
+export class SteamStoreRateLimitError extends Error {
+  constructor() {
+    super('Steam Store limite temporairement les requêtes. Réessayez plus tard.')
+    this.name = 'SteamStoreRateLimitError'
+  }
+}
+
+function isSteamStoreRateLimitError(error: unknown) {
+  return error instanceof SteamStoreRateLimitError
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -269,6 +292,68 @@ function createSteamErrorMessage(status: number) {
   }
 
   return `Steam a refusé la synchronisation (${status}).`
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function shouldProtectSteamStore(fetchImpl: typeof fetch) {
+  return fetchImpl === fetch
+}
+
+function createSteamStoreHttpError(status: number) {
+  if (status === 429) {
+    return new SteamStoreRateLimitError()
+  }
+
+  return new Error(`Steam Store a refusé les données (${status}).`)
+}
+
+async function waitForSteamStoreSlot(fetchImpl: typeof fetch) {
+  if (!shouldProtectSteamStore(fetchImpl)) {
+    return
+  }
+
+  const queuedRequest = steamStoreRequestQueue.then(async () => {
+    const cooldownDelay = steamStoreCooldownUntil - Date.now()
+
+    if (cooldownDelay > 0) {
+      throw new SteamStoreRateLimitError()
+    }
+
+    const spacingDelay = lastSteamStoreRequestAt + steamStoreRequestSpacingMs - Date.now()
+
+    if (spacingDelay > 0) {
+      await sleep(spacingDelay)
+    }
+
+    lastSteamStoreRequestAt = Date.now()
+  })
+
+  steamStoreRequestQueue = queuedRequest.catch(() => undefined)
+  await queuedRequest
+}
+
+function recordSteamStoreRateLimit(fetchImpl: typeof fetch) {
+  if (!shouldProtectSteamStore(fetchImpl)) {
+    return
+  }
+
+  steamStoreCooldownUntil = Math.max(
+    steamStoreCooldownUntil,
+    Date.now() + steamStoreRateLimitCooldownMs,
+  )
+}
+
+function chunkSteamAppIds(appids: number[]) {
+  const chunks: number[][] = []
+
+  for (let index = 0; index < appids.length; index += steamAppDetailsBatchSize) {
+    chunks.push(appids.slice(index, index + steamAppDetailsBatchSize))
+  }
+
+  return chunks
 }
 
 function tokenizeSteamKeyValues(content: string) {
@@ -917,10 +1002,10 @@ export function createSteamOwnedGamesUrl(apiKey: string, steamId: string) {
   return `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?${params}`
 }
 
-export function createSteamAppDetailsUrl(appid: number) {
-  const normalizedAppId = Math.trunc(appid)
+export function createSteamAppDetailsUrl(appid: number | number[]) {
+  const normalizedAppIds = normalizeSteamAppIds(Array.isArray(appid) ? appid : [appid])
 
-  if (!Number.isFinite(normalizedAppId) || normalizedAppId <= 0) {
+  if (normalizedAppIds.length === 0) {
     throw new Error('Identifiant Steam invalide.')
   }
 
@@ -930,7 +1015,7 @@ export function createSteamAppDetailsUrl(appid: number) {
     l: 'french',
   })
 
-  return `https://store.steampowered.com/api/appdetails?appids=${normalizedAppId}&${params}`
+  return `https://store.steampowered.com/api/appdetails?appids=${normalizedAppIds.join(',')}&${params}`
 }
 
 export function createSteamDlcForAppUrl(appid: number) {
@@ -1338,22 +1423,17 @@ export async function fetchSteamAppDetails({
 }: FetchSteamAppDetailsInput): Promise<SteamAppDetails[]> {
   const details: SteamAppDetails[] = []
 
-  for (const appid of normalizeSteamAppIds(appids)) {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), timeoutMs)
-
-    let response: Response
-
+  for (const batch of chunkSteamAppIds(normalizeSteamAppIds(appids))) {
     try {
-      response = await fetchImpl(createSteamAppDetailsUrl(appid), {
-        headers: steamStoreHeaders,
-        signal: controller.signal,
-      })
-      if (!response.ok) {
-        throw new Error(`Steam Store a refusé les données (${response.status}).`)
-      }
-
-      details.push(...parseSteamAppDetails(await response.json()))
+      details.push(
+        ...parseSteamAppDetails(
+          await fetchSteamStoreJson({
+            fetchImpl,
+            timeoutMs,
+            url: createSteamAppDetailsUrl(batch),
+          }),
+        ),
+      )
     } catch (error) {
       if (allowPartial) {
         continue
@@ -1372,8 +1452,6 @@ export async function fetchSteamAppDetails({
       }
 
       throw new Error('Impossible de joindre Steam Store. Vérifiez la connexion réseau.')
-    } finally {
-      clearTimeout(timeout)
     }
   }
 
@@ -1395,13 +1473,26 @@ async function fetchSteamStoreJson({
   let response: Response
 
   try {
+    await waitForSteamStoreSlot(fetchImpl)
     response = await fetchImpl(url, {
       headers: steamStoreHeaders,
       signal: controller.signal,
     })
   } catch (error) {
+    if (isSteamStoreRateLimitError(error)) {
+      throw error
+    }
+
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw new Error('Steam Store ne répond pas. Réessayez plus tard.')
+    }
+
+    if (error instanceof TypeError) {
+      throw new Error('Impossible de joindre Steam Store. Vérifiez la connexion réseau.')
+    }
+
+    if (error instanceof Error) {
+      throw error
     }
 
     throw new Error('Impossible de joindre Steam Store. Vérifiez la connexion réseau.')
@@ -1410,7 +1501,11 @@ async function fetchSteamStoreJson({
   }
 
   if (!response.ok) {
-    throw new Error(`Steam Store a refusé les données (${response.status}).`)
+    if (response.status === 429) {
+      recordSteamStoreRateLimit(fetchImpl)
+    }
+
+    throw createSteamStoreHttpError(response.status)
   }
 
   return response.json() as Promise<unknown>
@@ -1439,52 +1534,105 @@ export async function fetchSteamDlcCatalog({
   fetchImpl = fetch,
   timeoutMs = defaultSteamTimeoutMs,
 }: FetchSteamDlcCatalogInput): Promise<SteamAppDetails[]> {
-  try {
-    const directDlcCatalog = await fetchSteamDlcForApp({
-      appid,
+  const normalizedAppId = Math.trunc(appid)
+  const useCache = shouldProtectSteamStore(fetchImpl)
+  const cachedCatalog = useCache ? steamDlcCatalogCache.get(normalizedAppId) : undefined
+
+  if (
+    cachedCatalog &&
+    cachedCatalog.expiresAt > Date.now()
+  ) {
+    return cachedCatalog.value
+  }
+
+  if (useCache) {
+    const inFlightCatalog = steamDlcCatalogInFlight.get(normalizedAppId)
+
+    if (inFlightCatalog) {
+      return inFlightCatalog
+    }
+  }
+
+  const loadCatalog = async () => {
+    try {
+      const directDlcCatalog = await fetchSteamDlcForApp({
+        appid: normalizedAppId,
+        fetchImpl,
+        timeoutMs,
+      })
+
+      if (directDlcCatalog.length > 0) {
+        return directDlcCatalog
+      }
+    } catch (error) {
+      if (isSteamStoreRateLimitError(error)) {
+        throw error
+      }
+
+      // Steam Store can reject one public endpoint while another still works.
+    }
+
+    const [gameDetails] = await fetchSteamAppDetails({
+      appids: [normalizedAppId],
       fetchImpl,
       timeoutMs,
     })
 
-    if (directDlcCatalog.length > 0) {
-      return directDlcCatalog
+    if (!gameDetails || gameDetails.dlcAppIds.length === 0) {
+      return []
     }
-  } catch {
-    // Steam Store can reject one public endpoint while another still works.
+
+    const dlcDetails = await fetchSteamAppDetails({
+      allowPartial: true,
+      appids: gameDetails.dlcAppIds,
+      fetchImpl,
+      timeoutMs,
+    })
+    const dlcDetailsByAppId = new Map(dlcDetails.map((detail) => [detail.appid, detail]))
+
+    return gameDetails.dlcAppIds.map(
+      (dlcAppId) =>
+        dlcDetailsByAppId.get(dlcAppId) ?? {
+          appid: dlcAppId,
+          title: `Steam DLC ${dlcAppId}`,
+          coverUrl: null,
+          description: null,
+          developer: null,
+          dlcAppIds: [],
+          publisher: null,
+          releaseDate: null,
+          website: null,
+        },
+    )
   }
 
-  const [gameDetails] = await fetchSteamAppDetails({
-    appids: [appid],
-    fetchImpl,
-    timeoutMs,
-  })
+  const catalogPromise = loadCatalog()
+    .then((catalog) => {
+      if (useCache) {
+        steamDlcCatalogCache.set(normalizedAppId, {
+          expiresAt: Date.now() + steamDlcCatalogCacheTtlMs,
+          value: catalog,
+        })
+      }
 
-  if (!gameDetails || gameDetails.dlcAppIds.length === 0) {
-    return []
+      return catalog
+    })
+    .catch((error) => {
+      if (cachedCatalog && isSteamStoreRateLimitError(error)) {
+        return cachedCatalog.value
+      }
+
+      throw error
+    })
+    .finally(() => {
+      steamDlcCatalogInFlight.delete(normalizedAppId)
+    })
+
+  if (useCache) {
+    steamDlcCatalogInFlight.set(normalizedAppId, catalogPromise)
   }
 
-  const dlcDetails = await fetchSteamAppDetails({
-    allowPartial: true,
-    appids: gameDetails.dlcAppIds,
-    fetchImpl,
-    timeoutMs,
-  })
-  const dlcDetailsByAppId = new Map(dlcDetails.map((detail) => [detail.appid, detail]))
-
-  return gameDetails.dlcAppIds.map(
-    (dlcAppId) =>
-      dlcDetailsByAppId.get(dlcAppId) ?? {
-        appid: dlcAppId,
-        title: `Steam DLC ${dlcAppId}`,
-        coverUrl: null,
-        description: null,
-        developer: null,
-        dlcAppIds: [],
-        publisher: null,
-        releaseDate: null,
-        website: null,
-      },
-  )
+  return catalogPromise
 }
 
 async function fetchSteamJson({

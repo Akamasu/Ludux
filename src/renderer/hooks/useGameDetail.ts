@@ -112,10 +112,13 @@ export function useGameDetail(
       setAvailableDlc(await api.games.listAvailableDlc(gameId))
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
-      setAvailableDlc([])
     } finally {
       setIsLoadingAvailableDlc(false)
     }
+  }, [gameId])
+
+  useEffect(() => {
+    setAvailableDlc([])
   }, [gameId])
 
   const updateGame = useCallback(
@@ -898,10 +901,6 @@ export function useGameDetail(
   useEffect(() => {
     void refresh()
   }, [refresh])
-
-  useEffect(() => {
-    void loadAvailableDlc()
-  }, [loadAvailableDlc])
 
   return {
     availableDlc,

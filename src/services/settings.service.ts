@@ -6,7 +6,6 @@ import {
   fetchSteamAppDetails,
   fetchSteamAchievements,
   fetchSteamOwnedGames,
-  fetchSteamDlcCatalog,
   hasDatedSteamPlaytime,
   mergeSteamAppDetails,
   mergeSteamGames,
@@ -934,9 +933,20 @@ async function syncSteamDlcCatalog(
       continue
     }
 
-    const steamDlcCatalog = await fetchSteamDlcCatalog({
-      appid: game.appid,
-    }).catch(() => [])
+    const steamDlcCatalog = detail.dlcAppIds.map(
+      (dlcAppId) =>
+        dlcDetailsByAppId.get(dlcAppId) ?? {
+          appid: dlcAppId,
+          title: `Steam DLC ${dlcAppId}`,
+          coverUrl: null,
+          description: null,
+          developer: null,
+          dlcAppIds: [],
+          publisher: null,
+          releaseDate: null,
+          website: null,
+        },
+    )
     const visibleSteamDlcCatalog = filterSteamDlcCatalogDuplicates(steamDlcCatalog)
     const hiddenSteamDlcAppIds = new Set(
       steamDlcCatalog

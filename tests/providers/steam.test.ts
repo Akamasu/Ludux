@@ -625,6 +625,50 @@ HKEY_CURRENT_USER\\Software\\Valve\\Steam
     ])
   })
 
+  it('fetches Steam Store appdetails in batches', async () => {
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      expect(String(url)).toContain('appids=620,400')
+
+      return new Response(
+        JSON.stringify({
+          '620': {
+            success: true,
+            data: {
+              name: 'Portal 2',
+              dlc: [],
+            },
+          },
+          '400': {
+            success: true,
+            data: {
+              name: 'Portal',
+              dlc: [],
+            },
+          },
+        }),
+      )
+    })
+
+    const details = await fetchSteamAppDetails({
+      appids: [620, 400],
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    })
+
+    expect(details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          appid: 620,
+          title: 'Portal 2',
+        }),
+        expect.objectContaining({
+          appid: 400,
+          title: 'Portal',
+        }),
+      ]),
+    )
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+  })
+
   it('prefers the Steam DLC catalog endpoint before Store fallback', async () => {
     const fetchImpl = vi.fn(async (url: string | URL | Request) => {
       expect(String(url)).toContain('/api/dlcforapp/')
@@ -663,6 +707,18 @@ HKEY_CURRENT_USER\\Software\\Valve\\Steam
         website: null,
       },
     ])
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not hammer Store fallbacks after a DLC catalog rate limit', async () => {
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 429 }))
+
+    await expect(
+      fetchSteamDlcCatalog({
+        appid: 620,
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+      }),
+    ).rejects.toThrow('Steam Store limite temporairement les requêtes')
     expect(fetchImpl).toHaveBeenCalledTimes(1)
   })
 
