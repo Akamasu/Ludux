@@ -36,10 +36,10 @@ interface BookcasePage {
 type BookSpineStyle = CSSProperties & {
   '--book-accent': string
   '--book-color': string
-  '--book-width': string
+  '--book-height': string
 }
 
-const booksPerShelf = 9
+const booksPerShelf = 8
 const shelvesPerPage = 2
 
 const genreShelves: GenreShelf[] = [
@@ -320,10 +320,10 @@ function buildBookcasePages(games: GameListItem[]) {
       }
 
       if (left.genre.source === 'steam') {
-        return left.genre.label.localeCompare(right.genre.label, 'fr-FR')
+        return right.genre.label.localeCompare(left.genre.label, 'fr-FR')
       }
 
-      return order.indexOf(left.genre.id) - order.indexOf(right.genre.id)
+      return order.indexOf(right.genre.id) - order.indexOf(left.genre.id)
     })
     .flatMap((group) => {
       const sortedGames = [...group.games].sort((left, right) =>
@@ -354,12 +354,12 @@ function buildBookcasePages(games: GameListItem[]) {
 function createBookStyle(game: GameListItem, genre: GenreShelf, index: number): BookSpineStyle {
   const seed = [...game.id].reduce((total, character) => total + character.charCodeAt(0), 0)
   const color = genre.palette[(seed + index) % genre.palette.length]
-  const width = 42 + ((seed + game.title.length) % 24)
+  const height = 54 + ((seed + game.title.length) % 14)
 
   return {
     '--book-accent': genre.accent,
     '--book-color': color,
-    '--book-width': `${width}px`,
+    '--book-height': `${height}px`,
   } as BookSpineStyle
 }
 
@@ -468,10 +468,14 @@ export function LibraryBookcase({ games, onOpen }: LibraryBookcaseProps) {
                       style={createBookStyle(game, shelf.genre, index)}
                     >
                       <span className="library-book-title">{game.title}</span>
-                      <span className="library-book-status">
-                        {GAME_STATUS_LABELS[game.status]}
+                      <span className="library-book-meta">
+                        <span className="library-book-status">
+                          {GAME_STATUS_LABELS[game.status]}
+                        </span>
+                        <span className="library-book-time">
+                          {formatHours(game.totalMinutes)}
+                        </span>
                       </span>
-                      <span className="library-book-time">{formatHours(game.totalMinutes)}</span>
                     </button>
                   ))}
                 </div>

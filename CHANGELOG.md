@@ -29,6 +29,12 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.9 - 2026-07-22
+
+- Inversion de l'ordre des rayons de l'armoire ancienne pour parcourir les catégories dans l'autre sens.
+- Remplacement des dos de livres verticaux par des volumes horizontaux pour rendre les titres plus lisibles.
+- Grille de rayons plus souple afin de mieux tenir dans les fenêtres étroites ou larges.
+
 ## v0.24.8 - 2026-07-22
 
 - Découverte automatique du dossier Steam via le registre Windows, les variables système et les chemins standards.
