@@ -106,6 +106,20 @@ describe('igdb provider', () => {
     })
   })
 
+  it('rejects weak IGDB candidates when no close title is available', () => {
+    expect(
+      parseIgdbGameMetadata(
+        [
+          {
+            id: 1,
+            name: 'Portal Maze 2',
+          },
+        ],
+        'Portal 2',
+      ),
+    ).toBeNull()
+  })
+
   it('fetches metadata with Twitch token then IGDB request', async () => {
     const fetchImpl = vi
       .fn()

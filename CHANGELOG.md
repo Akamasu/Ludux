@@ -29,6 +29,12 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.25 - 2026-07-22
+
+- Protection IGDB contre les correspondances trop éloignées.
+- Les enrichissements IGDB sont ignorés quand aucun candidat suffisamment proche n'est trouvé.
+- Ajout de tests pour éviter les faux positifs de recherche catalogue.
+
 ## v0.24.24 - 2026-07-22
 
 - Validation réelle du setup IGDB avec les identifiants locaux.

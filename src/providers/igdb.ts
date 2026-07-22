@@ -159,6 +159,20 @@ function scoreIgdbCandidate(candidateTitle: string, requestedTitle: string | nul
   return missingTokens * 30 + extraTokens * 4 + containsPenalty
 }
 
+function isIgdbCandidateAcceptable(
+  candidateTitle: string,
+  requestedTitle: string | null,
+) {
+  if (!requestedTitle) {
+    return true
+  }
+
+  const candidate = normalizeComparableTitle(candidateTitle)
+  const requested = normalizeComparableTitle(requestedTitle)
+
+  return candidate === requested || candidate.includes(requested) || requested.includes(candidate)
+}
+
 function escapeApicalypseString(value: string) {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
@@ -268,6 +282,10 @@ export function parseIgdbGameMetadata(
     ?.candidate
 
   if (!game) {
+    return null
+  }
+
+  if (!isIgdbCandidateAcceptable(readString(game['name']) ?? '', requestedTitle)) {
     return null
   }
 
