@@ -4,7 +4,7 @@ import { dirname, join, normalize } from 'node:path'
 import type { ExternalProvider, LocalPlatformDetection } from '../types/settings'
 import { readSteamLocalLibrary } from './steam'
 
-export type EpicLocalGameSource =
+type EpicLocalGameSource =
   | 'manifest'
   | 'launcher-installation'
   | 'managed-app'
@@ -253,7 +253,7 @@ function createDetection({
   }
 }
 
-export async function detectSteamLocalPlatform(): Promise<LocalPlatformDetection> {
+async function detectSteamLocalPlatform(): Promise<LocalPlatformDetection> {
   const localLibrary = await readSteamLocalLibrary()
 
   return createDetection({

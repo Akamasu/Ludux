@@ -1,6 +1,6 @@
 import type { SteamAppDetails } from '../providers/steam'
 
-export const steamDlcFallbackPattern = /^steam dlc (\d+)$/i
+const steamDlcFallbackPattern = /^steam dlc (\d+)$/i
 
 interface SteamDlcCandidate {
   id: string

@@ -1570,7 +1570,7 @@ function DlcPanel({
                   badge={
                     groupOwnedCount > 0 || groupCompletedCount > 0 ? (
                       <span className="hidden rounded-lg bg-[#7C5CFF]/10 px-2.5 py-1 text-xs text-[#D8D0FF] sm:inline-flex">
-                        {groupOwnedCount} possede(s) / {groupCompletedCount} termine(s)
+                        {groupOwnedCount} possédé(s) / {groupCompletedCount} terminé(s)
                       </span>
                     ) : null
                   }
@@ -1731,7 +1731,7 @@ function AchievementPanel({
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={3}
-              placeholder="Condition, souvenir ou note associee..."
+              placeholder="Condition, souvenir ou note associée..."
               className="w-full resize-none rounded-lg border border-white/10 bg-[#0F1117] px-3 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
             />
           </label>
@@ -2248,7 +2248,7 @@ function ChronicleForm({
             value={content}
             onChange={(event) => setContent(event.target.value)}
             rows={6}
-            placeholder="Ce que ce moment a represente..."
+            placeholder="Ce que ce moment a représenté..."
             className="w-full resize-none rounded-lg border border-white/10 bg-[#0F1117] px-3 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
           />
         </label>

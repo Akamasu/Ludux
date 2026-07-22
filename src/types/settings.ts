@@ -18,7 +18,7 @@ export interface ExternalProviderDefinition {
   capabilities: string[]
 }
 
-export interface ExternalAccountItem {
+interface ExternalAccountItem {
   id: string
   provider: ExternalProvider
   externalId: string
@@ -28,7 +28,7 @@ export interface ExternalAccountItem {
   updatedAt: string
 }
 
-export interface ProviderSyncState {
+interface ProviderSyncState {
   status: string | null
   message: string | null
   lastSync: string | null
@@ -59,7 +59,7 @@ export interface LocalPlatformDetection {
   message: string
 }
 
-export interface LocalPlatformOverview {
+interface LocalPlatformOverview {
   platforms: LocalPlatformDetection[]
   detectedCount: number
   scannedAt: string

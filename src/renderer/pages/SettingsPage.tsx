@@ -332,7 +332,7 @@ function providerTokenPlaceholder(provider: ProviderConnection) {
   if (provider.provider === 'RAWG') {
     return provider.account?.hasToken
       ? 'Laisser vide pour conserver la clé existante'
-      : 'Optionnel si RAWG_API_KEY est defini'
+      : 'Optionnel si RAWG_API_KEY est défini'
   }
 
   if (provider.provider === 'IGDB') {
@@ -719,7 +719,7 @@ function ArchivedGamesPanel({
 }) {
   async function handleDelete(game: GameListItem) {
     const confirmed = window.confirm(
-      `Supprimer definitivement "${game.title}" ? Cette action supprimera aussi ses sessions, chroniques et souvenirs.`,
+      `Supprimer définitivement "${game.title}" ? Cette action supprimera aussi ses sessions, chroniques et souvenirs.`,
     )
 
     if (confirmed) {

@@ -286,7 +286,7 @@ export function ChroniclesPage({
                   Aucun souvenir selectionne
                 </h2>
                 <p className="mt-2 max-w-md text-sm leading-6 text-zinc-500">
-                  Les chroniques ecrites depuis les fiches de jeux formeront ce journal.
+                  Les chroniques écrites depuis les fiches de jeux formeront ce journal.
                 </p>
               </div>
             </div>

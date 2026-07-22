@@ -141,7 +141,7 @@ const steamDlcCatalogCache = new Map<
 >()
 const steamDlcCatalogInFlight = new Map<number, Promise<SteamAppDetails[]>>()
 
-export class SteamStoreRateLimitError extends Error {
+class SteamStoreRateLimitError extends Error {
   constructor() {
     super('Steam Store limite temporairement les requêtes. Réessayez plus tard.')
     this.name = 'SteamStoreRateLimitError'

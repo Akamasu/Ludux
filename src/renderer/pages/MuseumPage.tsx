@@ -134,11 +134,11 @@ export function MuseumPage({ games, onOpenGame, onOpenLibrary }: MuseumPageProps
             Galerie des aventures accomplies
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-            Les jeux termines deviennent une collection personnelle a revisiter.
+            Les jeux terminés deviennent une collection personnelle à revisiter.
           </p>
         </div>
         <div className="w-full rounded-lg border border-[#C9A646]/15 bg-[#181B23] px-4 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:w-auto sm:text-right">
-          <p className="text-xs text-zinc-500">Pieces exposees</p>
+          <p className="text-xs text-zinc-500">Pièces exposées</p>
           <p className="mt-1 text-sm font-medium text-zinc-100">{museumGames.length}</p>
         </div>
       </header>
@@ -166,7 +166,7 @@ export function MuseumPage({ games, onOpenGame, onOpenLibrary }: MuseumPageProps
 
         <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">
           <div className="mb-5 flex items-center justify-between gap-4">
-            <p className="text-sm text-zinc-500">Temps expose</p>
+            <p className="text-sm text-zinc-500">Temps exposé</p>
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-[#4F7CFF] text-white">
               <Clock3 size={18} aria-hidden="true" />
             </div>
@@ -198,7 +198,7 @@ export function MuseumPage({ games, onOpenGame, onOpenLibrary }: MuseumPageProps
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Rechercher un jeu expose..."
+            placeholder="Rechercher un jeu exposé..."
             className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
           />
         </label>

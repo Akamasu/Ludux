@@ -282,7 +282,7 @@ export function StatisticsPage({ error, isLoading, statistics }: StatisticsPageP
               </dd>
             </div>
             <div className="rounded-lg border border-white/10 bg-[#121620] p-4">
-              <dt className="text-sm text-zinc-500">Jeux termines</dt>
+              <dt className="text-sm text-zinc-500">Jeux terminés</dt>
               <dd className="mt-2 text-2xl font-semibold text-white">
                 {statistics.gamesCompleted} / {statistics.gamesOwned}
               </dd>

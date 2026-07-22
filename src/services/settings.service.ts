@@ -2607,7 +2607,7 @@ class SettingsService {
       return {
         canceled: true,
         path: null,
-        message: 'Export annule.',
+        message: 'Export annulé.',
       }
     }
 

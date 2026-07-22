@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.27 - 2026-07-22
+
+- Cleanup général du code et des docs après les intégrations Steam, Epic, GOG, RAWG et IGDB.
+- Suppression d'un ancien composant placeholder inutilisé.
+- Réduction des exports internes inutiles et correction de textes visibles sans accents.
+- Mise à jour des guides providers pour refléter les synchronisations réellement actives.
+
 ## v0.24.26 - 2026-07-22
 
 - Synchronisation globale réordonnée : Steam, Epic et GOG importent les jeux avant RAWG et IGDB.

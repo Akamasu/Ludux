@@ -12,7 +12,7 @@ Pour la v1 publique, Ludux devra éviter toute clé API commune dans le client d
 - `.env` : fichier local ignoré par Git pour les vraies clés et secrets.
 - `docs/providers/AUTO_SYNC_STRATEGY.md` : stratégie de synchronisation automatique.
 - `src/providers/registry.ts` : registre visible dans l'interface.
-- `src/providers/<provider>.ts` : adaptateur reseau isole par plateforme.
+- `src/providers/<provider>.ts` : adaptateur réseau isolé par plateforme.
 - `prisma/schema.prisma` : liens persistants entre jeux Ludux et jeux externes.
 
 ## Variables

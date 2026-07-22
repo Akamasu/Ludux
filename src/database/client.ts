@@ -7,7 +7,7 @@ const globalForPrisma = globalThis as unknown as {
   luduxPrisma?: PrismaClient
 }
 
-export function getDatabaseUrl() {
+function getDatabaseUrl() {
   return process.env['DATABASE_URL'] ?? 'file:./userdata/database/ludux.db'
 }
 

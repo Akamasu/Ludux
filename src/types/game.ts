@@ -118,7 +118,7 @@ export interface ScreenshotListItem {
   chronicleTitle: string | null
 }
 
-export interface GameReview {
+interface GameReview {
   id: string
   rating: number
   content: string | null
@@ -130,7 +130,7 @@ export interface GameReview {
   updatedAt: string
 }
 
-export interface GameMetadataSource {
+interface GameMetadataSource {
   provider: string
   label: string
   url: string
@@ -170,7 +170,7 @@ export interface GameDetail extends GameListItem {
   sessions: PlaySessionListItem[]
 }
 
-export interface RecentChronicle {
+interface RecentChronicle {
   id: string
   title: string
   gameTitle: string

@@ -1,80 +1,81 @@
-# Strategie de Synchronisation Automatique
+# Stratégie de Synchronisation Automatique
 
 L'objectif produit est que les utilisateurs connectent leurs comptes de jeu et que Ludux synchronise automatiquement leur parcours.
 
 ## Principes
 
 - La synchronisation doit rester optionnelle.
-- Les donnees locales restent utilisables sans compte externe.
-- Les secrets ne doivent jamais etre renvoyes au renderer.
-- Chaque plateforme doit passer par un adaptateur isole dans `src/providers`.
-- Ludux ne doit pas simuler une integration non officielle par scraping fragile.
-- Les erreurs reseau doivent etre historisees dans `SyncData` sans bloquer l'application.
+- Les données locales restent utilisables sans compte externe.
+- Les secrets ne doivent jamais être renvoyés au renderer.
+- Chaque plateforme doit passer par un adaptateur isolé dans `src/providers`.
+- Ludux ne doit pas simuler une intégration non officielle par scraping fragile.
+- Les erreurs réseau doivent être historisées dans `SyncData` sans bloquer l'application.
 
-## Etat Actuel
+## État Actuel
 
 Steam est le premier provider actif :
 
 - connexion locale avec SteamID64 ;
-- cle API stockee chiffree quand Electron le permet, ou lue depuis `.env` ;
-- synchronisation manuelle depuis les parametres ;
-- synchronisation automatique au demarrage et a intervalle regulier ;
-- import des jeux, jaquettes, plateforme Steam et temps total.
-- validation SteamID64 et erreurs reseau explicites.
+- clé API stockée chiffrée quand Electron le permet, ou lue depuis `.env` ;
+- synchronisation manuelle depuis les paramètres ;
+- synchronisation automatique au démarrage et à intervalle régulier ;
+- import des jeux, jaquettes, plateforme Steam, temps total, catégories, DLC et succès publics ;
+- validation SteamID64 et erreurs réseau explicites ;
 - fallback local via `libraryfolders.vdf`, `appmanifest_*.acf` et `localconfig.vdf`.
 
-RAWG est le premier provider de metadonnees actif :
+Epic et GOG importent les jeux installés détectés localement avant les enrichissements catalogue.
 
-- connexion locale avec une cle API RAWG ou fallback `RAWG_API_KEY` ;
-- enrichissement manuel depuis les parametres ;
-- ajout des champs manquants : description, jaquette, date, developpeur, editeur et site officiel ;
-- preservation des donnees deja saisies dans Ludux ;
-- pas d'auto-sync en v0.23.0 pour eviter de consommer le quota API sans action explicite.
+RAWG et IGDB sont les providers de métadonnées actifs :
 
-Les autres providers restent au stade de preparation tant qu'un acces officiel exploitable n'est pas branche.
+- connexion locale avec une clé API RAWG ou fallback `RAWG_API_KEY` ;
+- connexion locale avec Client ID et Client Secret IGDB ou fallback `.env` ;
+- enrichissement manuel depuis les paramètres ;
+- enrichissement automatique dans `Synchroniser tout`, après Steam/Epic/GOG ;
+- ajout des champs manquants : description, jaquette, date, développeur, éditeur, site officiel et genres ;
+- préservation des données déjà saisies dans Ludux.
 
-## Strategie Publique
+Les autres providers restent au stade de préparation tant qu'un accès officiel exploitable n'est pas branché.
 
-La cle Steam saisie dans l'interface est acceptable pour le developpement local et les tests personnels.
+## Stratégie Publique
 
-Pour une v1 publique, Ludux ne doit pas embarquer une cle Steam commune dans l'application desktop. Une cle incluse cote client serait recuperable. La cible est donc :
+La clé Steam saisie dans l'interface est acceptable pour le développement local et les tests personnels.
 
-- une connexion utilisateur Steam via un service controle par Ludux ;
-- une cle Steam conservee cote backend, jamais dans le bundle desktop ;
-- une synchronisation locale qui passe par ce service lorsque le mode public est active ;
-- un mode local avance qui reste possible pour les utilisateurs souhaitant saisir leur propre cle.
+Pour une v1 publique, Ludux ne doit pas embarquer une clé Steam commune dans l'application desktop. Une clé incluse côté client serait récupérable. La cible est donc :
+
+- une connexion utilisateur Steam via un service contrôlé par Ludux ;
+- une clé Steam conservée côté backend, jamais dans le bundle desktop ;
+- une synchronisation locale qui passe par ce service lorsque le mode public est activé ;
+- un mode local avancé qui reste possible pour les utilisateurs souhaitant saisir leur propre clé.
 
 ## Contraintes Plateformes
 
-| Plateforme | Connexion utilisateur | Bibliotheque utilisateur | Position Ludux |
+| Plateforme | Connexion utilisateur | Bibliothèque utilisateur | Position Ludux |
 | --- | --- | --- | --- |
-| Steam | Cle Web API + SteamID64 + fichiers locaux | Oui si les details de jeux sont visibles, avec fallback jeux installes | Actif |
-| Epic | OAuth/EOS selon projet | Pas de route publique simple pour toute la bibliotheque EGS | Attendre acces officiel |
-| GOG | GOG Galaxy SDK / acces developpeur | SDK oriente jeu, pas import universel simple | Attendre acces officiel |
-| Xbox | Microsoft/Xbox Services | Acces contraint par programme developpeur | Attendre acces officiel |
-| PlayStation | PlayStation Partners | Acces partenaire | Attendre acces officiel |
-| Nintendo | Nintendo Developer Portal | Acces partenaire | Attendre acces officiel |
-| RAWG | Cle API | Metadonnees publiques, pas compte joueur | Actif manuel |
-| IGDB | Twitch OAuth app token | Metadonnees publiques, pas compte joueur | Bon candidat metadata |
+| Steam | Clé Web API + SteamID64 + fichiers locaux | Oui si les détails de jeux sont visibles, avec fallback jeux installés | Actif |
+| Epic | OAuth/EOS selon projet | Pas de route publique simple pour toute la bibliothèque EGS | Import local actif, officiel à préparer |
+| GOG | GOG Galaxy SDK / accès développeur | SDK orienté jeu, pas import universel simple | Import local actif, officiel à préparer |
+| Xbox | Microsoft/Xbox Services | Accès contraint par programme développeur | Attendre accès officiel |
+| PlayStation | PlayStation Partners | Accès partenaire | Attendre accès officiel |
+| Nintendo | Nintendo Developer Portal | Accès partenaire | Attendre accès officiel |
+| RAWG | Clé API | Métadonnées publiques, pas compte joueur | Actif |
+| IGDB | Twitch OAuth app token | Métadonnées publiques, pas compte joueur | Actif |
 
 ## Architecture Cible
 
 ```text
 Compte utilisateur
-  -> Parametres Ludux
+  -> Paramètres Ludux
   -> ProviderConnection
   -> Adaptateur provider
-  -> Donnees normalisees
+  -> Données normalisées
   -> Import local
   -> ExternalGame / SyncData
 ```
 
-## Prochaines Etapes
+## Prochaines Étapes
 
-1. Tester Steam avec une vraie cle utilisateur et un vrai profil visible.
+1. Préparer Ludux Connect pour éviter les clés Steam utilisateur dans la v1 publique.
 2. Ajouter une file de synchronisation plus visible dans l'interface.
-3. Preparer Ludux Connect pour eviter les cles Steam utilisateur dans la v1 publique.
-4. Creer un ecran de resolution des correspondances quand un jeu externe ressemble a un jeu local.
-5. Etendre RAWG avec genres, screenshots, boutiques et attribution visible si necessaire.
-6. Comparer IGDB pour les jaquettes/studios/genres avant de le brancher.
-7. Brancher Epic, GOG, Xbox, PlayStation ou Nintendo uniquement lorsqu'un acces officiel exploitable est obtenu.
+3. Créer un écran de résolution des correspondances quand un jeu externe ressemble à un jeu local.
+4. Étendre RAWG/IGDB avec screenshots, boutiques et attribution visible si nécessaire.
+5. Brancher Epic, GOG, Xbox, PlayStation ou Nintendo en mode compte lorsqu'un accès officiel exploitable est obtenu.
