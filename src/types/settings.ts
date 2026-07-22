@@ -48,6 +48,23 @@ export interface ProviderOverview {
   lastSyncAt: string | null
 }
 
+export interface LocalPlatformDetection {
+  provider: ExternalProvider
+  label: string
+  detected: boolean
+  rootPaths: string[]
+  libraryPaths: string[]
+  configPaths: string[]
+  manifestCount: number
+  message: string
+}
+
+export interface LocalPlatformOverview {
+  platforms: LocalPlatformDetection[]
+  detectedCount: number
+  scannedAt: string
+}
+
 export interface SettingsOverview {
   appVersion: string
   databasePath: string | null
@@ -56,6 +73,7 @@ export interface SettingsOverview {
   backupDirectory: string
   lastBackupAt: string | null
   providerOverview: ProviderOverview
+  localPlatformOverview: LocalPlatformOverview
 }
 
 export interface SettingsActionResult {

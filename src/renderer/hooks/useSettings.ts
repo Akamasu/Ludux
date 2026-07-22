@@ -28,6 +28,11 @@ const BROWSER_OVERVIEW: SettingsOverview = {
   backupDirectory: 'Electron requis',
   lastBackupAt: null,
   providerOverview: BROWSER_PROVIDER_OVERVIEW,
+  localPlatformOverview: {
+    platforms: [],
+    detectedCount: 0,
+    scannedAt: new Date(0).toISOString(),
+  },
 }
 
 const ELECTRON_ONLY_ACTION_MESSAGE =

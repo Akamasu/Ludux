@@ -17,6 +17,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import type { GameListItem } from '../../types/game'
 import type {
   DeleteProviderConnectionInput,
+  LocalPlatformDetection,
   ProviderConnection,
   SettingsActionResult,
   SettingsOverview,
@@ -84,6 +85,109 @@ function DetailRow({ label, value }: { label: string; value: string }) {
         {value}
       </dd>
     </div>
+  )
+}
+
+function CompactPathList({ paths }: { paths: string[] }) {
+  if (paths.length === 0) {
+    return <span className="text-zinc-600">Aucun chemin</span>
+  }
+
+  return (
+    <ul className="grid gap-1">
+      {paths.slice(0, 3).map((path) => (
+        <li key={path} className="truncate" title={path}>
+          {path}
+        </li>
+      ))}
+      {paths.length > 3 ? (
+        <li className="text-zinc-600">+{paths.length - 3} autre(s)</li>
+      ) : null}
+    </ul>
+  )
+}
+
+function LocalPlatformCard({ platform }: { platform: LocalPlatformDetection }) {
+  const allPaths = Array.from(
+    new Set([...platform.libraryPaths, ...platform.rootPaths, ...platform.configPaths]),
+  )
+
+  return (
+    <article className="rounded-lg border border-white/10 bg-[#121620] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="truncate font-semibold text-white">{platform.label}</h3>
+          <p className="mt-1 text-sm leading-5 text-zinc-500">{platform.message}</p>
+        </div>
+        <span
+          className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium ${
+            platform.detected
+              ? 'bg-[#4F7CFF]/10 text-[#C9D6FF]'
+              : 'bg-white/7 text-zinc-500'
+          }`}
+        >
+          {platform.detected ? 'Détecté' : 'Absent'}
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3 text-xs text-zinc-400">
+        <div className="grid grid-cols-[110px_1fr] gap-3">
+          <span className="text-zinc-600">Fichiers</span>
+          <span>{platform.manifestCount}</span>
+        </div>
+        <div className="grid grid-cols-[110px_1fr] gap-3">
+          <span className="text-zinc-600">Chemins</span>
+          <CompactPathList paths={allPaths} />
+        </div>
+      </div>
+    </article>
+  )
+}
+
+function LocalPlatformsPanel({ overview }: { overview: SettingsOverview }) {
+  const localOverview = overview.localPlatformOverview
+
+  return (
+    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Plateformes locales</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Chemins détectés automatiquement pour préparer les synchronisations PC.
+          </p>
+        </div>
+        <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#4F7CFF]/10 text-[#C9D6FF]">
+          <HardDrive size={18} aria-hidden="true" />
+        </div>
+      </div>
+
+      <div className="mb-5 grid gap-3 md:grid-cols-2">
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Détectées</p>
+          <p className="mt-1 text-xl font-semibold text-white">
+            {localOverview.detectedCount}/{localOverview.platforms.length}
+          </p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Dernier scan</p>
+          <p className="mt-1 truncate text-xl font-semibold text-white">
+            {formatDate(localOverview.scannedAt)}
+          </p>
+        </div>
+      </div>
+
+      {localOverview.platforms.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-white/15 bg-[#121620] p-4 text-sm text-zinc-500">
+          Diagnostic disponible dans la fenêtre Electron de Ludux.
+        </p>
+      ) : (
+        <div className="grid gap-3 xl:grid-cols-3">
+          {localOverview.platforms.map((platform) => (
+            <LocalPlatformCard key={platform.provider} platform={platform} />
+          ))}
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -786,6 +890,8 @@ export function SettingsPage({
           <DetailRow label="Sauvegardes" value={overview.backupDirectory} />
         </dl>
       </section>
+
+      <LocalPlatformsPanel overview={overview} />
 
       <ProvidersPanel
         actionResult={actionResult}

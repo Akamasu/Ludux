@@ -29,6 +29,14 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.19 - 2026-07-22
+
+- Ajout d'un diagnostic des plateformes locales dans les paramètres.
+- Détection en lecture seule des chemins Steam, Epic Games et GOG.
+- Lecture des manifests Epic `.item` et des fichiers GOG `goggame-*.info` pour préparer les futures synchronisations.
+- Affichage des chemins, fichiers détectés et états locaux sans dépendre de la configuration d'une seule machine.
+- Ajout de tests dédiés aux détections locales Epic et GOG.
+
 ## v0.24.18 - 2026-07-22
 
 - Réduction massive des appels Steam Store grâce au batching des détails d'applications.

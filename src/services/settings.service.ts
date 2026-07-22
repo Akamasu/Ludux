@@ -30,6 +30,7 @@ import type {
   UpsertProviderConnectionInput,
 } from '../types/settings'
 import { EXTERNAL_PROVIDER_DEFINITIONS } from '../providers/registry'
+import { detectLocalPlatforms } from '../providers/local-platforms'
 import { libraryService } from './library.service'
 import { logger } from '../utils/logger'
 import { shouldPreferFrenchText } from '../utils/frenchText'
@@ -452,6 +453,16 @@ async function buildProviderOverview(): Promise<ProviderOverview> {
     configuredCount: providers.filter((provider) => provider.configured).length,
     totalProviders: providers.length,
     lastSyncAt: syncDates[0] ?? null,
+  }
+}
+
+async function buildLocalPlatformOverview() {
+  const platforms = await detectLocalPlatforms()
+
+  return {
+    platforms,
+    detectedCount: platforms.filter((platform) => platform.detected).length,
+    scannedAt: new Date().toISOString(),
   }
 }
 
@@ -1574,6 +1585,7 @@ class SettingsService {
       backupDirectory,
       lastBackupAt: await readLastBackupAt(),
       providerOverview: await buildProviderOverview(),
+      localPlatformOverview: await buildLocalPlatformOverview(),
     }
   }
 
