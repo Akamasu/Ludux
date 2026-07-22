@@ -29,6 +29,12 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.10 - 2026-07-22
+
+- Adaptation de la longueur des livres de l'armoire selon la taille du titre.
+- Titres longs affichés dans des volumes plus larges pour réduire les coupures et améliorer la lecture.
+- Conservation d'une colonne pleine largeur sur petite fenêtre pour éviter les débordements.
+
 ## v0.24.9 - 2026-07-22
 
 - Inversion de l'ordre des rayons de l'armoire ancienne pour parcourir les catégories dans l'autre sens.

@@ -37,6 +37,7 @@ type BookSpineStyle = CSSProperties & {
   '--book-accent': string
   '--book-color': string
   '--book-height': string
+  '--book-span': string
 }
 
 const booksPerShelf = 8
@@ -354,12 +355,15 @@ function buildBookcasePages(games: GameListItem[]) {
 function createBookStyle(game: GameListItem, genre: GenreShelf, index: number): BookSpineStyle {
   const seed = [...game.id].reduce((total, character) => total + character.charCodeAt(0), 0)
   const color = genre.palette[(seed + index) % genre.palette.length]
-  const height = 54 + ((seed + game.title.length) % 14)
+  const readableTitleLength = normalizeText(game.title).replace(/[^a-z0-9]/g, '').length
+  const span = readableTitleLength > 58 ? 6 : readableTitleLength > 42 ? 5 : readableTitleLength > 26 ? 4 : 3
+  const height = 50 + Math.min(16, Math.floor(readableTitleLength / 12) * 3) + (seed % 4)
 
   return {
     '--book-accent': genre.accent,
     '--book-color': color,
     '--book-height': `${height}px`,
+    '--book-span': String(span),
   } as BookSpineStyle
 }
 
