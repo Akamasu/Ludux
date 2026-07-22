@@ -19,7 +19,7 @@ describe('igdb provider', () => {
     expect(body).toContain('search "Portal \\"2\\""')
     expect(body).toContain('fields name,summary')
     expect(body).toContain('where version_parent = null')
-    expect(body).toContain('limit 1')
+    expect(body).toContain('limit 10')
   })
 
   it('normalizes Twitch OAuth token payloads', () => {
@@ -83,6 +83,27 @@ describe('igdb provider', () => {
     })
 
     expect(parseIgdbGameMetadata([])).toBeNull()
+  })
+
+  it('selects the best IGDB candidate by requested title', () => {
+    expect(
+      parseIgdbGameMetadata(
+        [
+          {
+            id: 1,
+            name: 'Portal Maze 2',
+          },
+          {
+            id: 2,
+            name: 'Portal 2',
+          },
+        ],
+        'Portal 2',
+      ),
+    ).toMatchObject({
+      igdbId: 2,
+      title: 'Portal 2',
+    })
   })
 
   it('fetches metadata with Twitch token then IGDB request', async () => {

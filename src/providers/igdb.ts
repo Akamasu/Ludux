@@ -117,6 +117,48 @@ function normalizeIgdbSearchTitle(value: string) {
   return title
 }
 
+function normalizeComparableTitle(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[™®©]/g, '')
+    .replace(/&/g, ' and ')
+    .replace(/[^a-zA-Z0-9]+/g, ' ')
+    .trim()
+    .toLocaleLowerCase('en-US')
+}
+
+function tokenizeComparableTitle(value: string) {
+  return normalizeComparableTitle(value).split(' ').filter(Boolean)
+}
+
+function scoreIgdbCandidate(candidateTitle: string, requestedTitle: string | null) {
+  if (!requestedTitle) {
+    return 0
+  }
+
+  const candidate = normalizeComparableTitle(candidateTitle)
+  const requested = normalizeComparableTitle(requestedTitle)
+
+  if (!candidate || !requested) {
+    return 100
+  }
+
+  if (candidate === requested) {
+    return 0
+  }
+
+  const candidateTokens = new Set(tokenizeComparableTitle(candidateTitle))
+  const requestedTokens = tokenizeComparableTitle(requestedTitle)
+  const matchedTokens = requestedTokens.filter((token) => candidateTokens.has(token)).length
+  const missingTokens = requestedTokens.length - matchedTokens
+  const extraTokens = Math.max(0, candidateTokens.size - matchedTokens)
+  const containsPenalty =
+    candidate.includes(requested) || requested.includes(candidate) ? 0 : 20
+
+  return missingTokens * 30 + extraTokens * 4 + containsPenalty
+}
+
 function escapeApicalypseString(value: string) {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
@@ -181,7 +223,7 @@ export function createIgdbGameSearchBody(title: string) {
     `search "${searchTitle}";`,
     'fields name,summary,storyline,first_release_date,cover.image_id,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,websites.category,websites.url,url;',
     'where version_parent = null;',
-    'limit 1;',
+    'limit 10;',
   ].join(' ')
 }
 
@@ -205,12 +247,25 @@ export function parseIgdbAccessToken(payload: unknown): IgdbAccessToken {
   }
 }
 
-export function parseIgdbGameMetadata(payload: unknown): IgdbGameMetadata | null {
+export function parseIgdbGameMetadata(
+  payload: unknown,
+  requestedTitle: string | null = null,
+): IgdbGameMetadata | null {
   if (!Array.isArray(payload)) {
     throw new Error('Réponse IGDB invalide.')
   }
 
-  const game = payload.find((item): item is Record<string, unknown> => isRecord(item))
+  const candidates = payload.filter((item): item is Record<string, unknown> =>
+    isRecord(item),
+  )
+  const game = candidates
+    .map((candidate, index) => ({
+      candidate,
+      index,
+      score: scoreIgdbCandidate(readString(candidate['name']) ?? '', requestedTitle),
+    }))
+    .sort((left, right) => left.score - right.score || left.index - right.index)[0]
+    ?.candidate
 
   if (!game) {
     return null
@@ -318,5 +373,6 @@ export async function fetchIgdbGameMetadata({
       timeoutMs,
       url: igdbGamesUrl,
     }),
+    title,
   )
 }

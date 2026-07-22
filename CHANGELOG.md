@@ -29,6 +29,12 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.24 - 2026-07-22
+
+- Validation réelle du setup IGDB avec les identifiants locaux.
+- Recherche IGDB plus robuste avec sélection du meilleur candidat parmi plusieurs résultats.
+- Correction d'un cas où IGDB pouvait choisir un titre proche mais incorrect.
+
 ## v0.24.23 - 2026-07-22
 
 - Ajout du provider IGDB pour enrichir les fiches avec jaquettes, dates, studios, éditeurs et genres.
