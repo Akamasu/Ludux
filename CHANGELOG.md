@@ -29,6 +29,12 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.29 - 2026-07-22
+
+- Correction des événements de synchronisation affichés comme encore en cours après réussite.
+- Les anciennes lignes `En cours` sont masquées dès qu'un état final plus récent existe pour le même provider.
+- Les futures synchronisations mettent à jour leur événement de départ au lieu d'ajouter une ligne obsolète.
+
 ## v0.24.28 - 2026-07-22
 
 - Ajout d'un panneau d'activité de synchronisation dans les paramètres.

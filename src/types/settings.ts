@@ -35,7 +35,7 @@ interface ProviderSyncState {
   updatedAt: string
 }
 
-interface ProviderSyncActivityItem {
+export interface ProviderSyncActivityItem {
   id: string
   provider: ExternalProvider
   providerLabel: string

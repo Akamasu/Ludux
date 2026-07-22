@@ -45,6 +45,10 @@ import {
 import { libraryService } from './library.service'
 import { logger } from '../utils/logger'
 import { shouldPreferFrenchText } from '../utils/frenchText'
+import {
+  buildProviderSyncActivity,
+  sortProviderSyncRecords,
+} from './provider-sync-activity'
 import { sortConfiguredSyncProviders } from './provider-sync-order'
 import {
   createSteamDlcDisplayName,
@@ -516,6 +520,32 @@ async function recordProviderSync(
   message: string,
   lastSync?: Date,
 ) {
+  if (status !== 'SYNCING') {
+    const runningSync = await prisma.syncData.findFirst({
+      where: {
+        provider,
+        status: 'SYNCING',
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })
+
+    if (runningSync) {
+      await prisma.syncData.update({
+        where: {
+          id: runningSync.id,
+        },
+        data: {
+          status,
+          message,
+          lastSync,
+        },
+      })
+      return
+    }
+  }
+
   await prisma.syncData.create({
     data: {
       provider,
@@ -540,9 +570,11 @@ async function buildProviderOverview(): Promise<ProviderOverview> {
     }),
   ])
 
+  const sortedSyncRecords = sortProviderSyncRecords(syncRecords)
   const providers = EXTERNAL_PROVIDER_DEFINITIONS.map((definition) => {
     const account = accounts.find((item) => item.provider === definition.provider) ?? null
-    const sync = syncRecords.find((item) => item.provider === definition.provider) ?? null
+    const sync =
+      sortedSyncRecords.find((item) => item.provider === definition.provider) ?? null
 
     return {
       ...definition,
@@ -573,33 +605,13 @@ async function buildProviderOverview(): Promise<ProviderOverview> {
     .map((provider) => provider.sync?.lastSync)
     .filter((value): value is string => value !== null && value !== undefined)
     .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())
-  const providerLabels = new Map(
-    EXTERNAL_PROVIDER_DEFINITIONS.map((definition) => [
-      definition.provider,
-      definition.label,
-    ]),
-  )
-  const activity = syncRecords.slice(0, 12).map((sync) => {
-    const provider = sync.provider as ExternalProvider
-
-    return {
-      id: sync.id,
-      provider,
-      providerLabel: providerLabels.get(provider) ?? sync.provider,
-      status: sync.status,
-      message: sync.message,
-      lastSync: sync.lastSync?.toISOString() ?? null,
-      createdAt: sync.createdAt.toISOString(),
-      updatedAt: sync.updatedAt.toISOString(),
-    }
-  })
 
   return {
     providers,
     configuredCount: providers.filter((provider) => provider.configured).length,
     totalProviders: providers.length,
     lastSyncAt: syncDates[0] ?? null,
-    activity,
+    activity: buildProviderSyncActivity(syncRecords, EXTERNAL_PROVIDER_DEFINITIONS),
   }
 }
 
