@@ -30,7 +30,11 @@ import type {
   UpsertProviderConnectionInput,
 } from '../types/settings'
 import { EXTERNAL_PROVIDER_DEFINITIONS } from '../providers/registry'
-import { detectLocalPlatforms } from '../providers/local-platforms'
+import {
+  detectLocalPlatforms,
+  readEpicLocalLibrary,
+  type EpicInstalledGame,
+} from '../providers/local-platforms'
 import { libraryService } from './library.service'
 import { logger } from '../utils/logger'
 import { shouldPreferFrenchText } from '../utils/frenchText'
@@ -49,6 +53,8 @@ const steamProvider: ExternalProvider = 'STEAM'
 const steamPlatformName = 'Steam'
 const steamCollectionDescription = 'Catégorie Steam synchronisée.'
 const steamTotalSessionNote = 'Temps total Steam synchronisé.'
+const epicProvider: ExternalProvider = 'EPIC'
+const epicPlatformName = 'Epic Games'
 const rawgProvider: ExternalProvider = 'RAWG'
 const rawgExternalId = 'catalogue'
 const manualGenreSource = 'MANUAL'
@@ -83,6 +89,13 @@ interface RawgEnrichmentStats {
   notFoundGames: number
   fieldsUpdated: number
   syncedGenres: number
+}
+
+interface EpicImportStats {
+  scannedManifests: number
+  importedGames: number
+  linkedGames: number
+  updatedGames: number
 }
 
 interface LocalGameMetadata {
@@ -297,6 +310,19 @@ function createRawgSyncMessage(stats: RawgEnrichmentStats) {
     `${stats.notFoundGames} introuvables`,
     `${stats.fieldsUpdated} champs ajoutés`,
     `${stats.syncedGenres} genres`,
+  ].join(' / ')
+}
+
+function createEpicSyncMessage(stats: EpicImportStats) {
+  if (stats.scannedManifests === 0) {
+    return 'Aucun manifest Epic local détecté.'
+  }
+
+  return [
+    `${stats.scannedManifests} manifest(s) Epic analysé(s)`,
+    `${stats.importedGames} ajouté(s)`,
+    `${stats.linkedGames} relié(s)`,
+    `${stats.updatedGames} déjà connu(s)`,
   ].join(' / ')
 }
 
@@ -590,6 +616,45 @@ async function ensureSteamPlatformForGame(gameId: string, platformId: string) {
       platformId,
       owned: true,
       played: true,
+    },
+  })
+}
+
+async function ensureEpicPlatform() {
+  return prisma.platform.upsert({
+    where: {
+      name: epicPlatformName,
+    },
+    update: {},
+    create: {
+      name: epicPlatformName,
+      manufacturer: 'Epic Games',
+    },
+  })
+}
+
+async function ensureEpicPlatformForGame(gameId: string, platformId: string) {
+  const existingPlatform = await prisma.gamePlatform.findFirst({
+    where: {
+      gameId,
+      platformId,
+      version: null,
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  if (existingPlatform) {
+    return
+  }
+
+  await prisma.gamePlatform.create({
+    data: {
+      gameId,
+      platformId,
+      owned: true,
+      played: false,
     },
   })
 }
@@ -1311,6 +1376,121 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
   return stats
 }
 
+async function importEpicInstalledGames(
+  games: EpicInstalledGame[],
+  manifestCount: number,
+): Promise<EpicImportStats> {
+  const stats: EpicImportStats = {
+    scannedManifests: manifestCount,
+    importedGames: 0,
+    linkedGames: 0,
+    updatedGames: 0,
+  }
+  const epicPlatform = await ensureEpicPlatform()
+  const localGames = await prisma.game.findMany({
+    where: {
+      archived: false,
+    },
+    select: {
+      id: true,
+      title: true,
+    },
+  })
+  const gamesByTitle = new Map(
+    localGames.map((game) => [normalizeTitle(game.title), game]),
+  )
+  const uniqueGames = Array.from(
+    new Map(games.map((game) => [game.externalId, game])).values(),
+  ).sort((left, right) => left.title.localeCompare(right.title, 'fr-FR'))
+
+  for (const epicGame of uniqueGames) {
+    const externalId = epicGame.externalId
+    const existingLink = await prisma.externalGame.findUnique({
+      where: {
+        provider_externalId: {
+          provider: epicProvider,
+          externalId,
+        },
+      },
+    })
+    const matchedGame = existingLink
+      ? await prisma.game.findUnique({
+          where: {
+            id: existingLink.gameId,
+          },
+          select: {
+            id: true,
+            title: true,
+          },
+        })
+      : (gamesByTitle.get(normalizeTitle(epicGame.title)) ?? null)
+    const localGame =
+      matchedGame ??
+      (await prisma.game.create({
+        data: {
+          title: epicGame.title,
+          status: 'BACKLOG',
+          platforms: {
+            create: {
+              platform: {
+                connect: {
+                  id: epicPlatform.id,
+                },
+              },
+              owned: true,
+              played: false,
+            },
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+        },
+      }))
+
+    if (existingLink) {
+      stats.updatedGames += 1
+    } else if (matchedGame) {
+      stats.linkedGames += 1
+    } else {
+      stats.importedGames += 1
+      gamesByTitle.set(normalizeTitle(localGame.title), localGame)
+    }
+
+    if (matchedGame) {
+      await ensureEpicPlatformForGame(localGame.id, epicPlatform.id)
+    }
+
+    await prisma.externalGame.upsert({
+      where: {
+        provider_externalId: {
+          provider: epicProvider,
+          externalId,
+        },
+      },
+      update: {
+        gameId: localGame.id,
+        playSessionId: null,
+        sourceTitle: epicGame.title,
+        sourceCoverUrl: null,
+        lastPlaytimeMinutes: 0,
+        lastSyncedAt: new Date(),
+      },
+      create: {
+        gameId: localGame.id,
+        provider: epicProvider,
+        externalId,
+        sourceTitle: epicGame.title,
+        sourceCoverUrl: null,
+        lastPlaytimeMinutes: 0,
+        lastSyncedAt: new Date(),
+      },
+    })
+  }
+
+  return stats
+}
+
 async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentStats> {
   const stats: RawgEnrichmentStats = {
     scannedGames: 0,
@@ -1485,14 +1665,19 @@ class SettingsService {
   }
 
   private async getConfiguredSyncProviders() {
-    const accounts = await prisma.externalAccount.findMany({
-      orderBy: {
-        updatedAt: 'desc',
-      },
-    })
+    const [accounts, localPlatforms] = await Promise.all([
+      prisma.externalAccount.findMany({
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      }),
+      detectLocalPlatforms().catch(() => []),
+    ])
     const providers: ExternalProvider[] = []
     const hasAccount = (provider: ExternalProvider) =>
       accounts.some((account) => account.provider === provider)
+    const hasLocalPlatform = (provider: ExternalProvider) =>
+      localPlatforms.some((platform) => platform.provider === provider && platform.detected)
 
     if (hasAccount(steamProvider)) {
       providers.push(steamProvider)
@@ -1500,6 +1685,10 @@ class SettingsService {
 
     if (hasAccount(rawgProvider) || readEnvValue('RAWG_API_KEY')) {
       providers.push(rawgProvider)
+    }
+
+    if (hasAccount(epicProvider) || hasLocalPlatform(epicProvider)) {
+      providers.push(epicProvider)
     }
 
     return providers
@@ -1791,6 +1980,39 @@ class SettingsService {
     }
   }
 
+  private async syncEpicProvider(): Promise<SettingsActionResult> {
+    await recordProviderSync(
+      epicProvider,
+      'SYNCING',
+      'Synchronisation Epic locale en cours.',
+    )
+
+    try {
+      const localLibrary = await readEpicLocalLibrary()
+      const stats = await importEpicInstalledGames(
+        localLibrary.games,
+        localLibrary.manifestCount,
+      )
+      const syncedAt = new Date()
+      const message = createEpicSyncMessage(stats)
+
+      await recordProviderSync(epicProvider, 'SYNCED', message, syncedAt)
+
+      return {
+        canceled: false,
+        path: localLibrary.libraryPaths[0] ?? null,
+        message,
+        createdAt: syncedAt.toISOString(),
+      }
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error ? caughtError.message : 'Erreur Epic inconnue.'
+
+      await recordProviderSync(epicProvider, 'ERROR', message)
+      throw caughtError
+    }
+  }
+
   private async syncRawgProvider(): Promise<SettingsActionResult> {
     const account = await prisma.externalAccount.findFirst({
       where: {
@@ -1851,8 +2073,12 @@ class SettingsService {
       return this.syncRawgProvider()
     }
 
+    if (input.provider === epicProvider) {
+      return this.syncEpicProvider()
+    }
+
     throw new Error(
-      'Seules les synchronisations Steam et RAWG sont disponibles pour le moment.',
+      'Seules les synchronisations Steam, Epic locale et RAWG sont disponibles pour le moment.',
     )
   }
 

@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   detectEpicLocalPlatform,
   detectGogLocalPlatform,
+  parseEpicManifest,
+  readEpicLocalLibrary,
 } from '../../src/providers/local-platforms'
 
 const originalProgramData = process.env['PROGRAMDATA']
@@ -45,6 +47,25 @@ afterEach(async () => {
 })
 
 describe('local platform detection', () => {
+  it('parses Epic manifests into installed games', () => {
+    expect(
+      parseEpicManifest(
+        JSON.stringify({
+          AppName: 'AlanWake2',
+          CatalogItemId: 'catalog-alan-wake-2',
+          DisplayName: 'Alan Wake 2',
+          InstallLocation: 'D:\\Epic\\AlanWake2',
+        }),
+        'C:\\ProgramData\\Epic\\manifest.item',
+      ),
+    ).toEqual({
+      externalId: 'catalog-alan-wake-2',
+      title: 'Alan Wake 2',
+      installPath: 'D:\\Epic\\AlanWake2',
+      manifestPath: 'C:\\ProgramData\\Epic\\manifest.item',
+    })
+  })
+
   it('detects Epic manifests and install locations', async () => {
     const root = await createTempRoot()
     const manifestDirectory = join(root, 'Epic', 'EpicGamesLauncher', 'Data', 'Manifests')
@@ -68,6 +89,16 @@ describe('local platform detection', () => {
       manifestCount: 1,
       libraryPaths: [manifestDirectory],
       rootPaths: [installLocation],
+    })
+
+    await expect(readEpicLocalLibrary()).resolves.toMatchObject({
+      manifestCount: 1,
+      games: [
+        expect.objectContaining({
+          title: 'Alan Wake 2',
+          installPath: installLocation,
+        }),
+      ],
     })
   })
 

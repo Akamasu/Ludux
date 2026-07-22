@@ -10,7 +10,7 @@
 
 Ludux est une application desktop qui rassemble votre bibliothèque de jeux, votre temps de jeu, vos succès, vos DLC, vos souvenirs et vos notes personnelles.
 
-Version courante : `v0.24.19`
+Version courante : `v0.24.20`
 
 ## Pour les joueurs
 
@@ -33,6 +33,8 @@ Steam synchronise actuellement :
 - DLC détectés depuis Steam Store, avec ajout manuel depuis la fiche du jeu.
 
 RAWG complète les fiches avec les descriptions, dates, studios, éditeurs et sites officiels quand les données manquent.
+
+Epic Games importe les jeux installés détectés localement via les manifests `.item`, sans clé API nécessaire pour cette première brique.
 
 Les fiches privilégient les textes français quand les plateformes les fournissent.
 

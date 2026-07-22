@@ -268,12 +268,36 @@ function providerDefaultExternalId(provider: ProviderConnection) {
   return provider.provider === 'RAWG' ? 'catalogue' : ''
 }
 
-function isSyncableProvider(provider: ProviderConnection | undefined) {
-  return provider?.provider === 'STEAM' || provider?.provider === 'RAWG'
+function localPlatformForProvider(
+  overview: SettingsOverview,
+  provider: ProviderConnection | undefined,
+) {
+  return overview.localPlatformOverview.platforms.find(
+    (platform) => platform.provider === provider?.provider,
+  )
 }
 
-function canSyncProvider(provider: ProviderConnection | undefined) {
-  if (!provider?.account || !isSyncableProvider(provider)) {
+function isSyncableProvider(provider: ProviderConnection | undefined) {
+  return (
+    provider?.provider === 'STEAM' ||
+    provider?.provider === 'EPIC' ||
+    provider?.provider === 'RAWG'
+  )
+}
+
+function canSyncProvider(
+  provider: ProviderConnection | undefined,
+  overview: SettingsOverview,
+) {
+  if (!provider || !isSyncableProvider(provider)) {
+    return false
+  }
+
+  if (provider.provider === 'EPIC') {
+    return Boolean(localPlatformForProvider(overview, provider)?.detected)
+  }
+
+  if (!provider.account) {
     return false
   }
 
@@ -328,7 +352,8 @@ function ProvidersPanel({
   const trimmedExternalId = externalId.trim()
   const isSteamProvider = selectedProvider?.provider === 'STEAM'
   const isRawgProvider = selectedProvider?.provider === 'RAWG'
-  const selectedProviderCanSync = canSyncProvider(selectedProvider)
+  const selectedLocalPlatform = localPlatformForProvider(overview, selectedProvider)
+  const selectedProviderCanSync = canSyncProvider(selectedProvider, overview)
 
   useEffect(() => {
     setExternalId(
@@ -388,7 +413,7 @@ function ProvidersPanel({
   }
 
   async function handleSyncProvider() {
-    if (!selectedProvider?.account || !isSyncableProvider(selectedProvider)) {
+    if (!selectedProvider || !selectedProviderCanSync) {
       return
     }
 
@@ -507,6 +532,14 @@ function ProvidersPanel({
               ))}
             </div>
 
+            {selectedProvider.provider === 'EPIC' ? (
+              <div className="mt-4 rounded-lg border border-[#7C5CFF]/20 bg-[#7C5CFF]/10 px-4 py-3 text-sm text-[#D8D0FF]">
+                {selectedLocalPlatform?.detected
+                  ? 'Manifests Epic locaux détectés. Ludux peut importer les jeux installés sans clé API.'
+                  : 'Aucun manifest Epic local détecté pour le moment.'}
+              </div>
+            ) : null}
+
             <div className="mt-5 grid gap-3">
               <label>
                 <span className="mb-2 block text-xs font-medium text-zinc-500">
@@ -580,7 +613,7 @@ function ProvidersPanel({
                 <Link2 size={17} aria-hidden="true" />
                 {isBusy ? 'Enregistrement...' : 'Enregistrer'}
               </Button>
-              {selectedProvider.account ? (
+              {isSyncableProvider(selectedProvider) ? (
                 <Button
                   type="button"
                   variant="secondary"

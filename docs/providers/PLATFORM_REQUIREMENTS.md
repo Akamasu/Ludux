@@ -1,16 +1,16 @@
-# Fichiers et Acces Plateformes
+# Fichiers et Accès Plateformes
 
-Ce document liste les fichiers, variables et acces a recuperer pour connecter les plateformes a Ludux.
+Ce document liste les fichiers, variables et accès à récupérer pour connecter les plateformes à Ludux.
 
-Les secrets reels doivent rester dans `.env` ou etre saisis dans l'application. Ils ne doivent jamais etre commits.
+Les secrets réels doivent rester dans `.env` ou être saisis dans l'application. Ils ne doivent jamais être commités.
 
-Pour la v1 publique, Ludux devra eviter toute cle API commune dans le client desktop. Les cles partagees ou applicatives devront rester cote backend.
+Pour la v1 publique, Ludux devra éviter toute clé API commune dans le client desktop. Les clés partagées ou applicatives devront rester côté backend.
 
 ## Fichiers Locaux
 
-- `.env.example` : modele versionne des variables attendues.
-- `.env` : fichier local ignore par Git pour les vraies cles et secrets.
-- `docs/providers/AUTO_SYNC_STRATEGY.md` : strategie de synchronisation automatique.
+- `.env.example` : modèle versionné des variables attendues.
+- `.env` : fichier local ignoré par Git pour les vraies clés et secrets.
+- `docs/providers/AUTO_SYNC_STRATEGY.md` : stratégie de synchronisation automatique.
 - `src/providers/registry.ts` : registre visible dans l'interface.
 - `src/providers/<provider>.ts` : adaptateur reseau isole par plateforme.
 - `prisma/schema.prisma` : liens persistants entre jeux Ludux et jeux externes.
@@ -19,47 +19,48 @@ Pour la v1 publique, Ludux devra eviter toute cle API commune dans le client des
 
 | Variable | Plateforme | Usage | Statut |
 | --- | --- | --- | --- |
-| `STEAM_WEB_API_KEY` | Steam | Cle Web API pour lire la bibliotheque possedee | Actif |
-| `STEAM_ID_64` | Steam | Identifiant du compte a connecter | Optionnel, saisie UI possible |
-| `LUDUX_STEAM_ROOT_PATH` | Steam | Chemin racine Steam local si la detection automatique echoue | Optionnel |
-| `LUDUX_STEAM_LIBRARY_PATHS` | Steam | Bibliotheques Steam locales separees par `;` | Optionnel |
+| `STEAM_WEB_API_KEY` | Steam | Clé Web API pour lire la bibliothèque possédée | Actif |
+| `STEAM_ID_64` | Steam | Identifiant du compte à connecter | Optionnel, saisie UI possible |
+| `LUDUX_STEAM_ROOT_PATH` | Steam | Chemin racine Steam local si la détection automatique échoue | Optionnel |
+| `LUDUX_STEAM_LIBRARY_PATHS` | Steam | Bibliothèques Steam locales séparées par `;` | Optionnel |
 | `LUDUX_AUTO_SYNC_INTERVAL_MINUTES` | Ludux | Intervalle de synchronisation automatique | Actif |
-| `RAWG_API_KEY` | RAWG | Metadonnees publiques de jeux | Actif manuel |
+| `LUDUX_EPIC_MANIFEST_PATHS` | Epic | Dossiers de manifests `.item` Epic séparés par `;` si la détection automatique échoue | Optionnel |
+| `RAWG_API_KEY` | RAWG | Métadonnées publiques de jeux | Actif manuel |
 | `IGDB_CLIENT_ID` | IGDB | Authentification Twitch/IGDB | A venir |
 | `IGDB_CLIENT_SECRET` | IGDB | Authentification Twitch/IGDB | A venir |
-| `XBOX_CLIENT_ID` | Xbox | OAuth/acces Xbox Services si disponible | A etudier |
-| `XBOX_CLIENT_SECRET` | Xbox | OAuth/acces Xbox Services si disponible | A etudier |
-| `PLAYSTATION_CLIENT_ID` | PlayStation | Acces partenaire si obtenu | A etudier |
-| `PLAYSTATION_CLIENT_SECRET` | PlayStation | Acces partenaire si obtenu | A etudier |
-| `NINTENDO_CLIENT_ID` | Nintendo | Acces developpeur/partenaire si obtenu | A etudier |
-| `NINTENDO_CLIENT_SECRET` | Nintendo | Acces developpeur/partenaire si obtenu | A etudier |
-| `GOG_CLIENT_ID` | GOG | Acces GOG Galaxy si disponible | A etudier |
-| `GOG_CLIENT_SECRET` | GOG | Acces GOG Galaxy si disponible | A etudier |
-| `EPIC_CLIENT_ID` | Epic | Acces Epic/EOS si disponible | A etudier |
-| `EPIC_CLIENT_SECRET` | Epic | Acces Epic/EOS si disponible | A etudier |
+| `XBOX_CLIENT_ID` | Xbox | OAuth/accès Xbox Services si disponible | À étudier |
+| `XBOX_CLIENT_SECRET` | Xbox | OAuth/accès Xbox Services si disponible | À étudier |
+| `PLAYSTATION_CLIENT_ID` | PlayStation | Accès partenaire si obtenu | À étudier |
+| `PLAYSTATION_CLIENT_SECRET` | PlayStation | Accès partenaire si obtenu | À étudier |
+| `NINTENDO_CLIENT_ID` | Nintendo | Accès développeur/partenaire si obtenu | À étudier |
+| `NINTENDO_CLIENT_SECRET` | Nintendo | Accès développeur/partenaire si obtenu | À étudier |
+| `GOG_CLIENT_ID` | GOG | Accès GOG Galaxy si disponible | À étudier |
+| `GOG_CLIENT_SECRET` | GOG | Accès GOG Galaxy si disponible | À étudier |
+| `EPIC_CLIENT_ID` | Epic | Accès Epic/EOS OAuth si disponible | À venir |
+| `EPIC_CLIENT_SECRET` | Epic | Accès Epic/EOS OAuth si disponible | À venir |
 
 ## Statut par Plateforme
 
-| Plateforme | Donnees visees | Ce qu'il faut recuperer | Source officielle | Decision Ludux |
+| Plateforme | Données visées | Ce qu'il faut récupérer | Source officielle | Décision Ludux |
 | --- | --- | --- | --- | --- |
-| Steam | Bibliotheque, temps de jeu, jaquettes, jeux installes | Web API key, SteamID64, details de jeux visibles, dossier Steam local | Steam Web API, IPlayerService, fichiers Steam locaux | Integration active avec fallback local |
-| RAWG | Metadonnees catalogue | Cle API RAWG | RAWG API docs | Integration active en enrichissement manuel |
-| IGDB | Metadonnees catalogue | Twitch Client ID, Client Secret, token OAuth app | IGDB API docs, Twitch OAuth | Bon candidat pour jaquettes/studios/genres |
-| Xbox | Succes, activite, profil | Acces Microsoft/Xbox Services autorise | Microsoft Learn Xbox Services | A garder pour plus tard, acces plus contraint |
-| PlayStation | Trophees, profil, activite | Acces PlayStation Partners si accepte | PlayStation Partners | A garder pour plus tard, pas de route publique simple |
-| Nintendo | Catalogue/profil Switch | Acces Nintendo Developer Portal si accepte | Nintendo Developer Portal | A garder pour plus tard, pas de route publique simple |
-| GOG | Succes/stats Galaxy | Acces GOG Galaxy SDK ou route officielle exploitable | GOG Developer Docs | A etudier apres Steam/metadonnees |
-| Epic | Compte/services Epic | Client Epic/EOS selon cas autorise | Epic Online Services docs | A etudier apres Steam/metadonnees |
+| Steam | Bibliothèque, temps de jeu, jaquettes, jeux installés | Web API key, SteamID64, détails de jeux visibles, dossier Steam local | Steam Web API, IPlayerService, fichiers Steam locaux | Intégration active avec fallback local |
+| RAWG | Métadonnées catalogue | Clé API RAWG | RAWG API docs | Intégration active en enrichissement manuel |
+| IGDB | Métadonnées catalogue | Twitch Client ID, Client Secret, token OAuth app | IGDB API docs, Twitch OAuth | Bon candidat pour jaquettes/studios/genres |
+| Xbox | Succès, activité, profil | Accès Microsoft/Xbox Services autorisé | Microsoft Learn Xbox Services | À garder pour plus tard, accès plus contraint |
+| PlayStation | Trophées, profil, activité | Accès PlayStation Partners si accepté | PlayStation Partners | À garder pour plus tard, pas de route publique simple |
+| Nintendo | Catalogue/profil Switch | Accès Nintendo Developer Portal si accepté | Nintendo Developer Portal | À garder pour plus tard, pas de route publique simple |
+| GOG | Succès/stats Galaxy | Accès GOG Galaxy SDK ou route officielle exploitable | GOG Developer Docs | À étudier après Steam/métadonnées |
+| Epic | Jeux installés, future connexion compte | Manifests `.item` locaux, puis client Epic/EOS OAuth avec consentement | Epic Online Services docs | Diagnostic et import local actifs, OAuth/EOS à étudier pour la connexion publique |
 
-## Ordre Recommande
+## Ordre Recommandé
 
-1. Stabiliser Steam avec une vraie cle utilisateur.
-2. Preparer une passerelle Ludux Connect pour les secrets de production.
-3. Ajouter un ecran de correspondance manuelle lorsque plusieurs jeux ont le meme titre.
-4. Etendre RAWG avec genres, screenshots et boutiques, puis comparer avec IGDB.
-5. Etudier Xbox, PlayStation, Nintendo, GOG et Epic seulement si un acces officiel ou acceptable est disponible.
+1. Stabiliser Steam avec une vraie clé utilisateur.
+2. Préparer une passerelle Ludux Connect pour les secrets de production.
+3. Ajouter un écran de correspondance manuelle lorsque plusieurs jeux ont le même titre.
+4. Étendre RAWG avec genres, screenshots et boutiques, puis comparer avec IGDB.
+5. Étudier Xbox, PlayStation, Nintendo, GOG et Epic seulement si un accès officiel ou acceptable est disponible.
 
-## Liens de Reference
+## Liens de Référence
 
 - Steam Web API key : https://steamcommunity.com/dev/apikey
 - Steam IPlayerService : https://partner.steamgames.com/doc/webapi/iplayerservice
@@ -72,3 +73,4 @@ Pour la v1 publique, Ludux devra eviter toute cle API commune dans le client des
 - Nintendo Developer Portal : https://developer.nintendo.com/
 - GOG Developer Docs : https://docs.gog.com/sdk/
 - Epic Online Services Web API : https://dev.epicgames.com/docs/web-api-ref/web-api-introduction
+- Référence non officielle Epic Store API : https://github.com/SD4RK/epicstore_api

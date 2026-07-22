@@ -4,6 +4,21 @@ import { join, normalize } from 'node:path'
 import type { ExternalProvider, LocalPlatformDetection } from '../types/settings'
 import { readSteamLocalLibrary } from './steam'
 
+export interface EpicInstalledGame {
+  externalId: string
+  title: string
+  installPath: string | null
+  manifestPath: string
+}
+
+export interface EpicLocalLibraryResult {
+  games: EpicInstalledGame[]
+  manifestCount: number
+  manifestPaths: string[]
+  libraryPaths: string[]
+  configPaths: string[]
+}
+
 const localPlatformCacheTtlMs = 30_000
 
 let cachedLocalPlatformOverview:
@@ -68,6 +83,22 @@ async function readDirectoryIfExists(path: string) {
   } catch {
     return []
   }
+}
+
+function readJsonObject(value: string) {
+  try {
+    const parsedValue = JSON.parse(value)
+
+    return typeof parsedValue === 'object' && parsedValue !== null
+      ? (parsedValue as Record<string, unknown>)
+      : null
+  } catch {
+    return null
+  }
+}
+
+function readOptionalText(value: unknown) {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
 }
 
 function countManifestsByExtension(names: string[], extension: string) {
@@ -140,6 +171,58 @@ export async function detectSteamLocalPlatform(): Promise<LocalPlatformDetection
 }
 
 export async function detectEpicLocalPlatform(): Promise<LocalPlatformDetection> {
+  const localLibrary = await readEpicLocalLibrary()
+
+  return createDetection({
+    provider: 'EPIC',
+    label: 'Epic Games',
+    rootPaths: localLibrary.games.flatMap((game) =>
+      game.installPath ? [game.installPath] : [],
+    ),
+    libraryPaths: localLibrary.libraryPaths,
+    configPaths: localLibrary.configPaths,
+    manifestCount: localLibrary.manifestCount,
+    message:
+      localLibrary.manifestCount > 0
+        ? `${localLibrary.manifestCount} manifest(s) Epic détecté(s).`
+        : 'Aucun manifest Epic détecté.',
+  })
+}
+
+export function parseEpicManifest(
+  content: string,
+  manifestPath: string,
+): EpicInstalledGame | null {
+  const payload = readJsonObject(content)
+
+  if (!payload) {
+    return null
+  }
+
+  const title =
+    readOptionalText(payload['DisplayName']) ??
+    readOptionalText(payload['Title']) ??
+    readOptionalText(payload['AppName'])
+  const externalId =
+    readOptionalText(payload['MainGameCatalogItemId']) ??
+    readOptionalText(payload['CatalogItemId']) ??
+    readOptionalText(payload['AppName']) ??
+    readOptionalText(payload['InstallLocation']) ??
+    title
+
+  if (!title || !externalId) {
+    return null
+  }
+
+  return {
+    externalId,
+    title,
+    installPath: readOptionalText(payload['InstallLocation']),
+    manifestPath,
+  }
+}
+
+export async function readEpicLocalLibrary(): Promise<EpicLocalLibraryResult> {
   const programData = resolveEnvironmentPath(process.env['PROGRAMDATA'])
   const manifestDirectories = uniqueTextValues([
     ...splitConfiguredPaths(process.env['LUDUX_EPIC_MANIFEST_PATHS']),
@@ -154,7 +237,8 @@ export async function detectEpicLocalPlatform(): Promise<LocalPlatformDetection>
   ])
   const existingManifestDirectories: string[] = []
   const existingConfigPaths: string[] = []
-  const installLocations: string[] = []
+  const manifestPaths: string[] = []
+  const games: EpicInstalledGame[] = []
   let manifestCount = 0
 
   for (const manifestDirectory of manifestDirectories) {
@@ -169,17 +253,16 @@ export async function detectEpicLocalPlatform(): Promise<LocalPlatformDetection>
     )
     manifestCount += manifestEntries.length
 
-    for (const entry of manifestEntries.slice(0, 250)) {
-      try {
-        const payload = JSON.parse(await readFile(join(manifestDirectory, entry.name), 'utf8')) as {
-          InstallLocation?: unknown
-        }
+    for (const entry of manifestEntries) {
+      const manifestPath = join(manifestDirectory, entry.name)
+      manifestPaths.push(manifestPath)
+      const game = parseEpicManifest(
+        await readFile(manifestPath, 'utf8').catch(() => ''),
+        manifestPath,
+      )
 
-        if (typeof payload.InstallLocation === 'string') {
-          installLocations.push(payload.InstallLocation)
-        }
-      } catch {
-        // Epic manifests are best-effort diagnostics; malformed files are ignored.
+      if (game) {
+        games.push(game)
       }
     }
   }
@@ -190,18 +273,13 @@ export async function detectEpicLocalPlatform(): Promise<LocalPlatformDetection>
     }
   }
 
-  return createDetection({
-    provider: 'EPIC',
-    label: 'Epic Games',
-    rootPaths: installLocations,
+  return {
+    games,
+    manifestCount,
+    manifestPaths,
     libraryPaths: existingManifestDirectories,
     configPaths: existingConfigPaths,
-    manifestCount,
-    message:
-      manifestCount > 0
-        ? `${manifestCount} manifest(s) Epic détecté(s).`
-        : 'Aucun manifest Epic détecté.',
-  })
+  }
 }
 
 async function countGogGameInfoFiles(candidateRoots: string[]) {

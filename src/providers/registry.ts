@@ -34,8 +34,8 @@ export const EXTERNAL_PROVIDER_DEFINITIONS: ExternalProviderDefinition[] = [
   {
     provider: 'EPIC',
     label: 'Epic Games',
-    description: 'Bibliothèque Epic et jeux PC possédés.',
-    capabilities: ['Bibliothèque', 'PC'],
+    description: 'Manifests locaux Epic et jeux PC installés.',
+    capabilities: ['Bibliothèque locale', 'Jeux installés'],
   },
   {
     provider: 'IGDB',

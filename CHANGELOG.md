@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.20 - 2026-07-22
+
+- Import local Epic Games depuis les manifests `.item`.
+- Création ou liaison automatique des jeux Epic installés dans la bibliothèque Ludux.
+- Activation de la synchronisation Epic locale sans clé API quand les manifests sont détectés.
+- Préparation de l'intégration Epic/EOS officielle pour une future connexion compte.
+
 ## v0.24.19 - 2026-07-22
 
 - Ajout d'un diagnostic des plateformes locales dans les paramètres.
