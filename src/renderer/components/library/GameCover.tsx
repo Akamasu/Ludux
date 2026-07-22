@@ -23,9 +23,11 @@ export function GameCover({
       <img
         src={coverUrl ?? undefined}
         alt=""
+        decoding="async"
+        draggable={false}
         loading="lazy"
         onError={() => setFailedUrl(coverUrl)}
-        className={cn('h-full w-full object-cover', className)}
+        className={cn('block h-full w-full object-cover object-center', className)}
       />
     )
   }

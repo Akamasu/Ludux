@@ -95,6 +95,8 @@ interface GameDetailPageProps {
   onUpdateScreenshot: (input: UpdateScreenshotInput) => Promise<void>
 }
 
+const TIMELINE_SESSION_BATCH_SIZE = 30
+
 function todayInputValue() {
   return new Date().toISOString().slice(0, 10)
 }
@@ -802,7 +804,7 @@ function DlcPanel({
   }
 
   return (
-    <section className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
+    <section className="archive-panel deferred-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">DLC</h2>
@@ -1110,7 +1112,7 @@ function AchievementPanel({
   }
 
   return (
-    <section className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
+    <section className="archive-panel deferred-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Succès</h2>
@@ -1345,7 +1347,7 @@ function ScreenshotPanel({
   }
 
   return (
-    <section className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
+    <section className="archive-panel deferred-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Souvenirs visuels</h2>
@@ -1520,6 +1522,9 @@ function ScreenshotPreview({ screenshot }: { screenshot: ScreenshotListItem }) {
     <img
       src={screenshotSource(screenshot.path)}
       alt={screenshot.description ?? screenshot.chronicleTitle ?? 'Capture Ludux'}
+      decoding="async"
+      draggable={false}
+      loading="lazy"
       onError={() => setHasFailed(true)}
       className="aspect-video w-full bg-[#0F1117] object-cover"
     />
@@ -1572,7 +1577,7 @@ function SessionForm({
   }
 
   return (
-    <form className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5" onSubmit={handleSubmit}>
+    <form className="archive-panel deferred-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5" onSubmit={handleSubmit}>
       <h2 className="text-lg font-semibold text-white">Ajouter une session</h2>
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         <label>
@@ -1658,7 +1663,7 @@ function ChronicleForm({
   }
 
   return (
-    <form className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5" onSubmit={handleSubmit}>
+    <form className="archive-panel deferred-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5" onSubmit={handleSubmit}>
       <h2 className="text-lg font-semibold text-white">Ecrire une chronique</h2>
       <div className="mt-5 grid gap-3">
         <label>
@@ -2099,8 +2104,18 @@ function Timeline({
   onUpdateChronicle: (input: UpdateChronicleInput) => Promise<void>
   onUpdatePlaySession: (input: UpdatePlaySessionInput) => Promise<void>
 }) {
+  const [visibleSessionsCount, setVisibleSessionsCount] = useState(
+    TIMELINE_SESSION_BATCH_SIZE,
+  )
+  const visibleSessions = detail.sessions.slice(0, visibleSessionsCount)
+  const remainingSessionsCount = detail.sessions.length - visibleSessions.length
+
+  useEffect(() => {
+    setVisibleSessionsCount(TIMELINE_SESSION_BATCH_SIZE)
+  }, [detail.id])
+
   return (
-    <section className="archive-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
+    <section className="archive-panel deferred-panel rounded-lg border border-[#C9A646]/15 bg-[#181B23] p-5">
       <h2 className="text-lg font-semibold text-white">Mon histoire</h2>
       <div className="mt-5 space-y-4">
         {detail.chronicles.length === 0 && detail.sessions.length === 0 ? (
@@ -2120,7 +2135,7 @@ function Timeline({
           />
         ))}
 
-        {detail.sessions.map((session) => (
+        {visibleSessions.map((session) => (
           <SessionTimelineArticle
             key={session.id}
             detail={detail}
@@ -2130,6 +2145,22 @@ function Timeline({
             session={session}
           />
         ))}
+
+        {remainingSessionsCount > 0 ? (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() =>
+              setVisibleSessionsCount((current) =>
+                Math.min(current + TIMELINE_SESSION_BATCH_SIZE, detail.sessions.length),
+              )
+            }
+          >
+            <Plus size={17} aria-hidden="true" />
+            Afficher {Math.min(TIMELINE_SESSION_BATCH_SIZE, remainingSessionsCount)} session(s)
+            de plus
+          </Button>
+        ) : null}
       </div>
     </section>
   )

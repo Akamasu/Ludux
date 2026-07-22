@@ -29,6 +29,14 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.15 - 2026-07-22
+
+- Retrait de la vue Armoire ancienne dans la bibliothèque.
+- Passage de la vue grille comme affichage par défaut.
+- Adaptation des jaquettes aux cartes de jeux avec un ratio plus stable.
+- Ajout des jaquettes en fond atténué dans la vue liste.
+- Allègement des fiches de jeu avec rendu différé des grands panneaux et chargement progressif des sessions de timeline.
+
 ## v0.24.14 - 2026-07-22
 
 - Suppression des rafraîchissements automatiques différés qui faisaient remonter les pages.
