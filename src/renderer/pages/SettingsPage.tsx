@@ -277,10 +277,15 @@ function localPlatformForProvider(
   )
 }
 
+function isLocalLibraryProvider(provider: ProviderConnection | undefined) {
+  return provider?.provider === 'EPIC' || provider?.provider === 'GOG'
+}
+
 function isSyncableProvider(provider: ProviderConnection | undefined) {
   return (
     provider?.provider === 'STEAM' ||
     provider?.provider === 'EPIC' ||
+    provider?.provider === 'GOG' ||
     provider?.provider === 'RAWG'
   )
 }
@@ -293,7 +298,7 @@ function canSyncProvider(
     return false
   }
 
-  if (provider.provider === 'EPIC') {
+  if (isLocalLibraryProvider(provider)) {
     return Boolean(localPlatformForProvider(overview, provider)?.detected)
   }
 
@@ -532,11 +537,11 @@ function ProvidersPanel({
               ))}
             </div>
 
-            {selectedProvider.provider === 'EPIC' ? (
+            {isLocalLibraryProvider(selectedProvider) ? (
               <div className="mt-4 rounded-lg border border-[#7C5CFF]/20 bg-[#7C5CFF]/10 px-4 py-3 text-sm text-[#D8D0FF]">
                 {selectedLocalPlatform?.detected
-                  ? 'Manifests Epic locaux détectés. Ludux peut importer les jeux installés sans clé API.'
-                  : 'Aucun manifest Epic local détecté pour le moment.'}
+                  ? `${selectedProvider.label} détecté localement. Ludux peut importer les jeux installés sans clé API.`
+                  : `${selectedProvider.label} local n'est pas détecté pour le moment.`}
               </div>
             ) : null}
 

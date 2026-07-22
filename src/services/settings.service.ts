@@ -33,7 +33,9 @@ import { EXTERNAL_PROVIDER_DEFINITIONS } from '../providers/registry'
 import {
   detectLocalPlatforms,
   readEpicLocalLibrary,
+  readGogLocalLibrary,
   type EpicInstalledGame,
+  type GogInstalledGame,
 } from '../providers/local-platforms'
 import { libraryService } from './library.service'
 import { logger } from '../utils/logger'
@@ -55,6 +57,8 @@ const steamCollectionDescription = 'Catégorie Steam synchronisée.'
 const steamTotalSessionNote = 'Temps total Steam synchronisé.'
 const epicProvider: ExternalProvider = 'EPIC'
 const epicPlatformName = 'Epic Games'
+const gogProvider: ExternalProvider = 'GOG'
+const gogPlatformName = 'GOG'
 const rawgProvider: ExternalProvider = 'RAWG'
 const rawgExternalId = 'catalogue'
 const manualGenreSource = 'MANUAL'
@@ -92,6 +96,13 @@ interface RawgEnrichmentStats {
 }
 
 interface EpicImportStats {
+  scannedManifests: number
+  importedGames: number
+  linkedGames: number
+  updatedGames: number
+}
+
+interface GogImportStats {
   scannedManifests: number
   importedGames: number
   linkedGames: number
@@ -320,6 +331,19 @@ function createEpicSyncMessage(stats: EpicImportStats) {
 
   return [
     `${stats.scannedManifests} entrée(s) Epic locale(s) analysée(s)`,
+    `${stats.importedGames} ajouté(s)`,
+    `${stats.linkedGames} relié(s)`,
+    `${stats.updatedGames} déjà connu(s)`,
+  ].join(' / ')
+}
+
+function createGogSyncMessage(stats: GogImportStats) {
+  if (stats.scannedManifests === 0) {
+    return 'Aucun fichier GOG local exploitable détecté.'
+  }
+
+  return [
+    `${stats.scannedManifests} fichier(s) GOG analysé(s)`,
     `${stats.importedGames} ajouté(s)`,
     `${stats.linkedGames} relié(s)`,
     `${stats.updatedGames} déjà connu(s)`,
@@ -634,6 +658,45 @@ async function ensureEpicPlatform() {
 }
 
 async function ensureEpicPlatformForGame(gameId: string, platformId: string) {
+  const existingPlatform = await prisma.gamePlatform.findFirst({
+    where: {
+      gameId,
+      platformId,
+      version: null,
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  if (existingPlatform) {
+    return
+  }
+
+  await prisma.gamePlatform.create({
+    data: {
+      gameId,
+      platformId,
+      owned: true,
+      played: false,
+    },
+  })
+}
+
+async function ensureGogPlatform() {
+  return prisma.platform.upsert({
+    where: {
+      name: gogPlatformName,
+    },
+    update: {},
+    create: {
+      name: gogPlatformName,
+      manufacturer: 'GOG',
+    },
+  })
+}
+
+async function ensureGogPlatformForGame(gameId: string, platformId: string) {
   const existingPlatform = await prisma.gamePlatform.findFirst({
     where: {
       gameId,
@@ -1506,6 +1569,121 @@ async function importEpicInstalledGames(
   return stats
 }
 
+async function importGogInstalledGames(
+  games: GogInstalledGame[],
+  manifestCount: number,
+): Promise<GogImportStats> {
+  const stats: GogImportStats = {
+    scannedManifests: manifestCount,
+    importedGames: 0,
+    linkedGames: 0,
+    updatedGames: 0,
+  }
+  const gogPlatform = await ensureGogPlatform()
+  const localGames = await prisma.game.findMany({
+    where: {
+      archived: false,
+    },
+    select: {
+      id: true,
+      title: true,
+    },
+  })
+  const gamesByTitle = new Map(
+    localGames.map((game) => [normalizeTitle(game.title), game]),
+  )
+  const uniqueGames = Array.from(
+    new Map(games.map((game) => [game.externalId, game])).values(),
+  ).sort((left, right) => left.title.localeCompare(right.title, 'fr-FR'))
+
+  for (const gogGame of uniqueGames) {
+    const externalId = gogGame.externalId
+    const existingLink = await prisma.externalGame.findUnique({
+      where: {
+        provider_externalId: {
+          provider: gogProvider,
+          externalId,
+        },
+      },
+    })
+    const matchedGame = existingLink
+      ? await prisma.game.findUnique({
+          where: {
+            id: existingLink.gameId,
+          },
+          select: {
+            id: true,
+            title: true,
+          },
+        })
+      : (gamesByTitle.get(normalizeTitle(gogGame.title)) ?? null)
+    const localGame =
+      matchedGame ??
+      (await prisma.game.create({
+        data: {
+          title: gogGame.title,
+          status: 'BACKLOG',
+          platforms: {
+            create: {
+              platform: {
+                connect: {
+                  id: gogPlatform.id,
+                },
+              },
+              owned: true,
+              played: false,
+            },
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+        },
+      }))
+
+    if (existingLink) {
+      stats.updatedGames += 1
+    } else if (matchedGame) {
+      stats.linkedGames += 1
+    } else {
+      stats.importedGames += 1
+      gamesByTitle.set(normalizeTitle(localGame.title), localGame)
+    }
+
+    if (matchedGame) {
+      await ensureGogPlatformForGame(localGame.id, gogPlatform.id)
+    }
+
+    await prisma.externalGame.upsert({
+      where: {
+        provider_externalId: {
+          provider: gogProvider,
+          externalId,
+        },
+      },
+      update: {
+        gameId: localGame.id,
+        playSessionId: null,
+        sourceTitle: gogGame.title,
+        sourceCoverUrl: null,
+        lastPlaytimeMinutes: 0,
+        lastSyncedAt: new Date(),
+      },
+      create: {
+        gameId: localGame.id,
+        provider: gogProvider,
+        externalId,
+        sourceTitle: gogGame.title,
+        sourceCoverUrl: null,
+        lastPlaytimeMinutes: 0,
+        lastSyncedAt: new Date(),
+      },
+    })
+  }
+
+  return stats
+}
+
 async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentStats> {
   const stats: RawgEnrichmentStats = {
     scannedGames: 0,
@@ -1704,6 +1882,10 @@ class SettingsService {
 
     if (hasAccount(epicProvider) || hasLocalPlatform(epicProvider)) {
       providers.push(epicProvider)
+    }
+
+    if (hasAccount(gogProvider) || hasLocalPlatform(gogProvider)) {
+      providers.push(gogProvider)
     }
 
     return providers
@@ -2028,6 +2210,39 @@ class SettingsService {
     }
   }
 
+  private async syncGogProvider(): Promise<SettingsActionResult> {
+    await recordProviderSync(
+      gogProvider,
+      'SYNCING',
+      'Synchronisation GOG locale en cours.',
+    )
+
+    try {
+      const localLibrary = await readGogLocalLibrary()
+      const stats = await importGogInstalledGames(
+        localLibrary.games,
+        localLibrary.manifestCount,
+      )
+      const syncedAt = new Date()
+      const message = createGogSyncMessage(stats)
+
+      await recordProviderSync(gogProvider, 'SYNCED', message, syncedAt)
+
+      return {
+        canceled: false,
+        path: localLibrary.libraryPaths[0] ?? null,
+        message,
+        createdAt: syncedAt.toISOString(),
+      }
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error ? caughtError.message : 'Erreur GOG inconnue.'
+
+      await recordProviderSync(gogProvider, 'ERROR', message)
+      throw caughtError
+    }
+  }
+
   private async syncRawgProvider(): Promise<SettingsActionResult> {
     const account = await prisma.externalAccount.findFirst({
       where: {
@@ -2092,8 +2307,12 @@ class SettingsService {
       return this.syncEpicProvider()
     }
 
+    if (input.provider === gogProvider) {
+      return this.syncGogProvider()
+    }
+
     throw new Error(
-      'Seules les synchronisations Steam, Epic locale et RAWG sont disponibles pour le moment.',
+      'Seules les synchronisations Steam, Epic locale, GOG locale et RAWG sont disponibles pour le moment.',
     )
   }
 

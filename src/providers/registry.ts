@@ -28,13 +28,13 @@ export const EXTERNAL_PROVIDER_DEFINITIONS: ExternalProviderDefinition[] = [
   {
     provider: 'GOG',
     label: 'GOG',
-    description: 'Bibliothèque PC sans DRM et temps de jeu GOG Galaxy.',
-    capabilities: ['Bibliothèque', 'Temps de jeu'],
+    description: 'Fichiers locaux GOG et jeux PC installés.',
+    capabilities: ['Bibliothèque locale', 'Jeux installés'],
   },
   {
     provider: 'EPIC',
     label: 'Epic Games',
-    description: 'Manifests locaux Epic et jeux PC installés.',
+    description: 'Fichiers locaux Epic, cache du launcher et jeux PC installés.',
     capabilities: ['Bibliothèque locale', 'Jeux installés'],
   },
   {

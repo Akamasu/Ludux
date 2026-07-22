@@ -9,7 +9,9 @@ import {
   parseEpicLauncherInstalledDatabase,
   parseEpicManagedApp,
   parseEpicManifest,
+  parseGogGameInfo,
   readEpicLocalLibrary,
+  readGogLocalLibrary,
 } from '../../src/providers/local-platforms'
 
 const originalProgramData = process.env['PROGRAMDATA']
@@ -268,6 +270,24 @@ describe('local platform detection', () => {
     })
   })
 
+  it('parses GOG game info files into installed games', () => {
+    expect(
+      parseGogGameInfo(
+        JSON.stringify({
+          gameId: '292030',
+          name: 'The Witcher 3: Wild Hunt',
+        }),
+        'D:\\GOG Games\\The Witcher 3\\goggame-292030.info',
+        'D:\\GOG Games\\The Witcher 3',
+      ),
+    ).toEqual({
+      externalId: '292030',
+      installPath: 'D:\\GOG Games\\The Witcher 3',
+      manifestPath: 'D:\\GOG Games\\The Witcher 3\\goggame-292030.info',
+      title: 'The Witcher 3: Wild Hunt',
+    })
+  })
+
   it('detects GOG Galaxy data and game info files', async () => {
     const root = await createTempRoot()
     const gogLibrary = join(root, 'GOG Games')
@@ -276,7 +296,13 @@ describe('local platform detection', () => {
     await mkdir(gameDirectory, {
       recursive: true,
     })
-    await writeFile(join(gameDirectory, 'goggame-292030.info'), '{}')
+    await writeFile(
+      join(gameDirectory, 'goggame-292030.info'),
+      JSON.stringify({
+        gameId: '292030',
+        name: 'The Witcher 3: Wild Hunt',
+      }),
+    )
     await writeFile(databasePath, '')
     process.env['PROGRAMDATA'] = root
     process.env['LUDUX_GOG_LIBRARY_PATHS'] = gogLibrary
@@ -291,5 +317,16 @@ describe('local platform detection', () => {
     })
     expect(detection.libraryPaths).toContain(gogLibrary)
     expect(detection.configPaths).toContain(databasePath)
+
+    await expect(readGogLocalLibrary()).resolves.toMatchObject({
+      games: [
+        expect.objectContaining({
+          externalId: '292030',
+          installPath: gameDirectory,
+          title: 'The Witcher 3: Wild Hunt',
+        }),
+      ],
+      manifestCount: 1,
+    })
   })
 })

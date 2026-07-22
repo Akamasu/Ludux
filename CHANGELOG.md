@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.22 - 2026-07-22
+
+- Import local GOG depuis les fichiers `goggame-*.info`.
+- Création ou liaison automatique des jeux GOG installés dans la bibliothèque Ludux.
+- Activation de GOG dans `Synchroniser tout` quand une bibliothèque locale est détectée.
+- Mise à jour de l'écran Paramètres pour les providers locaux Epic et GOG.
+
 ## v0.24.21 - 2026-07-22
 
 - Import de la bibliothèque Epic depuis le cache local du launcher quand les manifests `.item` sont absents.

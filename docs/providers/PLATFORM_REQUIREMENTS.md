@@ -51,7 +51,7 @@ Pour la v1 publique, Ludux devra éviter toute clé API commune dans le client d
 | Xbox | Succès, activité, profil | Accès Microsoft/Xbox Services autorisé | Microsoft Learn Xbox Services | À garder pour plus tard, accès plus contraint |
 | PlayStation | Trophées, profil, activité | Accès PlayStation Partners si accepté | PlayStation Partners | À garder pour plus tard, pas de route publique simple |
 | Nintendo | Catalogue/profil Switch | Accès Nintendo Developer Portal si accepté | Nintendo Developer Portal | À garder pour plus tard, pas de route publique simple |
-| GOG | Succès/stats Galaxy | Accès GOG Galaxy SDK ou route officielle exploitable | GOG Developer Docs | À étudier après Steam/métadonnées |
+| GOG | Jeux installés, future stats Galaxy | Fichiers `goggame-*.info`, base Galaxy si utile, puis accès GOG Galaxy SDK ou route officielle exploitable | GOG Developer Docs | Import local actif, stats Galaxy à étudier |
 | Epic | Jeux possédés/installés, future connexion compte | Manifests `.item`, `LauncherInstalled.dat`, apps gérées, cache local du launcher, puis client Epic/EOS OAuth avec consentement | Epic Online Services docs | Import local actif avec fallback cache, OAuth/EOS à étudier pour la connexion publique |
 
 ## Ordre Recommandé

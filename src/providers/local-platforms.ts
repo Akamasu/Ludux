@@ -1,6 +1,6 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join, normalize } from 'node:path'
+import { dirname, join, normalize } from 'node:path'
 import type { ExternalProvider, LocalPlatformDetection } from '../types/settings'
 import { readSteamLocalLibrary } from './steam'
 
@@ -22,6 +22,21 @@ export interface EpicInstalledGame {
 
 export interface EpicLocalLibraryResult {
   games: EpicInstalledGame[]
+  manifestCount: number
+  manifestPaths: string[]
+  libraryPaths: string[]
+  configPaths: string[]
+}
+
+export interface GogInstalledGame {
+  externalId: string
+  title: string
+  installPath: string | null
+  manifestPath: string
+}
+
+export interface GogLocalLibraryResult {
+  games: GogInstalledGame[]
   manifestCount: number
   manifestPaths: string[]
   libraryPaths: string[]
@@ -193,12 +208,9 @@ function isJsonObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function countManifestsByExtension(names: string[], extension: string) {
-  return names.filter((name) => name.toLocaleLowerCase('en-US').endsWith(extension)).length
-}
-
 function createDetection({
   configPaths = [],
+  detected: detectedOverride,
   label,
   libraryPaths = [],
   manifestCount = 0,
@@ -207,6 +219,7 @@ function createDetection({
   rootPaths = [],
 }: {
   configPaths?: string[]
+  detected?: boolean
   label: string
   libraryPaths?: string[]
   manifestCount?: number
@@ -218,10 +231,11 @@ function createDetection({
   const normalizedLibraryPaths = uniqueTextValues(libraryPaths)
   const normalizedConfigPaths = uniqueTextValues(configPaths)
   const detected =
-    normalizedRootPaths.length > 0 ||
-    normalizedLibraryPaths.length > 0 ||
-    normalizedConfigPaths.length > 0 ||
-    manifestCount > 0
+    detectedOverride ??
+    (normalizedRootPaths.length > 0 ||
+      normalizedLibraryPaths.length > 0 ||
+      normalizedConfigPaths.length > 0 ||
+      manifestCount > 0)
 
   return {
     provider,
@@ -898,9 +912,96 @@ export async function readEpicLocalLibrary(): Promise<EpicLocalLibraryResult> {
   }
 }
 
-async function countGogGameInfoFiles(candidateRoots: string[]) {
-  let manifestCount = 0
+function readGogGameIdFromPath(path: string) {
+  return path.match(/goggame-(\d+)\.info$/i)?.[1] ?? null
+}
+
+function readFolderName(path: string | null | undefined) {
+  if (!path) {
+    return null
+  }
+
+  return path.split(/[\\/]/).filter(Boolean).pop() ?? null
+}
+
+function createGogInstalledGame({
+  externalId,
+  installPath,
+  manifestPath,
+  title,
+}: {
+  externalId: string | null
+  installPath: string | null
+  manifestPath: string
+  title: string | null
+}): GogInstalledGame | null {
+  if (!externalId || !title) {
+    return null
+  }
+
+  return {
+    externalId,
+    title,
+    installPath,
+    manifestPath,
+  }
+}
+
+export function parseGogGameInfo(
+  content: string,
+  manifestPath: string,
+  installPath: string | null = null,
+): GogInstalledGame | null {
+  const payload = readJsonObject(content)
+  const fallbackGameId = readGogGameIdFromPath(manifestPath)
+  const title =
+    readOptionalText(payload?.['name']) ??
+    readOptionalText(payload?.['title']) ??
+    readOptionalText(payload?.['gameName']) ??
+    readFolderName(installPath)
+  const externalId =
+    readOptionalText(payload?.['gameId']) ??
+    readOptionalText(payload?.['rootGameId']) ??
+    readOptionalText(payload?.['clientId']) ??
+    fallbackGameId
+
+  return createGogInstalledGame({
+    externalId,
+    installPath,
+    manifestPath,
+    title,
+  })
+}
+
+function createGogCandidateLibraryPaths() {
+  const programFiles = resolveEnvironmentPath(process.env['ProgramFiles'])
+  const programFilesX86 = resolveEnvironmentPath(process.env['ProgramFiles(x86)'])
+  const configuredGameRoots = splitConfiguredPaths(process.env['LUDUX_GOG_LIBRARY_PATHS'])
+
+  return uniqueTextValues([
+    ...configuredGameRoots,
+    programFiles ? join(programFiles, 'GOG Galaxy', 'Games') : null,
+    programFilesX86 ? join(programFilesX86, 'GOG Galaxy', 'Games') : null,
+    'C:\\GOG Games',
+    'D:\\GOG Games',
+    join(homedir(), 'GOG Games'),
+  ])
+}
+
+function createGogCandidateDatabasePaths() {
+  const programData = resolveEnvironmentPath(process.env['PROGRAMDATA'])
+
+  return uniqueTextValues([
+    process.env['LUDUX_GOG_GALAXY_DB_PATH'],
+    programData
+      ? join(programData, 'GOG.com', 'Galaxy', 'storage', 'galaxy-2.0.db')
+      : null,
+  ])
+}
+
+async function findGogGameInfoFiles(candidateRoots: string[]) {
   const existingRoots: string[] = []
+  const manifestPaths: string[] = []
 
   for (const candidateRoot of candidateRoots) {
     if (!(await directoryExists(candidateRoot))) {
@@ -909,49 +1010,46 @@ async function countGogGameInfoFiles(candidateRoots: string[]) {
 
     existingRoots.push(candidateRoot)
     const entries = await readDirectoryIfExists(candidateRoot)
-    const directInfoFiles = countManifestsByExtension(
-      entries.filter((entry) => entry.isFile()).map((entry) => entry.name),
-      '.info',
-    )
-    manifestCount += directInfoFiles
 
-    for (const entry of entries.filter((entry) => entry.isDirectory()).slice(0, 250)) {
+    manifestPaths.push(
+      ...entries
+        .filter((entry) => entry.isFile() && /^goggame-\d+\.info$/i.test(entry.name))
+        .map((entry) => join(candidateRoot, entry.name)),
+    )
+
+    for (const entry of entries.filter((entry) => entry.isDirectory()).slice(0, 500)) {
       const gameEntries = await readDirectoryIfExists(join(candidateRoot, entry.name))
-      manifestCount += gameEntries.filter(
-        (gameEntry) =>
-          gameEntry.isFile() &&
-          /^goggame-\d+\.info$/i.test(gameEntry.name),
-      ).length
+
+      manifestPaths.push(
+        ...gameEntries
+          .filter(
+            (gameEntry) =>
+              gameEntry.isFile() &&
+              /^goggame-\d+\.info$/i.test(gameEntry.name),
+          )
+          .map((gameEntry) => join(candidateRoot, entry.name, gameEntry.name)),
+      )
     }
   }
 
   return {
     existingRoots,
-    manifestCount,
+    manifestPaths: uniqueTextValues(manifestPaths),
   }
 }
 
-export async function detectGogLocalPlatform(): Promise<LocalPlatformDetection> {
-  const programData = resolveEnvironmentPath(process.env['PROGRAMDATA'])
-  const programFiles = resolveEnvironmentPath(process.env['ProgramFiles'])
-  const programFilesX86 = resolveEnvironmentPath(process.env['ProgramFiles(x86)'])
-  const configuredGameRoots = splitConfiguredPaths(process.env['LUDUX_GOG_LIBRARY_PATHS'])
-  const gameRoots = uniqueTextValues([
-    ...configuredGameRoots,
-    programFiles ? join(programFiles, 'GOG Galaxy', 'Games') : null,
-    programFilesX86 ? join(programFilesX86, 'GOG Galaxy', 'Games') : null,
-    'C:\\GOG Games',
-    'D:\\GOG Games',
-    join(homedir(), 'GOG Games'),
-  ])
-  const databasePaths = uniqueTextValues([
-    process.env['LUDUX_GOG_GALAXY_DB_PATH'],
-    programData
-      ? join(programData, 'GOG.com', 'Galaxy', 'storage', 'galaxy-2.0.db')
-      : null,
-  ])
+function dedupeGogInstalledGames(games: GogInstalledGame[]) {
+  return Array.from(
+    new Map(games.map((game) => [game.externalId, game])).values(),
+  ).sort((left, right) => left.title.localeCompare(right.title, 'fr-FR'))
+}
+
+export async function readGogLocalLibrary(): Promise<GogLocalLibraryResult> {
+  const gameRoots = createGogCandidateLibraryPaths()
+  const databasePaths = createGogCandidateDatabasePaths()
   const existingConfigPaths: string[] = []
-  const { existingRoots, manifestCount } = await countGogGameInfoFiles(gameRoots)
+  const { existingRoots, manifestPaths } = await findGogGameInfoFiles(gameRoots)
+  const games: GogInstalledGame[] = []
 
   for (const databasePath of databasePaths) {
     if (await pathExists(databasePath)) {
@@ -959,18 +1057,46 @@ export async function detectGogLocalPlatform(): Promise<LocalPlatformDetection> 
     }
   }
 
+  for (const manifestPath of manifestPaths) {
+    const installPath = dirname(manifestPath)
+    const game = parseGogGameInfo(
+      await readLocalTextFile(manifestPath),
+      manifestPath,
+      installPath,
+    )
+
+    if (game) {
+      games.push(game)
+    }
+  }
+
+  return {
+    games: dedupeGogInstalledGames(games),
+    manifestCount: manifestPaths.length,
+    manifestPaths,
+    libraryPaths: existingRoots,
+    configPaths: existingConfigPaths,
+  }
+}
+
+export async function detectGogLocalPlatform(): Promise<LocalPlatformDetection> {
+  const localLibrary = await readGogLocalLibrary()
+
   return createDetection({
     provider: 'GOG',
     label: 'GOG',
-    rootPaths: existingRoots,
-    libraryPaths: existingRoots,
-    configPaths: existingConfigPaths,
-    manifestCount,
+    detected: localLibrary.manifestCount > 0,
+    rootPaths: localLibrary.games.flatMap((game) =>
+      game.installPath ? [game.installPath] : [],
+    ),
+    libraryPaths: localLibrary.libraryPaths,
+    configPaths: localLibrary.configPaths,
+    manifestCount: localLibrary.manifestCount,
     message:
-      manifestCount > 0
-        ? `${manifestCount} fichier(s) GOG détecté(s).`
-        : existingConfigPaths.length > 0
-          ? 'Base GOG Galaxy détectée.'
+      localLibrary.manifestCount > 0
+        ? `${localLibrary.games.length} jeu(x) GOG détecté(s) depuis les fichiers locaux.`
+        : localLibrary.configPaths.length > 0
+          ? 'Base GOG Galaxy visible, mais aucun jeu local exploitable.'
           : 'Aucune installation GOG détectée.',
   })
 }
