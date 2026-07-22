@@ -55,6 +55,11 @@ async function fetchGames(archived = false) {
           collection: true,
         },
       },
+      gameGenres: {
+        include: {
+          genre: true,
+        },
+      },
       chronicles: {
         orderBy: {
           date: 'desc',
@@ -119,6 +124,11 @@ async function fetchGameDetail(id: string) {
           collection: true,
         },
       },
+      gameGenres: {
+        include: {
+          genre: true,
+        },
+      },
       externalGames: {
         select: {
           provider: true,
@@ -149,6 +159,9 @@ function toGameListItem(game: GameWithRelations): GameListItem {
     platforms: game.platforms.map((gamePlatform) => gamePlatform.platform.name),
     collections: game.collectionGames
       .map((collectionGame) => collectionGame.collection.name)
+      .sort((left, right) => left.localeCompare(right, 'fr-FR')),
+    genres: game.gameGenres
+      .map((gameGenre) => gameGenre.genre.name)
       .sort((left, right) => left.localeCompare(right, 'fr-FR')),
     totalMinutes: game.sessions.reduce(
       (total, session) => total + session.durationMinutes,
@@ -392,6 +405,11 @@ class GameService {
         collectionGames: {
           include: {
             collection: true,
+          },
+        },
+        gameGenres: {
+          include: {
+            genre: true,
           },
         },
       },

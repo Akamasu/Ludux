@@ -203,7 +203,7 @@ function normalizeText(value: string) {
 
 function inferGenre(game: GameListItem) {
   const haystack = normalizeText(
-    `${game.title} ${game.platforms.join(' ')} ${game.collections.join(' ')}`,
+    `${game.genres.join(' ')} ${game.title} ${game.platforms.join(' ')} ${game.collections.join(' ')}`,
   )
 
   return (

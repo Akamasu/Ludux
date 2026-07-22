@@ -73,6 +73,7 @@ interface RawgEnrichmentStats {
   linkedGames: number
   notFoundGames: number
   fieldsUpdated: number
+  syncedGenres: number
 }
 
 interface LocalGameMetadata {
@@ -286,6 +287,7 @@ function createRawgSyncMessage(stats: RawgEnrichmentStats) {
     `${stats.linkedGames} reliés à RAWG`,
     `${stats.notFoundGames} introuvables`,
     `${stats.fieldsUpdated} champs ajoutés`,
+    `${stats.syncedGenres} genres`,
   ].join(' / ')
 }
 
@@ -446,7 +448,7 @@ async function buildProviderOverview(): Promise<ProviderOverview> {
 }
 
 async function buildExportSnapshot() {
-  const [games, platforms, collections, tags, statistics] = await Promise.all([
+  const [games, platforms, collections, genres, tags, statistics] = await Promise.all([
     prisma.game.findMany({
       include: {
         achievements: true,
@@ -466,6 +468,11 @@ async function buildExportSnapshot() {
         collectionGames: {
           include: {
             collection: true,
+          },
+        },
+        gameGenres: {
+          include: {
+            genre: true,
           },
         },
         dlcs: true,
@@ -500,6 +507,11 @@ async function buildExportSnapshot() {
         name: 'asc',
       },
     }),
+    prisma.genre.findMany({
+      orderBy: {
+        name: 'asc',
+      },
+    }),
     prisma.tag.findMany({
       orderBy: {
         name: 'asc',
@@ -510,7 +522,7 @@ async function buildExportSnapshot() {
 
   return {
     exportedAt: new Date().toISOString(),
-    formatVersion: 1,
+    formatVersion: 2,
     app: {
       name: 'Ludux',
       version: app.getVersion(),
@@ -519,6 +531,7 @@ async function buildExportSnapshot() {
     games,
     platforms,
     collections,
+    genres,
     tags,
   }
 }
@@ -572,6 +585,16 @@ function normalizeSteamCategories(value: string[] | undefined) {
   ).sort((left, right) => left.localeCompare(right, 'fr-FR'))
 }
 
+function normalizeGameGenres(value: string[] | undefined) {
+  return Array.from(
+    new Set(
+      value
+        ?.map((genre) => genre.trim().replace(/\s+/g, ' '))
+        .filter((genre) => genre.length > 0) ?? [],
+    ),
+  ).sort((left, right) => left.localeCompare(right, 'fr-FR'))
+}
+
 async function ensureCollection(name: string) {
   const existingCollection = await prisma.collection.findFirst({
     where: {
@@ -589,6 +612,21 @@ async function ensureCollection(name: string) {
   return prisma.collection.create({
     data: {
       description: steamCollectionDescription,
+      name,
+    },
+    select: {
+      id: true,
+    },
+  })
+}
+
+async function ensureGenre(name: string) {
+  return prisma.genre.upsert({
+    where: {
+      name,
+    },
+    update: {},
+    create: {
       name,
     },
     select: {
@@ -635,6 +673,56 @@ async function syncSteamGameCollections(gameId: string, steamGame: SteamOwnedGam
   })
 
   return categories.length
+}
+
+async function syncGameGenres(gameId: string, genreNames: string[], source: ExternalProvider) {
+  const genres = normalizeGameGenres(genreNames)
+
+  if (genres.length === 0) {
+    await prisma.gameGenre.deleteMany({
+      where: {
+        gameId,
+        source,
+      },
+    })
+
+    return 0
+  }
+
+  for (const genreName of genres) {
+    const genre = await ensureGenre(genreName)
+
+    await prisma.gameGenre.upsert({
+      where: {
+        gameId_genreId: {
+          gameId,
+          genreId: genre.id,
+        },
+      },
+      update: {
+        source,
+      },
+      create: {
+        gameId,
+        genreId: genre.id,
+        source,
+      },
+    })
+  }
+
+  await prisma.gameGenre.deleteMany({
+    where: {
+      gameId,
+      source,
+      genre: {
+        name: {
+          notIn: genres,
+        },
+      },
+    },
+  })
+
+  return genres.length
 }
 
 async function upsertSteamPlaySession({
@@ -1159,6 +1247,7 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
     linkedGames: 0,
     notFoundGames: 0,
     fieldsUpdated: 0,
+    syncedGenres: 0,
   }
   const games = await prisma.game.findMany({
     where: {
@@ -1181,6 +1270,11 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
         },
         {
           website: null,
+        },
+        {
+          gameGenres: {
+            none: {},
+          },
         },
       ],
     },
@@ -1245,6 +1339,8 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
         data: rawgGameData,
       })
     }
+
+    stats.syncedGenres += await syncGameGenres(game.id, metadata.genres, rawgProvider)
 
     const data = buildRawgUpdateData(game, metadata)
     const updatedFieldCount = Object.keys(data).length

@@ -51,6 +51,7 @@ model Game {
   externalGames   ExternalGame[]
   review          Review?
   collectionGames CollectionGame[]
+  gameGenres      GameGenre[]
 
   @@index([title])
   @@index([status])
@@ -221,6 +222,30 @@ model CollectionGame {
 
   @@unique([collectionId, gameId])
   @@index([gameId])
+}
+
+model Genre {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  games GameGenre[]
+
+  @@index([name])
+}
+
+model GameGenre {
+  id      String  @id @default(uuid())
+  gameId  String
+  genreId String
+  source  String?
+
+  game  Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  genre Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, genreId])
+  @@index([genreId])
 }
 
 model Tag {

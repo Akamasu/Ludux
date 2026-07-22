@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.12 - 2026-07-22
+
+- Ajout de genres structurés dans la base locale avec liaison aux jeux.
+- Synchronisation des genres RAWG en plus des métadonnées déjà récupérées.
+- Utilisation des genres réels dans le rayonnage avant le fallback par titre ou collection.
+- Inclusion des genres dans les exports JSON Ludux.
+
 ## v0.24.11 - 2026-07-22
 
 - Fusion des catégories de l'armoire en un rayonnage unique regroupant tous les jeux.

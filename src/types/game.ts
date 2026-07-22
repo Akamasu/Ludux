@@ -47,6 +47,7 @@ export interface GameListItem {
   coverUrl: string | null
   platforms: string[]
   collections: string[]
+  genres: string[]
   totalMinutes: number
   rating: number | null
   lastChronicleTitle: string | null

@@ -10,6 +10,7 @@ export interface RawgGameMetadata {
   coverUrl: string | null
   releaseDate: string | null
   developer: string | null
+  genres: string[]
   publisher: string | null
   website: string | null
 }
@@ -35,14 +36,22 @@ function readString(value: unknown) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
 }
 
-function readNames(value: unknown) {
+function readNameList(value: unknown) {
   if (!Array.isArray(value)) {
-    return null
+    return []
   }
 
-  const names = value
-    .map((item) => (isRecord(item) ? readString(item['name']) : null))
-    .filter((name): name is string => name !== null)
+  return Array.from(
+    new Set(
+      value
+        .map((item) => (isRecord(item) ? readString(item['name']) : null))
+        .filter((name): name is string => name !== null),
+    ),
+  )
+}
+
+function readNames(value: unknown) {
+  const names = readNameList(value)
 
   return names.length > 0 ? names.join(', ') : null
 }
@@ -163,6 +172,7 @@ export function parseRawgGameMetadata(payload: unknown): RawgGameMetadata {
     coverUrl: readString(payload['background_image']),
     releaseDate: readString(payload['released']),
     developer: readNames(payload['developers']),
+    genres: readNameList(payload['genres']),
     publisher: readNames(payload['publishers']),
     website: readString(payload['website']),
   }

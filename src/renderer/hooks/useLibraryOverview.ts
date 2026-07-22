@@ -18,6 +18,7 @@ function createBrowserOnlyGame(input: CreateGameInput): GameListItem {
     coverUrl: input.coverUrl ?? null,
     platforms: input.platformName?.trim() ? [input.platformName.trim()] : [],
     collections: [],
+    genres: [],
     totalMinutes: 0,
     rating: null,
     lastChronicleTitle: null,

@@ -47,6 +47,7 @@ describe('rawg provider', () => {
         background_image: 'https://media.rawg.io/media/games/portal-2.jpg',
         released: '2011-04-18',
         developers: [{ name: 'Valve Software' }],
+        genres: [{ name: 'Puzzle' }, { name: 'Platformer' }, { name: 'Puzzle' }],
         publishers: [{ name: 'Valve' }],
         website: 'https://www.thinkwithportals.com/',
       }),
@@ -57,6 +58,7 @@ describe('rawg provider', () => {
       coverUrl: 'https://media.rawg.io/media/games/portal-2.jpg',
       releaseDate: '2011-04-18',
       developer: 'Valve Software',
+      genres: ['Puzzle', 'Platformer'],
       publisher: 'Valve',
       website: 'https://www.thinkwithportals.com/',
     })
@@ -86,6 +88,7 @@ describe('rawg provider', () => {
             background_image: 'https://media.rawg.io/media/games/portal-2.jpg',
             released: '2011-04-18',
             developers: [{ name: 'Valve Software' }],
+            genres: [{ name: 'Puzzle' }],
             publishers: [{ name: 'Valve' }],
             website: 'https://www.thinkwithportals.com/',
           }),
@@ -102,6 +105,7 @@ describe('rawg provider', () => {
       rawgId: 4200,
       title: 'Portal 2',
       developer: 'Valve Software',
+      genres: ['Puzzle'],
     })
     expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
