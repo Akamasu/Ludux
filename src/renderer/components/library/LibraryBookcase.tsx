@@ -16,15 +16,11 @@ interface GenreShelf {
   accent: string
   palette: string[]
   keywords: string[]
-  source: 'steam' | 'fallback'
 }
 
 interface BookcaseShelf {
   id: string
-  genre: GenreShelf
   games: GameListItem[]
-  pageNumber: number
-  totalGenrePages: number
 }
 
 interface BookcasePage {
@@ -40,6 +36,11 @@ type BookSpineStyle = CSSProperties & {
   '--book-span': string
 }
 
+interface GenreLegendItem {
+  genre: GenreShelf
+  count: number
+}
+
 const booksPerShelf = 8
 const shelvesPerPage = 2
 
@@ -50,7 +51,6 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Mondes persistants, gestion et expériences contemplatives.',
     accent: '#8BC7FF',
     palette: ['#274C77', '#3B6EA5', '#2D5F73', '#415A77'],
-    source: 'fallback',
     keywords: [
       'sim',
       'simulator',
@@ -71,7 +71,6 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Quêtes longues, builds, choix et grands voyages.',
     accent: '#A797FF',
     palette: ['#4B367C', '#5B3F93', '#37215F', '#6D4ED8'],
-    source: 'fallback',
     keywords: [
       'rpg',
       'fantasy',
@@ -93,7 +92,6 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Rythme, réflexes, combats et campagnes nerveuses.',
     accent: '#FF6F91',
     palette: ['#7A3148', '#963F5A', '#5C2638', '#AA4A65'],
-    source: 'fallback',
     keywords: [
       'action',
       'battlefield',
@@ -114,7 +112,6 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Exploration, récit, mystères et grands horizons.',
     accent: '#F4C95D',
     palette: ['#735C27', '#8A6E2F', '#5E4B20', '#9A7A33'],
-    source: 'fallback',
     keywords: [
       'adventure',
       'avent',
@@ -134,7 +131,6 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Plans, empires, tactique et décisions lentes.',
     accent: '#73D2A3',
     palette: ['#22543D', '#2F6B4F', '#1F4A37', '#3B7B5D'],
-    source: 'fallback',
     keywords: [
       'strategy',
       'strategie',
@@ -154,7 +150,6 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Idées singulières, énigmes et petites merveilles.',
     accent: '#F4A261',
     palette: ['#7A4A2D', '#965E38', '#623C24', '#A66A41'],
-    source: 'fallback',
     keywords: [
       'puzzle',
       'portal',
@@ -174,7 +169,6 @@ const genreShelves: GenreShelf[] = [
     subtitle: 'Compétition, vitesse et records personnels.',
     accent: '#4F7CFF',
     palette: ['#1E3A8A', '#2548A8', '#1D2F6F', '#315BBF'],
-    source: 'fallback',
     keywords: [
       'sport',
       'football',
@@ -198,28 +192,7 @@ const fallbackShelf: GenreShelf = {
   accent: '#C9A646',
   palette: ['#3C3344', '#45395B', '#2F3444', '#524667'],
   keywords: [],
-  source: 'fallback',
 }
-
-const collectionAccents = [
-  '#8BC7FF',
-  '#A797FF',
-  '#FF6F91',
-  '#F4C95D',
-  '#73D2A3',
-  '#F4A261',
-  '#4F7CFF',
-]
-
-const collectionPalettes = [
-  ['#274C77', '#3B6EA5', '#2D5F73', '#415A77'],
-  ['#4B367C', '#5B3F93', '#37215F', '#6D4ED8'],
-  ['#7A3148', '#963F5A', '#5C2638', '#AA4A65'],
-  ['#735C27', '#8A6E2F', '#5E4B20', '#9A7A33'],
-  ['#22543D', '#2F6B4F', '#1F4A37', '#3B7B5D'],
-  ['#7A4A2D', '#965E38', '#623C24', '#A66A41'],
-  ['#1E3A8A', '#2548A8', '#1D2F6F', '#315BBF'],
-]
 
 function normalizeText(value: string) {
   return value
@@ -228,50 +201,16 @@ function normalizeText(value: string) {
     .toLocaleLowerCase('fr-FR')
 }
 
-function hashText(value: string) {
-  return [...value].reduce((total, character) => total + character.charCodeAt(0), 0)
-}
-
-function createCollectionShelf(name: string): GenreShelf {
-  const normalizedName = normalizeText(name)
-  const seed = hashText(normalizedName)
-  const paletteIndex = seed % collectionPalettes.length
-
-  return {
-    id: `steam:${normalizedName}`,
-    label: name,
-    subtitle: 'Catégorie Steam synchronisée depuis votre bibliothèque.',
-    accent: collectionAccents[paletteIndex],
-    palette: collectionPalettes[paletteIndex],
-    keywords: [],
-    source: 'steam',
-  }
-}
-
 function inferGenre(game: GameListItem) {
-  const haystack = normalizeText(`${game.title} ${game.platforms.join(' ')}`)
+  const haystack = normalizeText(
+    `${game.title} ${game.platforms.join(' ')} ${game.collections.join(' ')}`,
+  )
 
   return (
     genreShelves.find((shelf) =>
       shelf.keywords.some((keyword) => haystack.includes(normalizeText(keyword))),
     ) ?? fallbackShelf
   )
-}
-
-function resolveShelvesForGame(game: GameListItem) {
-  const collections = Array.from(
-    new Set(
-      game.collections
-        .map((collection) => collection.trim())
-        .filter((collection) => collection.length > 0),
-    ),
-  )
-
-  if (collections.length > 0) {
-    return collections.map(createCollectionShelf)
-  }
-
-  return [inferGenre(game)]
 }
 
 function chunkGames(games: GameListItem[]) {
@@ -295,60 +234,43 @@ function chunkShelves(shelves: BookcaseShelf[]) {
 }
 
 function buildBookcasePages(games: GameListItem[]) {
-  const groupedGames = new Map<string, { genre: GenreShelf; games: GameListItem[] }>()
+  const sortedGames = [...games].sort((left, right) =>
+    left.title.localeCompare(right.title, 'fr-FR'),
+  )
+  const shelves = chunkGames(sortedGames).map(
+    (chunk, index): BookcaseShelf => ({
+      id: `shelf-${index}`,
+      games: chunk,
+    }),
+  )
+
+  return chunkShelves(shelves).map(
+    (pageShelves, index): BookcasePage => ({
+      id: `page-${index}-${pageShelves.map((shelf) => shelf.id).join('-')}`,
+      label: `Page ${index + 1}`,
+      shelves: pageShelves,
+    }),
+  )
+}
+
+function buildGenreLegend(games: GameListItem[]): GenreLegendItem[] {
+  const counts = new Map<string, GenreLegendItem>()
 
   for (const game of games) {
-    for (const genre of resolveShelvesForGame(game)) {
-      const group = groupedGames.get(genre.id)
+    const genre = inferGenre(game)
+    const current = counts.get(genre.id)
 
-      if (group) {
-        group.games.push(game)
-      } else {
-        groupedGames.set(genre.id, {
-          genre,
-          games: [game],
-        })
-      }
+    if (current) {
+      current.count += 1
+    } else {
+      counts.set(genre.id, { genre, count: 1 })
     }
   }
 
   const order = [...genreShelves, fallbackShelf].map((genre) => genre.id)
 
-  const shelves = [...groupedGames.values()]
-    .sort((left, right) => {
-      if (left.genre.source !== right.genre.source) {
-        return left.genre.source === 'steam' ? -1 : 1
-      }
-
-      if (left.genre.source === 'steam') {
-        return right.genre.label.localeCompare(left.genre.label, 'fr-FR')
-      }
-
-      return order.indexOf(right.genre.id) - order.indexOf(left.genre.id)
-    })
-    .flatMap((group) => {
-      const sortedGames = [...group.games].sort((left, right) =>
-        left.title.localeCompare(right.title, 'fr-FR'),
-      )
-      const chunks = chunkGames(sortedGames)
-
-      return chunks.map(
-        (chunk, index): BookcaseShelf => ({
-          id: `${group.genre.id}-${index}`,
-          genre: group.genre,
-          games: chunk,
-          pageNumber: index + 1,
-          totalGenrePages: chunks.length,
-        }),
-      )
-    })
-
-  return chunkShelves(shelves).map(
-    (pageShelves, index): BookcasePage => ({
-      id: `page-${index}-${pageShelves.map((shelf) => shelf.id).join('-')}`,
-      label: pageShelves.map((shelf) => shelf.genre.label).join(' / '),
-      shelves: pageShelves,
-    }),
+  return [...counts.values()].sort(
+    (left, right) => order.indexOf(left.genre.id) - order.indexOf(right.genre.id),
   )
 }
 
@@ -356,7 +278,8 @@ function createBookStyle(game: GameListItem, genre: GenreShelf, index: number): 
   const seed = [...game.id].reduce((total, character) => total + character.charCodeAt(0), 0)
   const color = genre.palette[(seed + index) % genre.palette.length]
   const readableTitleLength = normalizeText(game.title).replace(/[^a-z0-9]/g, '').length
-  const span = readableTitleLength > 58 ? 6 : readableTitleLength > 42 ? 5 : readableTitleLength > 26 ? 4 : 3
+  const span =
+    readableTitleLength > 58 ? 6 : readableTitleLength > 42 ? 5 : readableTitleLength > 26 ? 4 : 3
   const height = 50 + Math.min(16, Math.floor(readableTitleLength / 12) * 3) + (seed % 4)
 
   return {
@@ -369,6 +292,7 @@ function createBookStyle(game: GameListItem, genre: GenreShelf, index: number): 
 
 export function LibraryBookcase({ games, onOpen }: LibraryBookcaseProps) {
   const pages = useMemo(() => buildBookcasePages(games), [games])
+  const legendItems = useMemo(() => buildGenreLegend(games), [games])
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
   const [direction, setDirection] = useState<'next' | 'previous'>('next')
 
@@ -381,12 +305,9 @@ export function LibraryBookcase({ games, onOpen }: LibraryBookcaseProps) {
   }
 
   const currentPage = pages[currentPageIndex]
-  const currentAccent = currentPage.shelves[0]?.genre.accent ?? '#C9A646'
-  const currentSubtitle = currentPage.shelves.every(
-    (shelf) => shelf.genre.source === 'steam',
-  )
-    ? 'Catégories Steam synchronisées depuis votre bibliothèque.'
-    : currentPage.shelves.map((shelf) => shelf.genre.subtitle).join(' ')
+  const currentAccent = '#C9A646'
+  const currentSubtitle =
+    'Tous vos jeux réunis sur les mêmes rayons, quelle que soit leur plateforme. Les couleurs indiquent le genre estimé.'
   const currentVolumeCount = currentPage.shelves.reduce(
     (total, shelf) => total + shelf.games.length,
     0,
@@ -404,13 +325,10 @@ export function LibraryBookcase({ games, onOpen }: LibraryBookcaseProps) {
   }
 
   return (
-    <section className="library-cabinet" aria-label="Armoire de la bibliothèque">
+    <section className="library-cabinet" aria-label="Rayonnage de la bibliothèque">
       <div className="library-cabinet-header">
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase text-[#C9A646]">Armoire ancienne</p>
-          <h2 className="mt-1 truncate text-xl font-semibold text-white">
-            Rayons {currentPage.label}
-          </h2>
+          <h2 className="truncate text-xl font-semibold text-white">Rayonnage</h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-400">
             {currentSubtitle}
           </p>
@@ -443,6 +361,20 @@ export function LibraryBookcase({ games, onOpen }: LibraryBookcaseProps) {
         </div>
       </div>
 
+      <div className="library-genre-legend" aria-label="Légende des genres">
+        {legendItems.map((item) => (
+          <span
+            className="library-genre-legend-item"
+            key={item.genre.id}
+            style={{ '--legend-accent': item.genre.accent } as CSSProperties}
+          >
+            <span className="library-genre-dot" aria-hidden="true" />
+            <span>{item.genre.label}</span>
+            <span className="library-genre-count">{item.count}</span>
+          </span>
+        ))}
+      </div>
+
       <div className="library-page-shell">
         <div
           key={currentPage.id}
@@ -453,35 +385,31 @@ export function LibraryBookcase({ games, onOpen }: LibraryBookcaseProps) {
           <div className="library-shelf-stack">
             {currentPage.shelves.map((shelf) => (
               <div className="genre-shelf" key={shelf.id}>
-                <div className="genre-shelf-heading">
-                  <span>{shelf.genre.label}</span>
-                  {shelf.totalGenrePages > 1 ? (
-                    <span>
-                      {shelf.pageNumber}/{shelf.totalGenrePages}
-                    </span>
-                  ) : null}
-                </div>
                 <div className="genre-book-row">
-                  {shelf.games.map((game, index) => (
-                    <button
-                      key={game.id}
-                      type="button"
-                      title={game.title}
-                      onClick={() => onOpen?.(game.id)}
-                      className="library-book-spine"
-                      style={createBookStyle(game, shelf.genre, index)}
-                    >
-                      <span className="library-book-title">{game.title}</span>
-                      <span className="library-book-meta">
-                        <span className="library-book-status">
-                          {GAME_STATUS_LABELS[game.status]}
+                  {shelf.games.map((game, index) => {
+                    const genre = inferGenre(game)
+
+                    return (
+                      <button
+                        key={game.id}
+                        type="button"
+                        title={`${game.title} - ${genre.label}`}
+                        onClick={() => onOpen?.(game.id)}
+                        className="library-book-spine"
+                        style={createBookStyle(game, genre, index)}
+                      >
+                        <span className="library-book-title">{game.title}</span>
+                        <span className="library-book-meta">
+                          <span className="library-book-status">
+                            {GAME_STATUS_LABELS[game.status]}
+                          </span>
+                          <span className="library-book-time">
+                            {formatHours(game.totalMinutes)}
+                          </span>
                         </span>
-                        <span className="library-book-time">
-                          {formatHours(game.totalMinutes)}
-                        </span>
-                      </span>
-                    </button>
-                  ))}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             ))}
@@ -496,26 +424,28 @@ export function LibraryBookcase({ games, onOpen }: LibraryBookcaseProps) {
         </div>
       </div>
 
-      <div className="library-page-tabs" aria-label="Rayons">
-        {pages.map((page, index) => (
-          <button
-            key={page.id}
-            type="button"
-            aria-label={`Ouvrir les rayons ${page.label}`}
-            aria-current={index === currentPageIndex ? 'page' : undefined}
-            onClick={() => openPage(index)}
-            className={cn(
-              'library-page-tab',
-              index === currentPageIndex && 'library-page-tab-active',
-            )}
-            style={{
-              '--tab-accent': page.shelves[0]?.genre.accent ?? '#C9A646',
-            } as CSSProperties}
-          >
-            {page.label}
-          </button>
-        ))}
-      </div>
+      {pages.length > 1 ? (
+        <div className="library-page-tabs" aria-label="Pages du rayonnage">
+          {pages.map((page, index) => (
+            <button
+              key={page.id}
+              type="button"
+              aria-label={`Ouvrir la ${page.label.toLocaleLowerCase('fr-FR')}`}
+              aria-current={index === currentPageIndex ? 'page' : undefined}
+              onClick={() => openPage(index)}
+              className={cn(
+                'library-page-tab',
+                index === currentPageIndex && 'library-page-tab-active',
+              )}
+              style={{
+                '--tab-accent': '#C9A646',
+              } as CSSProperties}
+            >
+              {index + 1}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </section>
   )
 }

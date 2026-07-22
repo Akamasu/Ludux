@@ -187,6 +187,49 @@ button:disabled {
   transform: none;
 }
 
+.library-genre-legend {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.9rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(201, 166, 70, 0.14);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(201, 166, 70, 0.09), transparent 14rem),
+    rgba(10, 12, 18, 0.36);
+}
+
+.library-genre-legend-item {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--legend-accent), transparent 52%);
+  border-radius: 999px;
+  padding: 0.35rem 0.55rem;
+  color: #e6e8ef;
+  background: color-mix(in srgb, var(--legend-accent), transparent 88%);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.library-genre-dot {
+  width: 0.58rem;
+  height: 0.58rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--legend-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--legend-accent), transparent 78%);
+}
+
+.library-genre-count {
+  color: color-mix(in srgb, var(--legend-accent), white 38%);
+  font-size: 0.68rem;
+}
+
 .library-page-shell {
   position: relative;
   z-index: 1;
@@ -218,30 +261,7 @@ button:disabled {
   display: flex;
   min-height: clamp(12.8rem, 19vw, 16rem);
   align-items: stretch;
-  padding: 1.9rem 0.6rem 1.35rem;
-}
-
-.genre-shelf-heading {
-  position: absolute;
-  top: 0;
-  left: 0.25rem;
-  right: 0.25rem;
-  z-index: 2;
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  justify-content: space-between;
-  color: #d9c98b;
-  font-size: 0.72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.genre-shelf-heading span:first-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding: 0.45rem 0.6rem 1.35rem;
 }
 
 .genre-shelf::after {

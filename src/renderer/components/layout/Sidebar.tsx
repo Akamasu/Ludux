@@ -35,20 +35,6 @@ interface SidebarProps {
 export function Sidebar({ activeView, onNavigate }: SidebarProps) {
   return (
     <aside className="fixed bottom-0 left-0 top-11 z-40 flex w-20 flex-col border-r border-[#C9A646]/15 bg-[#10131A]/95 px-2 py-5 shadow-[inset_-1px_0_0_rgba(255,255,255,0.03)] backdrop-blur transition-[width,padding] duration-200 lg:w-64 lg:px-4">
-      <div className="mb-8 px-0 lg:px-2">
-        <div className="flex items-center justify-center gap-3 lg:justify-start">
-          <img
-            src="/ludux-logo.png"
-            alt=""
-            className="h-11 w-11 rounded-lg border border-white/10 object-cover"
-          />
-          <div className="hidden min-w-0 lg:block">
-            <p className="text-lg font-semibold text-white">Ludux</p>
-            <p className="text-xs text-[#B9A66B]">Rayonnage local</p>
-          </div>
-        </div>
-      </div>
-
       <p className="mb-2 hidden px-3 text-[11px] font-semibold uppercase text-zinc-600 lg:block">
         Pages
       </p>

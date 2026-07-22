@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.11 - 2026-07-22
+
+- Fusion des catégories de l'armoire en un rayonnage unique regroupant tous les jeux.
+- Conservation du code couleur par genre avec une légende intégrée au style Ludux.
+- Remplacement du sous-titre Steam par une phrase compatible avec plusieurs plateformes.
+- Nettoyage de la barre latérale avec retrait du logo et de la mention `Rayonnage local`.
+
 ## v0.24.10 - 2026-07-22
 
 - Adaptation de la longueur des livres de l'armoire selon la taille du titre.
