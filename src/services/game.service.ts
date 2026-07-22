@@ -193,11 +193,17 @@ function toGameDetail(game: GameDetailWithRelations): GameDetail {
     releaseDate: game.releaseDate?.toISOString() ?? null,
     website: game.website,
     metadataSources: game.externalGames
-      .filter((externalGame) => externalGame.provider === 'RAWG')
+      .filter(
+        (externalGame) =>
+          externalGame.provider === 'RAWG' || externalGame.provider === 'IGDB',
+      )
       .map((externalGame) => ({
         provider: externalGame.provider,
-        label: 'RAWG',
-        url: 'https://rawg.io/',
+        label: externalGame.provider === 'IGDB' ? 'IGDB' : 'RAWG',
+        url:
+          externalGame.provider === 'IGDB'
+            ? 'https://www.igdb.com/'
+            : 'https://rawg.io/',
         lastSyncedAt: externalGame.lastSyncedAt?.toISOString() ?? null,
       })),
     review: game.review

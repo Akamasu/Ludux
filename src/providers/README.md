@@ -54,6 +54,14 @@ La v0.23.0 ajoute le premier provider de metadonnees actif avec RAWG :
 - preservation des champs deja renseignes dans Ludux ;
 - liens persistants dans `ExternalGame` pour memoriser les correspondances RAWG.
 
+La v0.24.23 ajoute IGDB comme second provider de metadonnees :
+
+- authentification Twitch OAuth client credentials ;
+- recherche de jeux via l'API IGDB v4 ;
+- lecture des jaquettes, dates, studios, editeurs et genres ;
+- enrichissement uniquement des champs manquants dans Ludux ;
+- liens persistants dans `ExternalGame` pour memoriser les correspondances IGDB.
+
 Les prochaines integrations reseau devront rester optionnelles et passer par un adaptateur dedie avant de proposer une importation dans la base locale.
 
 Guides de preparation :
@@ -61,3 +69,4 @@ Guides de preparation :
 - `docs/providers/PLATFORM_REQUIREMENTS.md`
 - `docs/providers/STEAM_SETUP.md`
 - `docs/providers/RAWG_SETUP.md`
+- `docs/providers/IGDB_SETUP.md`

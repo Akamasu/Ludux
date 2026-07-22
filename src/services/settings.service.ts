@@ -19,6 +19,11 @@ import {
   fetchRawgGameMetadata,
   type RawgGameMetadata,
 } from '../providers/rawg'
+import {
+  fetchIgdbAccessToken,
+  fetchIgdbGameMetadata,
+  type IgdbGameMetadata,
+} from '../providers/igdb'
 import { EXTERNAL_PROVIDER_VALUES } from '../types/settings'
 import type {
   DeleteProviderConnectionInput,
@@ -61,6 +66,8 @@ const gogProvider: ExternalProvider = 'GOG'
 const gogPlatformName = 'GOG'
 const rawgProvider: ExternalProvider = 'RAWG'
 const rawgExternalId = 'catalogue'
+const igdbProvider: ExternalProvider = 'IGDB'
+const igdbExternalId = 'catalogue'
 const manualGenreSource = 'MANUAL'
 const defaultAutoSyncIntervalMinutes = 120
 const defaultSteamAchievementSyncLimit = 80
@@ -87,6 +94,15 @@ interface SteamSyncSources {
 }
 
 interface RawgEnrichmentStats {
+  scannedGames: number
+  enrichedGames: number
+  linkedGames: number
+  notFoundGames: number
+  fieldsUpdated: number
+  syncedGenres: number
+}
+
+interface IgdbEnrichmentStats {
   scannedGames: number
   enrichedGames: number
   linkedGames: number
@@ -228,7 +244,9 @@ function hasProviderToken(provider: ExternalProvider, tokenHint: string | null) 
   return (
     Boolean(trimOptional(tokenHint ?? undefined)) ||
     (provider === steamProvider && Boolean(readEnvValue('STEAM_WEB_API_KEY'))) ||
-    (provider === rawgProvider && Boolean(readEnvValue('RAWG_API_KEY')))
+    (provider === rawgProvider && Boolean(readEnvValue('RAWG_API_KEY'))) ||
+    (provider === igdbProvider &&
+      Boolean(readEnvValue('IGDB_CLIENT_ID') && readEnvValue('IGDB_CLIENT_SECRET')))
   )
 }
 
@@ -264,6 +282,10 @@ function resolveProviderExternalId(input: UpsertProviderConnectionInput) {
     return trimOptional(input.externalId) ?? rawgExternalId
   }
 
+  if (input.provider === igdbProvider) {
+    return trimOptional(input.externalId) ?? igdbExternalId
+  }
+
   return input.externalId.trim()
 }
 
@@ -274,6 +296,10 @@ function createProviderReadyMessage(provider: ExternalProvider) {
 
   if (provider === rawgProvider) {
     return 'Catalogue RAWG prêt pour enrichir les métadonnées.'
+  }
+
+  if (provider === igdbProvider) {
+    return 'Catalogue IGDB prêt pour enrichir les métadonnées.'
   }
 
   return 'Compte référencé localement. Synchronisation réseau non active.'
@@ -318,6 +344,21 @@ function createRawgSyncMessage(stats: RawgEnrichmentStats) {
     `${stats.scannedGames} jeux analysés`,
     `${stats.enrichedGames} enrichis`,
     `${stats.linkedGames} reliés à RAWG`,
+    `${stats.notFoundGames} introuvables`,
+    `${stats.fieldsUpdated} champs ajoutés`,
+    `${stats.syncedGenres} genres`,
+  ].join(' / ')
+}
+
+function createIgdbSyncMessage(stats: IgdbEnrichmentStats) {
+  if (stats.scannedGames === 0) {
+    return 'Aucun jeu actif à enrichir avec IGDB.'
+  }
+
+  return [
+    `${stats.scannedGames} jeux analysés`,
+    `${stats.enrichedGames} enrichis`,
+    `${stats.linkedGames} reliés à IGDB`,
     `${stats.notFoundGames} introuvables`,
     `${stats.fieldsUpdated} champs ajoutés`,
     `${stats.syncedGenres} genres`,
@@ -373,6 +414,40 @@ function parseSteamReleaseDate(value: string | null) {
 function buildRawgUpdateData(
   game: LocalGameMetadata,
   metadata: RawgGameMetadata,
+): GameMetadataUpdateData {
+  const releaseDate = parseRawgReleaseDate(metadata.releaseDate)
+  const data: GameMetadataUpdateData = {}
+
+  if (!game.description && metadata.description) {
+    data.description = metadata.description
+  }
+
+  if (!game.coverUrl && metadata.coverUrl) {
+    data.coverUrl = metadata.coverUrl
+  }
+
+  if (!game.releaseDate && releaseDate) {
+    data.releaseDate = releaseDate
+  }
+
+  if (!game.developer && metadata.developer) {
+    data.developer = metadata.developer
+  }
+
+  if (!game.publisher && metadata.publisher) {
+    data.publisher = metadata.publisher
+  }
+
+  if (!game.website && metadata.website) {
+    data.website = metadata.website
+  }
+
+  return data
+}
+
+function buildIgdbUpdateData(
+  game: LocalGameMetadata,
+  metadata: IgdbGameMetadata,
 ): GameMetadataUpdateData {
   const releaseDate = parseRawgReleaseDate(metadata.releaseDate)
   const data: GameMetadataUpdateData = {}
@@ -1804,6 +1879,133 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
   return stats
 }
 
+async function enrichLocalGamesWithIgdb({
+  accessToken,
+  clientId,
+}: {
+  accessToken: string
+  clientId: string
+}): Promise<IgdbEnrichmentStats> {
+  const stats: IgdbEnrichmentStats = {
+    scannedGames: 0,
+    enrichedGames: 0,
+    linkedGames: 0,
+    notFoundGames: 0,
+    fieldsUpdated: 0,
+    syncedGenres: 0,
+  }
+  const games = await prisma.game.findMany({
+    where: {
+      archived: false,
+      OR: [
+        {
+          description: null,
+        },
+        {
+          coverUrl: null,
+        },
+        {
+          releaseDate: null,
+        },
+        {
+          developer: null,
+        },
+        {
+          publisher: null,
+        },
+        {
+          website: null,
+        },
+        {
+          gameGenres: {
+            none: {},
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      coverUrl: true,
+      releaseDate: true,
+      developer: true,
+      publisher: true,
+      website: true,
+    },
+    orderBy: {
+      title: 'asc',
+    },
+  })
+
+  stats.scannedGames = games.length
+
+  for (const game of games) {
+    const metadata = await fetchIgdbGameMetadata({
+      accessToken,
+      clientId,
+      title: game.title,
+    })
+
+    if (!metadata) {
+      stats.notFoundGames += 1
+      continue
+    }
+
+    const externalId = String(metadata.igdbId)
+    const existingLink = await prisma.externalGame.findUnique({
+      where: {
+        provider_externalId: {
+          provider: igdbProvider,
+          externalId,
+        },
+      },
+    })
+    const igdbGameData = {
+      sourceTitle: metadata.title,
+      sourceCoverUrl: metadata.coverUrl,
+      lastSyncedAt: new Date(),
+    }
+
+    if (!existingLink) {
+      await prisma.externalGame.create({
+        data: {
+          gameId: game.id,
+          provider: igdbProvider,
+          externalId,
+          ...igdbGameData,
+        },
+      })
+      stats.linkedGames += 1
+    } else if (existingLink.gameId === game.id) {
+      await prisma.externalGame.update({
+        where: {
+          id: existingLink.id,
+        },
+        data: igdbGameData,
+      })
+    }
+
+    stats.syncedGenres += await syncGameGenres(game.id, metadata.genres, igdbProvider)
+
+    const data = buildIgdbUpdateData(game, metadata)
+    const updatedFieldCount = Object.keys(data).length
+
+    if (updatedFieldCount > 0) {
+      await prisma.game.update({
+        where: {
+          id: game.id,
+        },
+        data,
+      })
+      stats.enrichedGames += 1
+      stats.fieldsUpdated += updatedFieldCount
+    }
+  }
+
+  return stats
+}
+
 const AUTO_SYNC_STARTUP_DELAY_MS = 15_000
 
 class SettingsService {
@@ -1878,6 +2080,13 @@ class SettingsService {
 
     if (hasAccount(rawgProvider) || readEnvValue('RAWG_API_KEY')) {
       providers.push(rawgProvider)
+    }
+
+    if (
+      hasAccount(igdbProvider) ||
+      (readEnvValue('IGDB_CLIENT_ID') && readEnvValue('IGDB_CLIENT_SECRET'))
+    ) {
+      providers.push(igdbProvider)
     }
 
     if (hasAccount(epicProvider) || hasLocalPlatform(epicProvider)) {
@@ -2243,6 +2452,65 @@ class SettingsService {
     }
   }
 
+  private async syncIgdbProvider(): Promise<SettingsActionResult> {
+    const account = await prisma.externalAccount.findFirst({
+      where: {
+        provider: igdbProvider,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    })
+    const clientId =
+      account?.externalId && account.externalId !== igdbExternalId
+        ? account.externalId
+        : readEnvValue('IGDB_CLIENT_ID')
+    const clientSecret =
+      decryptSecret(account?.tokenHint) ?? readEnvValue('IGDB_CLIENT_SECRET')
+
+    if (!account && (!clientId || !clientSecret)) {
+      throw new Error('Connexion IGDB introuvable.')
+    }
+
+    if (!clientId || !clientSecret) {
+      throw new Error('Client ID et Client Secret IGDB obligatoires.')
+    }
+
+    await recordProviderSync(
+      igdbProvider,
+      'SYNCING',
+      'Enrichissement IGDB en cours.',
+    )
+
+    try {
+      const token = await fetchIgdbAccessToken({
+        clientId,
+        clientSecret,
+      })
+      const stats = await enrichLocalGamesWithIgdb({
+        accessToken: token.accessToken,
+        clientId,
+      })
+      const syncedAt = new Date()
+      const message = createIgdbSyncMessage(stats)
+
+      await recordProviderSync(igdbProvider, 'SYNCED', message, syncedAt)
+
+      return {
+        canceled: false,
+        path: null,
+        message,
+        createdAt: syncedAt.toISOString(),
+      }
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error ? caughtError.message : 'Erreur IGDB inconnue.'
+
+      await recordProviderSync(igdbProvider, 'ERROR', message)
+      throw caughtError
+    }
+  }
+
   private async syncRawgProvider(): Promise<SettingsActionResult> {
     const account = await prisma.externalAccount.findFirst({
       where: {
@@ -2303,6 +2571,10 @@ class SettingsService {
       return this.syncRawgProvider()
     }
 
+    if (input.provider === igdbProvider) {
+      return this.syncIgdbProvider()
+    }
+
     if (input.provider === epicProvider) {
       return this.syncEpicProvider()
     }
@@ -2312,7 +2584,7 @@ class SettingsService {
     }
 
     throw new Error(
-      'Seules les synchronisations Steam, Epic locale, GOG locale et RAWG sont disponibles pour le moment.',
+      'Seules les synchronisations Steam, Epic locale, GOG locale, RAWG et IGDB sont disponibles pour le moment.',
     )
   }
 

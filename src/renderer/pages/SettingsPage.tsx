@@ -237,6 +237,10 @@ function providerExternalIdLabel(provider: ProviderConnection) {
     return 'Catalogue'
   }
 
+  if (provider.provider === 'IGDB') {
+    return 'Client ID Twitch/IGDB'
+  }
+
   return 'Identifiant externe'
 }
 
@@ -249,6 +253,10 @@ function providerExternalIdPlaceholder(provider: ProviderConnection) {
     return 'catalogue'
   }
 
+  if (provider.provider === 'IGDB') {
+    return 'Client ID'
+  }
+
   return 'SteamID, gamertag, pseudo, clé publique...'
 }
 
@@ -259,6 +267,10 @@ function providerTokenLabel(provider: ProviderConnection) {
 
   if (provider.provider === 'RAWG') {
     return 'Clé API RAWG ou variable .env'
+  }
+
+  if (provider.provider === 'IGDB') {
+    return 'Client Secret IGDB ou variable .env'
   }
 
   return 'Indice token'
@@ -286,6 +298,7 @@ function isSyncableProvider(provider: ProviderConnection | undefined) {
     provider?.provider === 'STEAM' ||
     provider?.provider === 'EPIC' ||
     provider?.provider === 'GOG' ||
+    provider?.provider === 'IGDB' ||
     provider?.provider === 'RAWG'
   )
 }
@@ -320,6 +333,12 @@ function providerTokenPlaceholder(provider: ProviderConnection) {
     return provider.account?.hasToken
       ? 'Laisser vide pour conserver la clé existante'
       : 'Optionnel si RAWG_API_KEY est defini'
+  }
+
+  if (provider.provider === 'IGDB') {
+    return provider.account?.hasToken
+      ? 'Laisser vide pour conserver le secret existant'
+      : 'Optionnel si IGDB_CLIENT_SECRET est défini'
   }
 
   return 'Optionnel'
@@ -357,6 +376,7 @@ function ProvidersPanel({
   const trimmedExternalId = externalId.trim()
   const isSteamProvider = selectedProvider?.provider === 'STEAM'
   const isRawgProvider = selectedProvider?.provider === 'RAWG'
+  const isIgdbProvider = selectedProvider?.provider === 'IGDB'
   const selectedLocalPlatform = localPlatformForProvider(overview, selectedProvider)
   const selectedProviderCanSync = canSyncProvider(selectedProvider, overview)
 
@@ -570,6 +590,11 @@ function ProvidersPanel({
                     Catalogue RAWG public pour enrichir les fiches locales.
                   </span>
                 ) : null}
+                {isIgdbProvider ? (
+                  <span className="mt-2 block text-xs text-zinc-600">
+                    Client ID de l'application Twitch utilisée par IGDB.
+                  </span>
+                ) : null}
               </label>
 
               <div className="grid gap-3 md:grid-cols-2">
@@ -589,7 +614,7 @@ function ProvidersPanel({
                     {providerTokenLabel(selectedProvider)}
                   </span>
                   <input
-                    type={isSteamProvider || isRawgProvider ? 'password' : 'text'}
+                    type={isSteamProvider || isRawgProvider || isIgdbProvider ? 'password' : 'text'}
                     value={tokenHint}
                     onChange={(event) => {
                       setTokenHint(event.target.value)

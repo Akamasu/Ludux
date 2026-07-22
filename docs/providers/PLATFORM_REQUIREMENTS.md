@@ -28,8 +28,8 @@ Pour la v1 publique, Ludux devra éviter toute clé API commune dans le client d
 | `LUDUX_EPIC_MANAGED_APP_PATHS` | Epic | Dossiers d'apps gérées Epic séparés par `;` si la détection automatique échoue | Optionnel |
 | `LUDUX_EPIC_WEBCACHE_PATHS` | Epic | Dossiers `webcache*` Epic Launcher séparés par `;` si la détection automatique échoue | Optionnel |
 | `RAWG_API_KEY` | RAWG | Métadonnées publiques de jeux | Actif manuel |
-| `IGDB_CLIENT_ID` | IGDB | Authentification Twitch/IGDB | A venir |
-| `IGDB_CLIENT_SECRET` | IGDB | Authentification Twitch/IGDB | A venir |
+| `IGDB_CLIENT_ID` | IGDB | Client ID Twitch Developer pour interroger IGDB | Actif manuel |
+| `IGDB_CLIENT_SECRET` | IGDB | Client Secret Twitch Developer pour obtenir un token IGDB | Actif manuel |
 | `XBOX_CLIENT_ID` | Xbox | OAuth/accès Xbox Services si disponible | À étudier |
 | `XBOX_CLIENT_SECRET` | Xbox | OAuth/accès Xbox Services si disponible | À étudier |
 | `PLAYSTATION_CLIENT_ID` | PlayStation | Accès partenaire si obtenu | À étudier |
@@ -47,7 +47,7 @@ Pour la v1 publique, Ludux devra éviter toute clé API commune dans le client d
 | --- | --- | --- | --- | --- |
 | Steam | Bibliothèque, temps de jeu, jaquettes, jeux installés | Web API key, SteamID64, détails de jeux visibles, dossier Steam local | Steam Web API, IPlayerService, fichiers Steam locaux | Intégration active avec fallback local |
 | RAWG | Métadonnées catalogue | Clé API RAWG | RAWG API docs | Intégration active en enrichissement manuel |
-| IGDB | Métadonnées catalogue | Twitch Client ID, Client Secret, token OAuth app | IGDB API docs, Twitch OAuth | Bon candidat pour jaquettes/studios/genres |
+| IGDB | Métadonnées catalogue | Twitch Client ID, Client Secret, token OAuth app | IGDB API docs, Twitch OAuth | Intégration active en enrichissement manuel |
 | Xbox | Succès, activité, profil | Accès Microsoft/Xbox Services autorisé | Microsoft Learn Xbox Services | À garder pour plus tard, accès plus contraint |
 | PlayStation | Trophées, profil, activité | Accès PlayStation Partners si accepté | PlayStation Partners | À garder pour plus tard, pas de route publique simple |
 | Nintendo | Catalogue/profil Switch | Accès Nintendo Developer Portal si accepté | Nintendo Developer Portal | À garder pour plus tard, pas de route publique simple |

@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.23 - 2026-07-22
+
+- Ajout du provider IGDB pour enrichir les fiches avec jaquettes, dates, studios, éditeurs et genres.
+- Authentification IGDB via le flux Twitch OAuth client credentials.
+- Synchronisation IGDB depuis `.env` ou depuis les identifiants enregistrés dans les paramètres.
+- Affichage de la source IGDB sur les fiches de jeu enrichies.
+
 ## v0.24.22 - 2026-07-22
 
 - Import local GOG depuis les fichiers `goggame-*.info`.

@@ -40,8 +40,8 @@ export const EXTERNAL_PROVIDER_DEFINITIONS: ExternalProviderDefinition[] = [
   {
     provider: 'IGDB',
     label: 'IGDB',
-    description: 'Métadonnées publiques : jaquettes, dates, studios et genres.',
-    capabilities: ['Métadonnées', 'Jaquettes'],
+    description: 'Métadonnées publiques via Twitch : jaquettes, dates, studios et genres.',
+    capabilities: ['Métadonnées', 'Jaquettes', 'Genres'],
   },
   {
     provider: 'RAWG',
