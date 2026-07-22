@@ -2,6 +2,15 @@ import { copyFile, mkdir } from 'node:fs/promises'
 import { basename, extname, join, parse, resolve } from 'node:path'
 import { prisma } from '../database/client'
 import { fetchSteamDlcCatalog, type SteamAppDetails } from '../providers/steam'
+import {
+  createSteamDlcDisplayName,
+  filterSteamDlcCatalogDuplicates,
+  findMergeableSteamDlc,
+  hasResolvedSteamDlcName,
+  mergeSteamDlcBundleDuplicates,
+  normalizeDlcLookupText,
+  shouldMergeSteamDlcCandidate,
+} from './steam-dlc.service'
 import type {
   AddAvailableDlcInput,
   AvailableDlcListItem,
@@ -204,7 +213,7 @@ function toGameDetail(game: GameDetailWithRelations): GameDetail {
           updatedAt: game.review.updatedAt.toISOString(),
         }
       : null,
-    dlcs: game.dlcs.map((dlc) => ({
+    dlcs: mergeSteamDlcBundleDuplicates(game.dlcs).map((dlc) => ({
       id: dlc.id,
       name: dlc.name,
       releaseDate: dlc.releaseDate?.toISOString() ?? null,
@@ -261,10 +270,6 @@ function trimNullable(value: string | null | undefined) {
   return trimmed ? trimmed : null
 }
 
-function normalizeLookupText(value: string) {
-  return value.trim().toLocaleLowerCase('fr-FR')
-}
-
 function normalizeGameGenres(value: string[] | undefined) {
   return Array.from(
     new Set(
@@ -304,10 +309,6 @@ function readSteamAppId(value: string | null | undefined) {
   const appid = Number(value)
 
   return Number.isInteger(appid) && appid > 0 ? appid : null
-}
-
-function createSteamDlcName(detail: SteamAppDetails) {
-  return detail.title ?? `Steam DLC ${detail.appid}`
 }
 
 async function requireGameDetail(id: string) {
@@ -373,7 +374,7 @@ function toAvailableDlcListItem(
   existingSteamExternalIds: Set<string>,
   existingDlcNames: Set<string>,
 ): AvailableDlcListItem {
-  const name = createSteamDlcName(detail)
+  const name = createSteamDlcDisplayName(detail)
   const externalId = String(detail.appid)
 
   return {
@@ -385,7 +386,87 @@ function toAvailableDlcListItem(
     externalId,
     added:
       existingSteamExternalIds.has(externalId) ||
-      existingDlcNames.has(normalizeLookupText(name)),
+      existingDlcNames.has(normalizeDlcLookupText(name)),
+  }
+}
+
+async function reconcileExistingSteamDlcCatalog(
+  gameId: string,
+  catalog: SteamAppDetails[],
+) {
+  const existingDlcs = await prisma.dlc.findMany({
+    where: {
+      gameId,
+    },
+    select: {
+      id: true,
+      name: true,
+      provider: true,
+      externalId: true,
+      owned: true,
+      completed: true,
+    },
+  })
+
+  for (const detail of catalog) {
+    const target = findMergeableSteamDlc(existingDlcs, detail)
+
+    if (!target) {
+      continue
+    }
+
+    const duplicateDlcs = existingDlcs.filter(
+      (dlc) => dlc.id !== target.id && shouldMergeSteamDlcCandidate(dlc, detail),
+    )
+    const mergedDlcs = [target, ...duplicateDlcs]
+    const name = hasResolvedSteamDlcName(detail)
+      ? createSteamDlcDisplayName(detail)
+      : target.name
+
+    await prisma.dlc.update({
+      where: {
+        id: target.id,
+      },
+      data: {
+        name,
+        releaseDate: parseNullableDate(detail.releaseDate),
+        provider: steamProvider,
+        externalId: String(detail.appid),
+        owned: mergedDlcs.some((dlc) => dlc.owned),
+        completed: mergedDlcs.some((dlc) => dlc.completed),
+      },
+    })
+
+    if (duplicateDlcs.length > 0) {
+      await prisma.dlc.deleteMany({
+        where: {
+          gameId,
+          id: {
+            in: duplicateDlcs.map((dlc) => dlc.id),
+          },
+        },
+      })
+
+      const duplicateIds = new Set(duplicateDlcs.map((dlc) => dlc.id))
+      for (let index = existingDlcs.length - 1; index >= 0; index -= 1) {
+        if (duplicateIds.has(existingDlcs[index].id)) {
+          existingDlcs.splice(index, 1)
+        }
+      }
+    }
+
+    const targetIndex = existingDlcs.findIndex((dlc) => dlc.id === target.id)
+
+    if (targetIndex >= 0) {
+      existingDlcs[targetIndex] = {
+        ...existingDlcs[targetIndex],
+        name,
+        provider: steamProvider,
+        externalId: String(detail.appid),
+        owned: mergedDlcs.some((dlc) => dlc.owned),
+        completed: mergedDlcs.some((dlc) => dlc.completed),
+      }
+    }
   }
 }
 
@@ -499,16 +580,23 @@ class GameService {
     const catalog = await fetchSteamDlcCatalog({
       appid: steamAppId,
     })
+    await reconcileExistingSteamDlcCatalog(game.id, catalog)
+
+    const syncedDlcs = await prisma.dlc.findMany({
+      where: {
+        gameId: game.id,
+      },
+    })
     const existingSteamExternalIds = new Set(
-      game.dlcs.flatMap((dlc) =>
+      syncedDlcs.flatMap((dlc) =>
         dlc.provider === steamProvider && dlc.externalId ? [dlc.externalId] : [],
       ),
     )
     const existingDlcNames = new Set(
-      game.dlcs.map((dlc) => normalizeLookupText(dlc.name)),
+      syncedDlcs.map((dlc) => normalizeDlcLookupText(dlc.name)),
     )
 
-    return catalog
+    return filterSteamDlcCatalogDuplicates(catalog)
       .map((detail) =>
         toAvailableDlcListItem(detail, existingSteamExternalIds, existingDlcNames),
       )
@@ -643,8 +731,10 @@ class GameService {
       throw new Error('DLC Steam introuvable pour ce jeu.')
     }
 
+    await reconcileExistingSteamDlcCatalog(input.gameId, [detail])
+
     const externalId = String(detail.appid)
-    const name = createSteamDlcName(detail)
+    const name = createSteamDlcDisplayName(detail)
     const releaseDate = parseNullableDate(detail.releaseDate)
     const existingSyncedDlc = await prisma.dlc.findFirst({
       where: {

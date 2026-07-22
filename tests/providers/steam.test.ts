@@ -182,7 +182,9 @@ HKEY_CURRENT_USER\\Software\\Valve\\Steam
             name: 'Portal 2 - Test Chambers',
             header_image: 'https://shared.akamai.steamstatic.com/dlc.jpg',
             description: '<p>Nouvelles salles de test.</p>',
-            release_date: 'May 1, 2011',
+            release_date: {
+              steam: 1_304_208_000,
+            },
           },
         ],
       }),

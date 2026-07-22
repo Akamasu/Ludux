@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.16 - 2026-07-22
+
+- Renommage automatique des DLC Steam restés en fallback `Steam DLC <id>` dès que le catalogue fournit le vrai nom.
+- Fusion/masquage des bundles Steam qui doublonnent un DLC principal, par exemple les `Premium Bundle`.
+- Réparation des doublons DLC lors du rafraîchissement du catalogue ou de la synchronisation Steam.
+- Prise en charge des dates DLC Steam fournies sous forme de timestamp.
+
 ## v0.24.15 - 2026-07-22
 
 - Retrait de la vue Armoire ancienne dans la bibliothèque.

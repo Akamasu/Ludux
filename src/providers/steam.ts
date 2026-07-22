@@ -1068,6 +1068,14 @@ function normalizeSteamAppIds(appids: number[]) {
 }
 
 function parseSteamStoreReleaseDate(value: unknown) {
+  if (isRecord(value)) {
+    const timestamp = readNumberLike(value['steam'])
+
+    if (timestamp && timestamp > 0) {
+      return new Date(timestamp * 1000).toISOString()
+    }
+  }
+
   const releaseDate = readString(isRecord(value) ? value['date'] : value)
 
   if (!releaseDate) {

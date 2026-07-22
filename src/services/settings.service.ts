@@ -6,6 +6,7 @@ import {
   fetchSteamAppDetails,
   fetchSteamAchievements,
   fetchSteamOwnedGames,
+  fetchSteamDlcCatalog,
   hasDatedSteamPlaytime,
   mergeSteamAppDetails,
   mergeSteamGames,
@@ -33,6 +34,13 @@ import { EXTERNAL_PROVIDER_DEFINITIONS } from '../providers/registry'
 import { libraryService } from './library.service'
 import { logger } from '../utils/logger'
 import { shouldPreferFrenchText } from '../utils/frenchText'
+import {
+  createSteamDlcDisplayName,
+  filterSteamDlcCatalogDuplicates,
+  findMergeableSteamDlc,
+  hasResolvedSteamDlcName,
+  shouldMergeSteamDlcCandidate,
+} from './steam-dlc.service'
 
 const userDataDirectory = resolve('userdata')
 const exportDirectory = join(userDataDirectory, 'exports')
@@ -825,62 +833,69 @@ async function upsertSteamDlc({
 }) {
   const externalId = String(detail.appid)
   const releaseDate = parseSteamReleaseDate(detail.releaseDate)
-  const existingSyncedDlc = await prisma.dlc.findFirst({
+  const existingDlcs = await prisma.dlc.findMany({
     where: {
       gameId,
-      provider: steamProvider,
-      externalId,
     },
     select: {
       id: true,
+      name: true,
+      provider: true,
+      externalId: true,
+      owned: true,
+      completed: true,
     },
   })
+  const existingSyncedDlc = existingDlcs.find(
+    (dlc) => dlc.provider === steamProvider && dlc.externalId === externalId,
+  )
+  const mergeableDlc = existingSyncedDlc ?? findMergeableSteamDlc(existingDlcs, detail)
 
-  if (existingSyncedDlc) {
+  if (mergeableDlc) {
+    const duplicateDlcs = existingDlcs.filter(
+      (dlc) => dlc.id !== mergeableDlc.id && shouldMergeSteamDlcCandidate(dlc, detail),
+    )
+    const mergedDlcs = [mergeableDlc, ...duplicateDlcs]
+    const name = hasResolvedSteamDlcName(detail)
+      ? createSteamDlcDisplayName(detail)
+      : mergeableDlc.name
+
     await prisma.dlc.update({
       where: {
-        id: existingSyncedDlc.id,
+        id: mergeableDlc.id,
       },
       data: {
-        name: detail.title ?? `Steam DLC ${externalId}`,
+        name,
         releaseDate,
+        provider: steamProvider,
+        externalId,
+        owned: mergedDlcs.some((dlc) => dlc.owned),
+        completed: mergedDlcs.some((dlc) => dlc.completed),
       },
     })
+
+    if (duplicateDlcs.length > 0) {
+      await prisma.dlc.deleteMany({
+        where: {
+          gameId,
+          id: {
+            in: duplicateDlcs.map((dlc) => dlc.id),
+          },
+        },
+      })
+    }
+
     return
   }
 
-  const existingManualDlc = detail.title
-    ? await prisma.dlc.findFirst({
-        where: {
-          gameId,
-          name: detail.title,
-          provider: null,
-          externalId: null,
-        },
-        select: {
-          id: true,
-        },
-      })
-    : null
-
-  if (existingManualDlc) {
-    await prisma.dlc.update({
-      where: {
-        id: existingManualDlc.id,
-      },
-      data: {
-        provider: steamProvider,
-        externalId,
-        releaseDate,
-      },
-    })
+  if (!hasResolvedSteamDlcName(detail)) {
     return
   }
 
   await prisma.dlc.create({
     data: {
       gameId,
-      name: detail.title ?? `Steam DLC ${externalId}`,
+      name: createSteamDlcDisplayName(detail),
       releaseDate,
       provider: steamProvider,
       externalId,
@@ -915,20 +930,39 @@ async function syncSteamDlcCatalog(
       continue
     }
 
-    for (const dlcAppId of detail.dlcAppIds) {
+    const steamDlcCatalog = await fetchSteamDlcCatalog({
+      appid: game.appid,
+    }).catch(() => [])
+    const visibleSteamDlcCatalog = filterSteamDlcCatalogDuplicates(steamDlcCatalog)
+    const hiddenSteamDlcAppIds = new Set(
+      steamDlcCatalog
+        .filter(
+          (dlcDetail) =>
+            !visibleSteamDlcCatalog.some((visibleDlc) => visibleDlc.appid === dlcDetail.appid),
+        )
+        .map((dlcDetail) => dlcDetail.appid),
+    )
+    const catalogDetailsByAppId = new Map(
+      visibleSteamDlcCatalog.map((dlcDetail) => [dlcDetail.appid, dlcDetail]),
+    )
+    const dlcAppIds = [
+      ...new Set([
+        ...detail.dlcAppIds.filter((dlcAppId) => !hiddenSteamDlcAppIds.has(dlcAppId)),
+        ...visibleSteamDlcCatalog.map((dlcDetail) => dlcDetail.appid),
+      ]),
+    ]
+
+    for (const dlcAppId of dlcAppIds) {
+      const dlcDetail =
+        catalogDetailsByAppId.get(dlcAppId) ?? dlcDetailsByAppId.get(dlcAppId)
+
+      if (!dlcDetail) {
+        continue
+      }
+
       await upsertSteamDlc({
         gameId,
-        detail: dlcDetailsByAppId.get(dlcAppId) ?? {
-          appid: dlcAppId,
-          title: `Steam DLC ${dlcAppId}`,
-          coverUrl: null,
-          description: null,
-          developer: null,
-          dlcAppIds: [],
-          publisher: null,
-          releaseDate: null,
-          website: null,
-        },
+        detail: dlcDetail,
       })
       syncedDlc += 1
     }
