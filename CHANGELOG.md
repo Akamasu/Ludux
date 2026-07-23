@@ -29,6 +29,12 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.31 - 2026-07-23
+
+- Simplification de l'affichage des plateformes connectées sur les fiches de jeu.
+- Remplacement du panneau technique par un résumé discret et une zone `Gérer` repliée.
+- Libellés plus orientés utilisateur pour ouvrir ou retirer une source liée.
+
 ## v0.24.30 - 2026-07-23
 
 - Ajout d'un panneau de liens providers sur les fiches de jeu.

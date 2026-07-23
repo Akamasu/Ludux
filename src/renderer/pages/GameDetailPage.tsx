@@ -13,7 +13,6 @@ import {
   ExternalLink,
   FolderOpen,
   ImagePlus,
-  Link2,
   Pencil,
   Plus,
   Puzzle,
@@ -196,22 +195,60 @@ function providerLinkStatusLabel(source: GameProviderLink) {
   }
 
   if (source.matchStatus === 'UNKNOWN') {
-    return 'Inconnu'
+    return 'À confirmer'
   }
 
-  return 'Fiable'
+  return 'Connectée'
 }
 
 function providerLinkStatusClassName(source: GameProviderLink) {
   if (source.matchStatus === 'REVIEW') {
-    return 'border-[#C9A646]/35 bg-[#C9A646]/10 text-[#E9DFA8]'
+    return 'border-[#C9A646]/35 bg-[#C9A646]/10 text-[#F4E7A6]'
   }
 
   if (source.matchStatus === 'UNKNOWN') {
-    return 'border-white/10 bg-white/7 text-zinc-400'
+    return 'border-white/10 bg-white/5 text-zinc-400'
   }
 
-  return 'border-emerald-400/25 bg-emerald-400/10 text-emerald-100'
+  return 'border-[#7C5CFF]/25 bg-[#7C5CFF]/10 text-[#D8D0FF]'
+}
+
+function providerLinksCountLabel(count: number) {
+  return count > 1 ? `${count} plateformes connectées` : '1 plateforme connectée'
+}
+
+function providerLinksSummary(sources: GameProviderLink[]) {
+  const labels = sources.map((source) => source.label)
+
+  if (labels.length <= 2) {
+    return labels.join(' et ')
+  }
+
+  return `${labels.slice(0, 2).join(', ')} et ${labels.length - 2} autre${
+    labels.length - 2 > 1 ? 's' : ''
+  }`
+}
+
+function providerLinkDetails(source: GameProviderLink) {
+  if (source.matchStatus === 'REVIEW') {
+    return source.sourceTitle
+      ? `Trouvé sous « ${source.sourceTitle} ».`
+      : 'La correspondance doit être confirmée.'
+  }
+
+  if (source.matchStatus === 'UNKNOWN') {
+    return 'Source connectée, titre catalogue absent.'
+  }
+
+  if (source.lastSyncedAt) {
+    return `Mis à jour le ${formatDate(source.lastSyncedAt)}.`
+  }
+
+  return 'Source connectée.'
+}
+
+function providerLinkReference(source: GameProviderLink) {
+  return source.sourceTitle ?? source.externalId
 }
 
 function ProviderLinksPanel({
@@ -223,13 +260,19 @@ function ProviderLinksPanel({
   isSaving: boolean
   onDeleteExternalGameLink: (input: DeleteExternalGameLinkInput) => Promise<void>
 }) {
+  const [isManagingSources, setIsManagingSources] = useState(false)
+
   if (detail.metadataSources.length === 0) {
     return null
   }
 
+  const sourcesToReview = detail.metadataSources.filter(
+    (source) => source.matchStatus !== 'CONFIDENT',
+  )
+
   async function handleDelete(source: GameProviderLink) {
     const confirmed = window.confirm(
-      `Délier ${source.label} de "${detail.title}" ? Les données locales du jeu seront conservées.`,
+      `Retirer le lien ${source.label} de "${detail.title}" ? Le jeu et vos notes resteront dans Ludux.`,
     )
 
     if (!confirmed) {
@@ -243,86 +286,115 @@ function ProviderLinksPanel({
   }
 
   return (
-    <div className="mt-6 rounded-lg border border-white/10 bg-[#0F1117]/70 p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold text-white">Liens providers</h2>
+    <section className="mt-6 border-t border-white/10 pt-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-white">Plateformes connectées</h2>
           <p className="mt-1 text-xs text-zinc-500">
-            Sources synchronisées et correspondances à contrôler.
+            {providerLinksCountLabel(detail.metadataSources.length)} :{' '}
+            {providerLinksSummary(detail.metadataSources)}.
+            {sourcesToReview.length > 0
+              ? ` ${sourcesToReview.length} lien${
+                  sourcesToReview.length > 1 ? 's' : ''
+                } à vérifier.`
+              : ''}
           </p>
         </div>
-        <Link2 size={17} className="text-[#A797FF]" aria-hidden="true" />
+        <button
+          type="button"
+          onClick={() => setIsManagingSources((current) => !current)}
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-medium text-zinc-300 transition hover:border-[#7C5CFF]/40 hover:bg-[#7C5CFF]/10 hover:text-white"
+          aria-expanded={isManagingSources}
+        >
+          Gérer
+          <ChevronDown
+            size={14}
+            className={`transition ${isManagingSources ? 'rotate-180' : ''}`}
+            aria-hidden="true"
+          />
+        </button>
       </div>
 
-      <div className="grid gap-2">
+      <div className="mt-3 flex flex-wrap gap-2">
         {detail.metadataSources.map((source) => (
-          <article
+          <span
             key={source.id}
-            className={`grid gap-3 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_auto] ${
-              source.matchStatus === 'REVIEW'
-                ? 'border-[#C9A646]/25 bg-[#C9A646]/5'
-                : 'border-white/10 bg-[#121620]'
-            }`}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${providerLinkStatusClassName(source)}`}
           >
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-semibold text-white">{source.label}</p>
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs ${providerLinkStatusClassName(source)}`}
-                >
-                  {source.matchStatus === 'REVIEW' ? (
-                    <AlertTriangle size={13} aria-hidden="true" />
-                  ) : (
-                    <CheckCircle2 size={13} aria-hidden="true" />
-                  )}
-                  {providerLinkStatusLabel(source)}
-                </span>
-              </div>
-              <p className="mt-2 truncate text-xs text-zinc-500" title={source.externalId}>
-                ID externe : {source.externalId}
-              </p>
-              {source.sourceTitle ? (
-                <p className="mt-1 truncate text-sm text-zinc-300" title={source.sourceTitle}>
-                  Titre source : {source.sourceTitle}
-                </p>
-              ) : null}
-              {source.matchReason ? (
-                <p className="mt-2 text-xs text-[#E9DFA8]">{source.matchReason}</p>
-              ) : null}
-              {source.lastSyncedAt ? (
-                <p className="mt-2 text-xs text-zinc-600">
-                  Synchronisé le {formatDate(source.lastSyncedAt)}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              {source.url ? (
-                <a
-                  href={source.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-xs font-medium text-zinc-300 transition hover:border-[#7C5CFF]/50 hover:text-white"
-                >
-                  <ExternalLink size={14} aria-hidden="true" />
-                  Ouvrir
-                </a>
-              ) : null}
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => handleDelete(source)}
-                disabled={isSaving}
-                className="h-9 border-rose-400/30 bg-rose-400/10 px-3 text-xs text-rose-100 hover:border-rose-300/60 hover:bg-rose-400/15"
-              >
-                <Trash2 size={14} aria-hidden="true" />
-                Délier
-              </Button>
-            </div>
-          </article>
+            {source.matchStatus === 'REVIEW' ? (
+              <AlertTriangle size={13} aria-hidden="true" />
+            ) : (
+              <CheckCircle2 size={13} aria-hidden="true" />
+            )}
+            {source.label}
+            {source.matchStatus !== 'CONFIDENT' ? (
+              <span className="text-current/80">· {providerLinkStatusLabel(source)}</span>
+            ) : null}
+          </span>
         ))}
       </div>
-    </div>
+
+      {isManagingSources ? (
+        <div className="mt-3 divide-y divide-white/10 rounded-lg border border-white/10 bg-white/[0.03] px-3">
+          {detail.metadataSources.map((source) => (
+            <article
+              key={source.id}
+              className="grid gap-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto]"
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium text-white">{source.label}</p>
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs ${providerLinkStatusClassName(source)}`}
+                  >
+                    {source.matchStatus === 'REVIEW' ? (
+                      <AlertTriangle size={13} aria-hidden="true" />
+                    ) : (
+                      <CheckCircle2 size={13} aria-hidden="true" />
+                    )}
+                    {providerLinkStatusLabel(source)}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-zinc-500">{providerLinkDetails(source)}</p>
+                {source.matchReason ? (
+                  <p className="mt-1 text-xs text-[#E9DFA8]">{source.matchReason}</p>
+                ) : null}
+                <p
+                  className="mt-1 truncate text-xs text-zinc-600"
+                  title={source.externalId}
+                >
+                  Référence : {providerLinkReference(source)}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                {source.url ? (
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-xs font-medium text-zinc-300 transition hover:border-[#7C5CFF]/50 hover:text-white"
+                  >
+                    <ExternalLink size={13} aria-hidden="true" />
+                    Ouvrir
+                  </a>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => handleDelete(source)}
+                  disabled={isSaving}
+                  className="h-8 border-rose-400/25 bg-transparent px-3 text-xs text-zinc-400 hover:border-rose-300/50 hover:bg-rose-400/10 hover:text-rose-100"
+                >
+                  <Trash2 size={13} aria-hidden="true" />
+                  Retirer
+                </Button>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : null}
+    </section>
   )
 }
 

@@ -99,7 +99,7 @@ export function buildGameProviderLink(
     matchStatus,
     matchReason:
       matchStatus === 'REVIEW'
-        ? 'Le titre source est différent du titre local.'
+        ? 'Le titre trouvé ne correspond pas exactement au titre dans Ludux.'
         : null,
   }
 }
