@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  isLocalGameCacheCoverUrl,
   localGameCacheProtocol,
   normalizeCacheSegment,
+  parseLocalGameCacheSnapshot,
   resolveImageExtension,
   resolveLocalGameCacheUrl,
   shouldCacheRemoteAsset,
@@ -22,6 +24,40 @@ describe('local game cache', () => {
     expect(shouldCacheRemoteAsset(`${localGameCacheProtocol}://cover/steam/620.jpg`)).toBe(
       false,
     )
+  })
+
+  it('detects local game cache cover URLs', () => {
+    expect(isLocalGameCacheCoverUrl(`${localGameCacheProtocol}://cover/steam/620.jpg`)).toBe(
+      true,
+    )
+    expect(isLocalGameCacheCoverUrl(`${localGameCacheProtocol}://metadata/steam/620.json`)).toBe(
+      false,
+    )
+    expect(isLocalGameCacheCoverUrl('https://cdn.example.test/cover.jpg')).toBe(false)
+  })
+
+  it('reads remote cover fallbacks from metadata snapshots', () => {
+    expect(
+      parseLocalGameCacheSnapshot({
+        provider: 'STEAM',
+        externalId: '620',
+        remoteCoverUrl: 'https://cdn.example.test/620.jpg',
+        cachedCoverUrl: `${localGameCacheProtocol}://cover/steam/620.jpg`,
+      }),
+    ).toEqual({
+      provider: 'STEAM',
+      externalId: '620',
+      remoteCoverUrl: 'https://cdn.example.test/620.jpg',
+      cachedCoverUrl: `${localGameCacheProtocol}://cover/steam/620.jpg`,
+    })
+
+    expect(
+      parseLocalGameCacheSnapshot({
+        provider: 'STEAM',
+        externalId: '620',
+        remoteCoverUrl: `${localGameCacheProtocol}://cover/steam/620.jpg`,
+      }),
+    ).toBeNull()
   })
 
   it('resolves image extensions from content type before URL suffixes', () => {

@@ -1,4 +1,4 @@
-import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { extname, isAbsolute, join, relative, resolve } from 'node:path'
 import type { LocalGameCacheOverview } from '../types/settings'
 import { logger } from '../utils/logger'
@@ -15,6 +15,7 @@ const supportedImageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gi
 let cacheWritesSinceCleanup = 0
 
 export const localGameCacheProtocol = 'ludux-cache'
+const fallbackKeySeparator = '\u0000'
 
 export interface CacheSyncedGameDataInput {
   provider: string
@@ -29,6 +30,13 @@ export interface CacheSyncedGameDataResult {
   coverUrl: string | null
   metadataPath: string
   cachedCover: boolean
+}
+
+export interface LocalGameCacheCoverFallback {
+  provider: string
+  externalId: string
+  remoteCoverUrl: string
+  cachedCoverUrl: string | null
 }
 
 interface CachedCover {
@@ -90,6 +98,51 @@ export function shouldCacheRemoteAsset(
     return url.protocol === 'http:' || url.protocol === 'https:'
   } catch {
     return false
+  }
+}
+
+export function isLocalGameCacheCoverUrl(value: string | null | undefined): value is string {
+  if (!value) {
+    return false
+  }
+
+  try {
+    const url = new URL(value)
+    return url.protocol === `${localGameCacheProtocol}:` && url.hostname === 'cover'
+  } catch {
+    return false
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function readNonEmptyString(value: unknown) {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
+}
+
+export function parseLocalGameCacheSnapshot(
+  value: unknown,
+): LocalGameCacheCoverFallback | null {
+  if (!isRecord(value)) {
+    return null
+  }
+
+  const provider = readNonEmptyString(value['provider'])
+  const externalId = readNonEmptyString(value['externalId'])
+  const remoteCoverUrl = readNonEmptyString(value['remoteCoverUrl'])
+  const cachedCoverUrl = readNonEmptyString(value['cachedCoverUrl'])
+
+  if (!provider || !externalId || !shouldCacheRemoteAsset(remoteCoverUrl)) {
+    return null
+  }
+
+  return {
+    provider,
+    externalId,
+    remoteCoverUrl,
+    cachedCoverUrl: isLocalGameCacheCoverUrl(cachedCoverUrl) ? cachedCoverUrl : null,
   }
 }
 
@@ -464,6 +517,34 @@ export async function readLocalGameCacheOverview(): Promise<LocalGameCacheOvervi
     coverFiles,
     metadataFiles,
   }
+}
+
+export async function readLocalGameCacheCoverFallbacks() {
+  const files = await collectCacheFiles(metadataCacheDirectory)
+  const fallbackByLink = new Map<string, LocalGameCacheCoverFallback>()
+
+  for (const file of files) {
+    if (extname(file.path).toLocaleLowerCase('en-US') !== '.json') {
+      continue
+    }
+
+    try {
+      const snapshot = parseLocalGameCacheSnapshot(
+        JSON.parse(await readFile(file.path, 'utf8')),
+      )
+
+      if (snapshot) {
+        fallbackByLink.set(
+          `${snapshot.provider}${fallbackKeySeparator}${snapshot.externalId}`,
+          snapshot,
+        )
+      }
+    } catch {
+      continue
+    }
+  }
+
+  return Array.from(fallbackByLink.values())
 }
 
 export async function clearLocalGameCache(): Promise<LocalGameCacheOverview> {

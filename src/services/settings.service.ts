@@ -64,7 +64,10 @@ import {
 import {
   cacheSyncedGameData,
   clearLocalGameCache,
+  localGameCacheProtocol,
+  readLocalGameCacheCoverFallbacks,
   readLocalGameCacheOverview,
+  shouldCacheRemoteAsset,
 } from './local-game-cache'
 
 const userDataDirectory = resolve('userdata')
@@ -168,6 +171,16 @@ interface GameMetadataUpdateData {
   website?: string
 }
 
+interface CacheReferenceCleanupResult {
+  clearedGameCovers: number
+  restoredExternalCovers: number
+  restoredGameCovers: number
+}
+
+function createExternalCoverFallbackKey(provider: string, externalId: string) {
+  return `${provider}\u0000${externalId}`
+}
+
 function createTimestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-')
 }
@@ -181,6 +194,90 @@ async function readFileSize(path: string | null) {
     return (await stat(path)).size
   } catch {
     return 0
+  }
+}
+
+async function restoreRemoteCoverReferencesBeforeCacheClear(): Promise<CacheReferenceCleanupResult> {
+  const fallbacks = await readLocalGameCacheCoverFallbacks()
+  const fallbackByLink = new Map(
+    fallbacks.map((fallback) => [
+      createExternalCoverFallbackKey(fallback.provider, fallback.externalId),
+      fallback.remoteCoverUrl,
+    ]),
+  )
+  let restoredExternalCovers = 0
+  let restoredGameCovers = 0
+  let clearedGameCovers = 0
+  const localCacheUrlPrefix = `${localGameCacheProtocol}://`
+
+  for (const fallback of fallbacks) {
+    const result = await prisma.externalGame.updateMany({
+      where: {
+        provider: fallback.provider,
+        externalId: fallback.externalId,
+        sourceCoverUrl: {
+          startsWith: localCacheUrlPrefix,
+        },
+      },
+      data: {
+        sourceCoverUrl: fallback.remoteCoverUrl,
+      },
+    })
+    restoredExternalCovers += result.count
+  }
+
+  const gamesWithCachedCovers = await prisma.game.findMany({
+    where: {
+      coverUrl: {
+        startsWith: localCacheUrlPrefix,
+      },
+    },
+    select: {
+      id: true,
+      externalGames: {
+        select: {
+          provider: true,
+          externalId: true,
+          sourceCoverUrl: true,
+        },
+      },
+    },
+  })
+
+  for (const game of gamesWithCachedCovers) {
+    const fallbackCoverUrl =
+      game.externalGames.find((link) => shouldCacheRemoteAsset(link.sourceCoverUrl))
+        ?.sourceCoverUrl ??
+      game.externalGames
+        .map(
+          (link) =>
+            fallbackByLink.get(
+              createExternalCoverFallbackKey(link.provider, link.externalId),
+            ) ?? null,
+        )
+        .find((coverUrl) => shouldCacheRemoteAsset(coverUrl)) ??
+      null
+
+    await prisma.game.update({
+      where: {
+        id: game.id,
+      },
+      data: {
+        coverUrl: fallbackCoverUrl,
+      },
+    })
+
+    if (fallbackCoverUrl) {
+      restoredGameCovers += 1
+    } else {
+      clearedGameCovers += 1
+    }
+  }
+
+  return {
+    clearedGameCovers,
+    restoredExternalCovers,
+    restoredGameCovers,
   }
 }
 
@@ -2877,12 +2974,18 @@ class SettingsService {
   }
 
   async clearGameCache(): Promise<SettingsActionResult> {
+    const cleanupResult = await restoreRemoteCoverReferencesBeforeCacheClear()
     const overview = await clearLocalGameCache()
+    const restoredCovers =
+      cleanupResult.restoredGameCovers + cleanupResult.restoredExternalCovers
 
     return {
       canceled: false,
       path: overview.directory,
-      message: 'Cache d’affichage vidé.',
+      message:
+        restoredCovers > 0
+          ? `Cache d’affichage vidé. ${restoredCovers} référence(s) de jaquette restaurée(s).`
+          : 'Cache d’affichage vidé.',
       bytes: overview.sizeBytes,
       createdAt: new Date().toISOString(),
     }

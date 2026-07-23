@@ -29,6 +29,12 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.37 - 2026-07-23
+
+- Le vidage du cache restaure maintenant les jaquettes distantes connues avant de supprimer les fichiers locaux.
+- Les fiches de jeu ne restent plus bloquées sur des URLs `ludux-cache://` supprimées.
+- Ajout de tests pour la lecture des snapshots de cache et la détection des jaquettes locales.
+
 ## v0.24.36 - 2026-07-23
 
 - Ajout d'un panneau `Cache d'affichage` dans les paramètres.
