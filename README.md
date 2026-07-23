@@ -10,7 +10,7 @@
 
 Ludux est une application desktop qui rassemble votre bibliothèque de jeux, votre temps de jeu, vos succès, vos DLC, vos souvenirs et vos notes personnelles.
 
-Version courante : `v0.24.35`
+Version courante : `v0.24.36`
 
 ## Pour les joueurs
 

@@ -1,5 +1,6 @@
 import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { extname, isAbsolute, join, relative, resolve } from 'node:path'
+import type { LocalGameCacheOverview } from '../types/settings'
 import { logger } from '../utils/logger'
 
 const gameCacheDirectory = resolve('userdata', 'cache', 'games')
@@ -445,6 +446,40 @@ export async function trimLocalGameCache() {
       logger.error('[LocalGameCache]', error)
     }
   }
+}
+
+export async function readLocalGameCacheOverview(): Promise<LocalGameCacheOverview> {
+  const files = await collectCacheFiles(gameCacheDirectory)
+  const coverFiles = files.filter((file) =>
+    isPathInside(file.path, coverCacheDirectory),
+  ).length
+  const metadataFiles = files.filter((file) =>
+    isPathInside(file.path, metadataCacheDirectory),
+  ).length
+
+  return {
+    directory: gameCacheDirectory,
+    sizeBytes: files.reduce((total, file) => total + file.size, 0),
+    maxSizeBytes: getMaxCacheBytes(),
+    coverFiles,
+    metadataFiles,
+  }
+}
+
+export async function clearLocalGameCache(): Promise<LocalGameCacheOverview> {
+  const overview = await readLocalGameCacheOverview()
+  const cacheParentDirectory = resolve('userdata', 'cache')
+
+  if (!isPathInside(gameCacheDirectory, cacheParentDirectory)) {
+    throw new Error('Chemin de cache invalide.')
+  }
+
+  await rm(gameCacheDirectory, {
+    force: true,
+    recursive: true,
+  })
+
+  return overview
 }
 
 export async function cacheSyncedGameData(

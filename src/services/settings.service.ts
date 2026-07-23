@@ -61,7 +61,11 @@ import {
   buildIgnoredExternalGameLinkKeySet,
   hasIgnoredExternalGameLink,
 } from './provider-link-ignore'
-import { cacheSyncedGameData } from './local-game-cache'
+import {
+  cacheSyncedGameData,
+  clearLocalGameCache,
+  readLocalGameCacheOverview,
+} from './local-game-cache'
 
 const userDataDirectory = resolve('userdata')
 const exportDirectory = join(userDataDirectory, 'exports')
@@ -2400,6 +2404,7 @@ class SettingsService {
       appVersion: app.getVersion(),
       databasePath,
       databaseSizeBytes: await readFileSize(databasePath),
+      cacheOverview: await readLocalGameCacheOverview(),
       exportDirectory,
       backupDirectory,
       lastBackupAt: await readLastBackupAt(),
@@ -2867,6 +2872,18 @@ class SettingsService {
       path: backupPath,
       message: 'Sauvegarde creee.',
       bytes: await readFileSize(backupPath),
+      createdAt: new Date().toISOString(),
+    }
+  }
+
+  async clearGameCache(): Promise<SettingsActionResult> {
+    const overview = await clearLocalGameCache()
+
+    return {
+      canceled: false,
+      path: overview.directory,
+      message: 'Cache d’affichage vidé.',
+      bytes: overview.sizeBytes,
       createdAt: new Date().toISOString(),
     }
   }

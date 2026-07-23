@@ -41,6 +41,7 @@ interface SettingsPageProps {
   archivedGames: GameListItem[]
   launchView: AppView
   onChangeLaunchView: (view: AppView) => void
+  onClearGameCache: () => Promise<void>
   onCreateBackup: () => Promise<void>
   onDeleteGame: (gameId: string) => Promise<void>
   onDeleteProviderConnection: (input: DeleteProviderConnectionInput) => Promise<void>
@@ -217,6 +218,77 @@ function ResultMessage({ result }: { result: SettingsActionResult }) {
         </p>
       ) : null}
     </div>
+  )
+}
+
+function CacheStoragePanel({
+  isBusy,
+  onClearGameCache,
+  overview,
+}: {
+  isBusy: boolean
+  onClearGameCache: () => Promise<void>
+  overview: SettingsOverview
+}) {
+  const cache = overview.cacheOverview
+  const usagePercent =
+    cache.maxSizeBytes > 0
+      ? Math.min(100, Math.round((cache.sizeBytes / cache.maxSizeBytes) * 100))
+      : 0
+
+  return (
+    <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+      <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Cache d'affichage</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-500">
+            Jaquettes et métadonnées locales utilisées pour accélérer les écrans, sans
+            copier les dossiers de jeux.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onClearGameCache}
+          disabled={isBusy || cache.sizeBytes === 0}
+          className="w-full border-rose-400/30 bg-rose-400/10 text-rose-100 hover:border-rose-300/60 hover:bg-rose-400/15 lg:w-auto"
+        >
+          <Trash2 size={17} aria-hidden="true" />
+          Vider le cache
+        </Button>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Poids</p>
+          <p className="mt-1 text-xl font-semibold text-white">
+            {formatBytes(cache.sizeBytes)}
+          </p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Limite</p>
+          <p className="mt-1 text-xl font-semibold text-white">
+            {formatBytes(cache.maxSizeBytes)}
+          </p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Jaquettes</p>
+          <p className="mt-1 text-xl font-semibold text-white">{cache.coverFiles}</p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
+          <p className="text-xs text-zinc-500">Métadonnées</p>
+          <p className="mt-1 text-xl font-semibold text-white">{cache.metadataFiles}</p>
+        </div>
+      </div>
+
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/7">
+        <div
+          className="h-full rounded-full bg-[#7C5CFF] transition-all duration-300"
+          style={{ width: `${usagePercent}%` }}
+        />
+      </div>
+      <p className="mt-2 text-xs text-zinc-600">{usagePercent}% de la limite locale</p>
+    </section>
   )
 }
 
@@ -1114,6 +1186,7 @@ export function SettingsPage({
   isLoading,
   launchView,
   onChangeLaunchView,
+  onClearGameCache,
   onCreateBackup,
   onDeleteGame,
   onDeleteProviderConnection,
@@ -1195,6 +1268,12 @@ export function SettingsPage({
           </p>
         </article>
       </section>
+
+      <CacheStoragePanel
+        isBusy={isBusy}
+        overview={overview}
+        onClearGameCache={onClearGameCache}
+      />
 
       <section className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
         <article className="rounded-lg border border-white/10 bg-[#181B23] p-5">

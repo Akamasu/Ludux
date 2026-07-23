@@ -77,10 +77,19 @@ interface LocalPlatformOverview {
   scannedAt: string
 }
 
+export interface LocalGameCacheOverview {
+  directory: string
+  sizeBytes: number
+  maxSizeBytes: number
+  coverFiles: number
+  metadataFiles: number
+}
+
 export interface SettingsOverview {
   appVersion: string
   databasePath: string | null
   databaseSizeBytes: number
+  cacheOverview: LocalGameCacheOverview
   exportDirectory: string
   backupDirectory: string
   lastBackupAt: string | null

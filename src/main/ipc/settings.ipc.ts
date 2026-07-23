@@ -101,6 +101,15 @@ export function registerSettingsHandlers() {
     }
   })
 
+  ipcMain.handle('settings:clearGameCache', async () => {
+    try {
+      return await settingsService.clearGameCache()
+    } catch (error) {
+      logger.error('[SettingsIPC]', error)
+      throw error
+    }
+  })
+
   ipcMain.handle('settings:openDataFolder', async () => {
     try {
       return await settingsService.openDataFolder()

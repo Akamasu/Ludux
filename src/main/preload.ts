@@ -121,6 +121,8 @@ const api: LuduxApi = {
       ipcRenderer.invoke('settings:exportLibrary') as Promise<SettingsActionResult>,
     createBackup: () =>
       ipcRenderer.invoke('settings:createBackup') as Promise<SettingsActionResult>,
+    clearGameCache: () =>
+      ipcRenderer.invoke('settings:clearGameCache') as Promise<SettingsActionResult>,
     openDataFolder: () =>
       ipcRenderer.invoke('settings:openDataFolder') as Promise<boolean>,
     upsertProviderConnection: (input: UpsertProviderConnectionInput) =>

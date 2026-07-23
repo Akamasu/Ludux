@@ -208,6 +208,7 @@ export default function App() {
         archivedGames={libraryState.archivedGames}
         launchView={launchView}
         onChangeLaunchView={changeLaunchView}
+        onClearGameCache={settingsState.clearGameCache}
         onCreateBackup={settingsState.createBackup}
         onDeleteProviderConnection={settingsState.deleteProviderConnection}
         onDeleteGame={libraryState.deleteGame}

@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.36 - 2026-07-23
+
+- Ajout d'un panneau `Cache d'affichage` dans les paramètres.
+- Affichage du poids du cache, de sa limite, des jaquettes et des métadonnées stockées localement.
+- Ajout d'une action pour vider le cache sans toucher à la base SQLite ni aux dossiers de jeux.
+- Exposition de l'aperçu du cache dans l'API de paramètres et rafraîchissement automatique après nettoyage.
+
 ## v0.24.35 - 2026-07-23
 
 - Ajout d'un cache local léger pour les jaquettes et instantanés de métadonnées synchronisés.

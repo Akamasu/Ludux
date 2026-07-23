@@ -25,6 +25,13 @@ const BROWSER_OVERVIEW: SettingsOverview = {
   appVersion: 'navigateur',
   databasePath: null,
   databaseSizeBytes: 0,
+  cacheOverview: {
+    directory: 'Electron requis',
+    sizeBytes: 0,
+    maxSizeBytes: 0,
+    coverFiles: 0,
+    metadataFiles: 0,
+  },
   exportDirectory: 'Electron requis',
   backupDirectory: 'Electron requis',
   lastBackupAt: null,
@@ -115,6 +122,21 @@ export function useSettings() {
     }
 
     await runAction(api.settings.createBackup)
+  }, [runAction])
+
+  const clearGameCache = useCallback(async () => {
+    const api = window.ludux
+
+    if (!api) {
+      setActionResult({
+        canceled: true,
+        path: null,
+        message: ELECTRON_ONLY_ACTION_MESSAGE,
+      })
+      return
+    }
+
+    await runAction(api.settings.clearGameCache)
   }, [runAction])
 
   const openDataFolder = useCallback(async () => {
@@ -259,6 +281,7 @@ export function useSettings() {
     refresh,
     exportLibrary,
     createBackup,
+    clearGameCache,
     openDataFolder,
     upsertProviderConnection,
     deleteProviderConnection,
