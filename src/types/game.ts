@@ -130,11 +130,19 @@ interface GameReview {
   updatedAt: string
 }
 
-interface GameMetadataSource {
+export type GameProviderLinkMatchStatus = 'CONFIDENT' | 'REVIEW' | 'UNKNOWN'
+
+export interface GameProviderLink {
+  id: string
   provider: string
   label: string
-  url: string
+  externalId: string
+  sourceTitle: string | null
+  sourceCoverUrl: string | null
+  url: string | null
   lastSyncedAt: string | null
+  matchStatus: GameProviderLinkMatchStatus
+  matchReason: string | null
 }
 
 export type LifeBookEventKind = 'CHRONICLE' | 'SESSION'
@@ -161,7 +169,7 @@ export interface GameDetail extends GameListItem {
   publisher: string | null
   releaseDate: string | null
   website: string | null
-  metadataSources: GameMetadataSource[]
+  metadataSources: GameProviderLink[]
   review: GameReview | null
   dlcs: DlcListItem[]
   achievements: AchievementListItem[]
@@ -335,6 +343,11 @@ export interface UpdateScreenshotInput {
 }
 
 export interface DeleteScreenshotInput {
+  gameId: string
+  id: string
+}
+
+export interface DeleteExternalGameLinkInput {
   gameId: string
   id: string
 }

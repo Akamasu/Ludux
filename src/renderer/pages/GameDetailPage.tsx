@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Archive,
   ArrowLeft,
   BookOpen,
@@ -12,6 +13,7 @@ import {
   ExternalLink,
   FolderOpen,
   ImagePlus,
+  Link2,
   Pencil,
   Plus,
   Puzzle,
@@ -39,11 +41,13 @@ import {
   type DeleteAchievementInput,
   type DeleteChronicleInput,
   type DeleteDlcInput,
+  type DeleteExternalGameLinkInput,
   type DeletePlaySessionInput,
   type DeleteScreenshotInput,
   type DlcListItem,
   type Emotion,
   type GameDetail,
+  type GameProviderLink,
   type GameStatus,
   type ImportScreenshotFileInput,
   type PlaySessionListItem,
@@ -83,6 +87,7 @@ interface GameDetailPageProps {
   onDeleteAchievement: (input: DeleteAchievementInput) => Promise<void>
   onDeleteChronicle: (input: DeleteChronicleInput) => Promise<void>
   onDeleteDlc: (input: DeleteDlcInput) => Promise<void>
+  onDeleteExternalGameLink: (input: DeleteExternalGameLinkInput) => Promise<void>
   onDeletePlaySession: (input: DeletePlaySessionInput) => Promise<void>
   onDeleteScreenshot: (input: DeleteScreenshotInput) => Promise<void>
   onImportScreenshotFile: (input: ImportScreenshotFileInput) => Promise<void>
@@ -185,6 +190,142 @@ function GameDescription({ description }: { description: string | null }) {
   )
 }
 
+function providerLinkStatusLabel(source: GameProviderLink) {
+  if (source.matchStatus === 'REVIEW') {
+    return 'À vérifier'
+  }
+
+  if (source.matchStatus === 'UNKNOWN') {
+    return 'Inconnu'
+  }
+
+  return 'Fiable'
+}
+
+function providerLinkStatusClassName(source: GameProviderLink) {
+  if (source.matchStatus === 'REVIEW') {
+    return 'border-[#C9A646]/35 bg-[#C9A646]/10 text-[#E9DFA8]'
+  }
+
+  if (source.matchStatus === 'UNKNOWN') {
+    return 'border-white/10 bg-white/7 text-zinc-400'
+  }
+
+  return 'border-emerald-400/25 bg-emerald-400/10 text-emerald-100'
+}
+
+function ProviderLinksPanel({
+  detail,
+  isSaving,
+  onDeleteExternalGameLink,
+}: {
+  detail: GameDetail
+  isSaving: boolean
+  onDeleteExternalGameLink: (input: DeleteExternalGameLinkInput) => Promise<void>
+}) {
+  if (detail.metadataSources.length === 0) {
+    return null
+  }
+
+  async function handleDelete(source: GameProviderLink) {
+    const confirmed = window.confirm(
+      `Délier ${source.label} de "${detail.title}" ? Les données locales du jeu seront conservées.`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    await onDeleteExternalGameLink({
+      gameId: detail.id,
+      id: source.id,
+    })
+  }
+
+  return (
+    <div className="mt-6 rounded-lg border border-white/10 bg-[#0F1117]/70 p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-white">Liens providers</h2>
+          <p className="mt-1 text-xs text-zinc-500">
+            Sources synchronisées et correspondances à contrôler.
+          </p>
+        </div>
+        <Link2 size={17} className="text-[#A797FF]" aria-hidden="true" />
+      </div>
+
+      <div className="grid gap-2">
+        {detail.metadataSources.map((source) => (
+          <article
+            key={source.id}
+            className={`grid gap-3 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_auto] ${
+              source.matchStatus === 'REVIEW'
+                ? 'border-[#C9A646]/25 bg-[#C9A646]/5'
+                : 'border-white/10 bg-[#121620]'
+            }`}
+          >
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold text-white">{source.label}</p>
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs ${providerLinkStatusClassName(source)}`}
+                >
+                  {source.matchStatus === 'REVIEW' ? (
+                    <AlertTriangle size={13} aria-hidden="true" />
+                  ) : (
+                    <CheckCircle2 size={13} aria-hidden="true" />
+                  )}
+                  {providerLinkStatusLabel(source)}
+                </span>
+              </div>
+              <p className="mt-2 truncate text-xs text-zinc-500" title={source.externalId}>
+                ID externe : {source.externalId}
+              </p>
+              {source.sourceTitle ? (
+                <p className="mt-1 truncate text-sm text-zinc-300" title={source.sourceTitle}>
+                  Titre source : {source.sourceTitle}
+                </p>
+              ) : null}
+              {source.matchReason ? (
+                <p className="mt-2 text-xs text-[#E9DFA8]">{source.matchReason}</p>
+              ) : null}
+              {source.lastSyncedAt ? (
+                <p className="mt-2 text-xs text-zinc-600">
+                  Synchronisé le {formatDate(source.lastSyncedAt)}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              {source.url ? (
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-xs font-medium text-zinc-300 transition hover:border-[#7C5CFF]/50 hover:text-white"
+                >
+                  <ExternalLink size={14} aria-hidden="true" />
+                  Ouvrir
+                </a>
+              ) : null}
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => handleDelete(source)}
+                disabled={isSaving}
+                className="h-9 border-rose-400/30 bg-rose-400/10 px-3 text-xs text-rose-100 hover:border-rose-300/60 hover:bg-rose-400/15"
+              >
+                <Trash2 size={14} aria-hidden="true" />
+                Délier
+              </Button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ArchiveInfoRow({
   label,
   value,
@@ -209,11 +350,13 @@ function GameArchiveHero({
   isSaving,
   onArchiveGame,
   onBack,
+  onDeleteExternalGameLink,
 }: {
   detail: GameDetail
   isSaving: boolean
   onArchiveGame: () => void
   onBack: () => void
+  onDeleteExternalGameLink: (input: DeleteExternalGameLinkInput) => Promise<void>
 }) {
   return (
     <header className="game-book-spread overflow-hidden rounded-lg border border-[#C9A646]/20 bg-[#181B23]">
@@ -283,27 +426,11 @@ function GameArchiveHero({
               <GameGenreChips className="mt-4" genres={detail.genres} maxVisible={6} />
               <GameDescription description={detail.description} />
 
-              {detail.metadataSources.length > 0 ? (
-                <div className="mt-5 flex flex-wrap items-center gap-2">
-                  {detail.metadataSources.map((source) => (
-                    <a
-                      key={source.provider}
-                      href={source.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#0F1117]/80 px-2.5 py-1 text-xs text-zinc-300 transition hover:border-[#7C5CFF]/50 hover:text-white"
-                      title={
-                        source.lastSyncedAt
-                          ? `Synchronisé le ${formatDate(source.lastSyncedAt)}`
-                          : undefined
-                      }
-                    >
-                      <ExternalLink size={13} aria-hidden="true" />
-                      Source {source.label}
-                    </a>
-                  ))}
-                </div>
-              ) : null}
+              <ProviderLinksPanel
+                detail={detail}
+                isSaving={isSaving}
+                onDeleteExternalGameLink={onDeleteExternalGameLink}
+              />
             </div>
 
             <aside className="chapter-index rounded-lg border border-[#C9A646]/15 bg-[#0F1117]/70 p-4">
@@ -387,6 +514,7 @@ export function GameDetailPage({
   onDeleteAchievement,
   onDeleteChronicle,
   onDeleteDlc,
+  onDeleteExternalGameLink,
   onDeletePlaySession,
   onDeleteScreenshot,
   onImportScreenshotFile,
@@ -441,6 +569,7 @@ export function GameDetailPage({
         isSaving={isSaving}
         onArchiveGame={handleArchiveGame}
         onBack={onBack}
+        onDeleteExternalGameLink={onDeleteExternalGameLink}
       />
 
       {error ? (

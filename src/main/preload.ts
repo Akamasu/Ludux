@@ -12,6 +12,7 @@ import type {
   DeleteAchievementInput,
   DeleteChronicleInput,
   DeleteDlcInput,
+  DeleteExternalGameLinkInput,
   DeletePlaySessionInput,
   DeleteScreenshotInput,
   GameDetail,
@@ -67,6 +68,8 @@ const api: LuduxApi = {
     archive: (id: string) => ipcRenderer.invoke('games:archive', id) as Promise<void>,
     restore: (id: string) => ipcRenderer.invoke('games:restore', id) as Promise<void>,
     delete: (id: string) => ipcRenderer.invoke('games:delete', id) as Promise<void>,
+    deleteExternalGameLink: (input: DeleteExternalGameLinkInput) =>
+      ipcRenderer.invoke('games:deleteExternalGameLink', input) as Promise<GameDetail>,
     updateReview: (input: UpdateReviewInput) =>
       ipcRenderer.invoke('games:updateReview', input) as Promise<GameDetail>,
     createDlc: (input: CreateDlcInput) =>

@@ -138,6 +138,7 @@ export default function App() {
         onDeleteAchievement={gameDetailState.deleteAchievement}
         onDeleteChronicle={gameDetailState.deleteChronicle}
         onDeleteDlc={gameDetailState.deleteDlc}
+        onDeleteExternalGameLink={gameDetailState.deleteExternalGameLink}
         onDeletePlaySession={gameDetailState.deletePlaySession}
         onDeleteScreenshot={gameDetailState.deleteScreenshot}
         onImportScreenshotFile={gameDetailState.importScreenshotFile}

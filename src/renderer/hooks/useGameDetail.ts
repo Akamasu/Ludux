@@ -10,6 +10,7 @@ import type {
   DeleteAchievementInput,
   DeleteChronicleInput,
   DeleteDlcInput,
+  DeleteExternalGameLinkInput,
   DeletePlaySessionInput,
   DeleteScreenshotInput,
   GameDetail,
@@ -760,6 +761,38 @@ export function useGameDetail(
     }
   }, [])
 
+  const deleteExternalGameLink = useCallback(
+    async (input: DeleteExternalGameLinkInput) => {
+      const api = window.ludux
+      setIsSaving(true)
+      setError(null)
+
+      try {
+        if (!api) {
+          setDetail((current) =>
+            current
+              ? {
+                  ...current,
+                  metadataSources: current.metadataSources.filter(
+                    (source) => source.id !== input.id,
+                  ),
+                }
+              : current,
+          )
+          return
+        }
+
+        setDetail(await api.games.deleteExternalGameLink(input))
+        await onChanged()
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [onChanged],
+  )
+
   const createPlaySession = useCallback(
     async (input: CreatePlaySessionInput) => {
       const api = window.ludux
@@ -924,6 +957,7 @@ export function useGameDetail(
     importScreenshotFile,
     updateScreenshot,
     deleteScreenshot,
+    deleteExternalGameLink,
     createChronicle,
     updateChronicle,
     deleteChronicle,

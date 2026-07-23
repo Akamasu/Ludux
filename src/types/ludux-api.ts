@@ -11,6 +11,7 @@ import type {
   DeleteAchievementInput,
   DeleteChronicleInput,
   DeleteDlcInput,
+  DeleteExternalGameLinkInput,
   DeletePlaySessionInput,
   DeleteScreenshotInput,
   GameDetail,
@@ -56,6 +57,7 @@ export interface LuduxApi {
     archive: (id: string) => Promise<void>
     restore: (id: string) => Promise<void>
     delete: (id: string) => Promise<void>
+    deleteExternalGameLink: (input: DeleteExternalGameLinkInput) => Promise<GameDetail>
     updateReview: (input: UpdateReviewInput) => Promise<GameDetail>
     createDlc: (input: CreateDlcInput) => Promise<GameDetail>
     listAvailableDlc: (gameId: string) => Promise<AvailableDlcListItem[]>

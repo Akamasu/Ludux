@@ -14,6 +14,7 @@ import {
   type DeleteAchievementInput,
   type DeleteChronicleInput,
   type DeleteDlcInput,
+  type DeleteExternalGameLinkInput,
   type DeletePlaySessionInput,
   type DeleteScreenshotInput,
   type Emotion,
@@ -397,6 +398,17 @@ function parseDeleteScreenshotInput(value: unknown): DeleteScreenshotInput {
   }
 }
 
+function parseDeleteExternalGameLinkInput(value: unknown): DeleteExternalGameLinkInput {
+  if (!isRecord(value)) {
+    throw new Error('Les données du lien provider sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de lien provider invalide.'),
+  }
+}
+
 function parseUpdateReviewInput(value: unknown): UpdateReviewInput {
   if (!isRecord(value) || typeof value['rating'] !== 'number') {
     throw new Error("Les données de l'évaluation sont invalides.")
@@ -524,6 +536,17 @@ export function registerLibraryHandlers() {
   ipcMain.handle('games:delete', async (_event, id: unknown) => {
     try {
       await gameService.deleteGame(readRequiredString(id, 'Identifiant de jeu invalide.'))
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:deleteExternalGameLink', async (_event, input: unknown) => {
+    try {
+      return await gameService.deleteExternalGameLink(
+        parseDeleteExternalGameLinkInput(input),
+      )
     } catch (error) {
       logger.error('[LibraryIPC]', error)
       throw error

@@ -2,6 +2,7 @@ import { copyFile, mkdir } from 'node:fs/promises'
 import { basename, extname, join, parse, resolve } from 'node:path'
 import { prisma } from '../database/client'
 import { fetchSteamDlcCatalog, type SteamAppDetails } from '../providers/steam'
+import { buildGameProviderLink } from './provider-link-diagnostics'
 import {
   createSteamDlcDisplayName,
   filterSteamDlcCatalogDuplicates,
@@ -23,6 +24,7 @@ import type {
   DeleteAchievementInput,
   DeleteChronicleInput,
   DeleteDlcInput,
+  DeleteExternalGameLinkInput,
   DeletePlaySessionInput,
   DeleteScreenshotInput,
   Emotion,
@@ -141,8 +143,11 @@ async function fetchGameDetail(id: string) {
       },
       externalGames: {
         select: {
+          id: true,
           provider: true,
           externalId: true,
+          sourceTitle: true,
+          sourceCoverUrl: true,
           lastSyncedAt: true,
         },
         orderBy: {
@@ -192,20 +197,9 @@ function toGameDetail(game: GameDetailWithRelations): GameDetail {
     publisher: game.publisher,
     releaseDate: game.releaseDate?.toISOString() ?? null,
     website: game.website,
-    metadataSources: game.externalGames
-      .filter(
-        (externalGame) =>
-          externalGame.provider === 'RAWG' || externalGame.provider === 'IGDB',
-      )
-      .map((externalGame) => ({
-        provider: externalGame.provider,
-        label: externalGame.provider === 'IGDB' ? 'IGDB' : 'RAWG',
-        url:
-          externalGame.provider === 'IGDB'
-            ? 'https://www.igdb.com/'
-            : 'https://rawg.io/',
-        lastSyncedAt: externalGame.lastSyncedAt?.toISOString() ?? null,
-      })),
+    metadataSources: game.externalGames.map((externalGame) =>
+      buildGameProviderLink(game.title, externalGame),
+    ),
     review: game.review
       ? {
           id: game.review.id,
@@ -1065,6 +1059,21 @@ class GameService {
         id,
       },
     })
+  }
+
+  async deleteExternalGameLink(input: DeleteExternalGameLinkInput): Promise<GameDetail> {
+    const result = await prisma.externalGame.deleteMany({
+      where: {
+        id: input.id,
+        gameId: input.gameId,
+      },
+    })
+
+    if (result.count === 0) {
+      throw new Error('Lien provider introuvable.')
+    }
+
+    return toGameDetail(await requireGameDetail(input.gameId))
   }
 
   async createChronicle(input: CreateChronicleInput): Promise<GameDetail> {

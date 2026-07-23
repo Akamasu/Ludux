@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.30 - 2026-07-23
+
+- Ajout d'un panneau de liens providers sur les fiches de jeu.
+- Détection des correspondances source douteuses avec badge `À vérifier`.
+- Ajout d'une action `Délier` pour retirer un mauvais lien provider sans supprimer les données locales du jeu.
+- Affichage des identifiants externes, titres source et dates de synchronisation.
+
 ## v0.24.29 - 2026-07-22
 
 - Correction des événements de synchronisation affichés comme encore en cours après réussite.
