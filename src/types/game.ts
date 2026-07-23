@@ -145,6 +145,16 @@ export interface GameProviderLink {
   matchReason: string | null
 }
 
+export interface GameIgnoredProviderLink {
+  id: string
+  provider: string
+  label: string
+  externalId: string
+  sourceTitle: string | null
+  url: string | null
+  createdAt: string
+}
+
 export type LifeBookEventKind = 'CHRONICLE' | 'SESSION'
 
 export interface LifeBookEvent {
@@ -170,6 +180,7 @@ export interface GameDetail extends GameListItem {
   releaseDate: string | null
   website: string | null
   metadataSources: GameProviderLink[]
+  ignoredMetadataSources: GameIgnoredProviderLink[]
   review: GameReview | null
   dlcs: DlcListItem[]
   achievements: AchievementListItem[]
@@ -348,6 +359,11 @@ export interface DeleteScreenshotInput {
 }
 
 export interface DeleteExternalGameLinkInput {
+  gameId: string
+  id: string
+}
+
+export interface RestoreExternalGameLinkInput {
   gameId: string
   id: string
 }

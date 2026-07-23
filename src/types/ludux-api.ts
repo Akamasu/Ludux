@@ -20,6 +20,7 @@ import type {
   LibraryOverview,
   LibraryStatistics,
   LifeBookEvent,
+  RestoreExternalGameLinkInput,
   UpdateAchievementInput,
   UpdateChronicleInput,
   UpdateDlcInput,
@@ -58,6 +59,7 @@ export interface LuduxApi {
     restore: (id: string) => Promise<void>
     delete: (id: string) => Promise<void>
     deleteExternalGameLink: (input: DeleteExternalGameLinkInput) => Promise<GameDetail>
+    restoreExternalGameLink: (input: RestoreExternalGameLinkInput) => Promise<GameDetail>
     updateReview: (input: UpdateReviewInput) => Promise<GameDetail>
     createDlc: (input: CreateDlcInput) => Promise<GameDetail>
     listAvailableDlc: (gameId: string) => Promise<AvailableDlcListItem[]>

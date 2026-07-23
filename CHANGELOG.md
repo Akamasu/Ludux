@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.33 - 2026-07-23
+
+- Affichage des sources de plateformes masquées dans la zone `Gérer` des fiches de jeu.
+- Ajout d'une action `Réactiver` pour restaurer une source retirée par erreur.
+- Le détail de jeu remonte désormais les sources connectées et les sources masquées séparément.
+- Ajout du flux IPC/preload et d'un test pour verrouiller les sources masquées côté interface.
+
 ## v0.24.32 - 2026-07-23
 
 - Ajout d'une mémoire locale des liens de plateformes retirés depuis une fiche de jeu.

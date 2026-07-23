@@ -16,6 +16,7 @@ import type {
   GameDetail,
   GameListItem,
   ImportScreenshotFileInput,
+  RestoreExternalGameLinkInput,
   UpdateAchievementInput,
   UpdateChronicleInput,
   UpdateDlcInput,
@@ -48,6 +49,7 @@ function detailFromListItem(game: GameListItem): GameDetail {
     releaseDate: null,
     website: null,
     metadataSources: [],
+    ignoredMetadataSources: [],
     review: null,
     dlcs: [],
     achievements: [],
@@ -771,9 +773,61 @@ export function useGameDetail(
         if (!api) {
           setDetail((current) =>
             current
+              ? (() => {
+                  const source = current.metadataSources.find(
+                    (metadataSource) => metadataSource.id === input.id,
+                  )
+
+                  return {
+                    ...current,
+                    metadataSources: current.metadataSources.filter(
+                      (metadataSource) => metadataSource.id !== input.id,
+                    ),
+                    ignoredMetadataSources: source
+                      ? [
+                          ...current.ignoredMetadataSources,
+                          {
+                            id: source.id,
+                            provider: source.provider,
+                            label: source.label,
+                            externalId: source.externalId,
+                            sourceTitle: source.sourceTitle,
+                            url: source.url,
+                            createdAt: new Date().toISOString(),
+                          },
+                        ]
+                      : current.ignoredMetadataSources,
+                  }
+                })()
+              : current,
+          )
+          return
+        }
+
+        setDetail(await api.games.deleteExternalGameLink(input))
+        await onChanged()
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [onChanged],
+  )
+
+  const restoreExternalGameLink = useCallback(
+    async (input: RestoreExternalGameLinkInput) => {
+      const api = window.ludux
+      setIsSaving(true)
+      setError(null)
+
+      try {
+        if (!api) {
+          setDetail((current) =>
+            current
               ? {
                   ...current,
-                  metadataSources: current.metadataSources.filter(
+                  ignoredMetadataSources: current.ignoredMetadataSources.filter(
                     (source) => source.id !== input.id,
                   ),
                 }
@@ -782,7 +836,7 @@ export function useGameDetail(
           return
         }
 
-        setDetail(await api.games.deleteExternalGameLink(input))
+        setDetail(await api.games.restoreExternalGameLink(input))
         await onChanged()
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
@@ -958,6 +1012,7 @@ export function useGameDetail(
     updateScreenshot,
     deleteScreenshot,
     deleteExternalGameLink,
+    restoreExternalGameLink,
     createChronicle,
     updateChronicle,
     deleteChronicle,

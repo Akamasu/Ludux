@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildIgnoredGameProviderLink,
   buildGameProviderLink,
   resolveProviderLinkMatchStatus,
 } from '../src/services/provider-link-diagnostics'
@@ -33,6 +34,23 @@ describe('provider link diagnostics', () => {
       label: 'Steam',
       url: 'https://store.steampowered.com/app/620/',
       matchStatus: 'CONFIDENT',
+    })
+  })
+
+  it('builds a hidden provider link item for the detail page', () => {
+    expect(
+      buildIgnoredGameProviderLink({
+        id: 'ignored-1',
+        provider: 'STEAM',
+        externalId: '620',
+        sourceTitle: 'Portal 2',
+        createdAt: new Date('2026-07-23T11:00:00.000Z'),
+      }),
+    ).toMatchObject({
+      id: 'ignored-1',
+      label: 'Steam',
+      url: 'https://store.steampowered.com/app/620/',
+      createdAt: '2026-07-23T11:00:00.000Z',
     })
   })
 })

@@ -1,4 +1,8 @@
-import type { GameProviderLink, GameProviderLinkMatchStatus } from '../types/game'
+import type {
+  GameIgnoredProviderLink,
+  GameProviderLink,
+  GameProviderLinkMatchStatus,
+} from '../types/game'
 
 interface ProviderLinkRecord {
   id: string
@@ -7,6 +11,14 @@ interface ProviderLinkRecord {
   sourceTitle: string | null
   sourceCoverUrl: string | null
   lastSyncedAt: Date | null
+}
+
+interface IgnoredProviderLinkRecord {
+  id: string
+  provider: string
+  externalId: string
+  sourceTitle: string | null
+  createdAt: Date
 }
 
 const providerLabels = new Map([
@@ -101,5 +113,19 @@ export function buildGameProviderLink(
       matchStatus === 'REVIEW'
         ? 'Le titre trouvé ne correspond pas exactement au titre dans Ludux.'
         : null,
+  }
+}
+
+export function buildIgnoredGameProviderLink(
+  record: IgnoredProviderLinkRecord,
+): GameIgnoredProviderLink {
+  return {
+    id: record.id,
+    provider: record.provider,
+    label: providerLabels.get(record.provider) ?? record.provider,
+    externalId: record.externalId,
+    sourceTitle: record.sourceTitle,
+    url: createProviderLinkUrl(record.provider, record.externalId),
+    createdAt: record.createdAt.toISOString(),
   }
 }

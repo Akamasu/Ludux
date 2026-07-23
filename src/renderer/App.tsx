@@ -143,6 +143,7 @@ export default function App() {
         onDeleteScreenshot={gameDetailState.deleteScreenshot}
         onImportScreenshotFile={gameDetailState.importScreenshotFile}
         onRefreshAvailableDlc={gameDetailState.loadAvailableDlc}
+        onRestoreExternalGameLink={gameDetailState.restoreExternalGameLink}
         onUpdateAchievement={gameDetailState.updateAchievement}
         onUpdateChronicle={gameDetailState.updateChronicle}
         onUpdateDlc={gameDetailState.updateDlc}

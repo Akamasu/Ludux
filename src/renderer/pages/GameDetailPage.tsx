@@ -46,10 +46,12 @@ import {
   type DlcListItem,
   type Emotion,
   type GameDetail,
+  type GameIgnoredProviderLink,
   type GameProviderLink,
   type GameStatus,
   type ImportScreenshotFileInput,
   type PlaySessionListItem,
+  type RestoreExternalGameLinkInput,
   type ScreenshotListItem,
   type UpdateAchievementInput,
   type UpdateChronicleInput,
@@ -91,6 +93,7 @@ interface GameDetailPageProps {
   onDeleteScreenshot: (input: DeleteScreenshotInput) => Promise<void>
   onImportScreenshotFile: (input: ImportScreenshotFileInput) => Promise<void>
   onRefreshAvailableDlc: () => Promise<void>
+  onRestoreExternalGameLink: (input: RestoreExternalGameLinkInput) => Promise<void>
   onUpdateAchievement: (input: UpdateAchievementInput) => Promise<void>
   onUpdateChronicle: (input: UpdateChronicleInput) => Promise<void>
   onUpdateDlc: (input: UpdateDlcInput) => Promise<void>
@@ -229,6 +232,10 @@ function providerLinksSummary(sources: GameProviderLink[]) {
   }`
 }
 
+function ignoredProviderLinksCountLabel(count: number) {
+  return count > 1 ? `${count} sources masquées` : '1 source masquée'
+}
+
 function providerLinkDetails(source: GameProviderLink) {
   if (source.matchStatus === 'REVIEW') {
     return source.sourceTitle
@@ -251,18 +258,24 @@ function providerLinkReference(source: GameProviderLink) {
   return source.sourceTitle ?? source.externalId
 }
 
+function ignoredProviderLinkReference(source: GameIgnoredProviderLink) {
+  return source.sourceTitle ?? source.externalId
+}
+
 function ProviderLinksPanel({
   detail,
   isSaving,
   onDeleteExternalGameLink,
+  onRestoreExternalGameLink,
 }: {
   detail: GameDetail
   isSaving: boolean
   onDeleteExternalGameLink: (input: DeleteExternalGameLinkInput) => Promise<void>
+  onRestoreExternalGameLink: (input: RestoreExternalGameLinkInput) => Promise<void>
 }) {
   const [isManagingSources, setIsManagingSources] = useState(false)
 
-  if (detail.metadataSources.length === 0) {
+  if (detail.metadataSources.length === 0 && detail.ignoredMetadataSources.length === 0) {
     return null
   }
 
@@ -285,18 +298,33 @@ function ProviderLinksPanel({
     })
   }
 
+  async function handleRestore(source: GameIgnoredProviderLink) {
+    await onRestoreExternalGameLink({
+      gameId: detail.id,
+      id: source.id,
+    })
+  }
+
   return (
     <section className="mt-6 border-t border-white/10 pt-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-white">Plateformes connectées</h2>
           <p className="mt-1 text-xs text-zinc-500">
-            {providerLinksCountLabel(detail.metadataSources.length)} :{' '}
-            {providerLinksSummary(detail.metadataSources)}.
+            {detail.metadataSources.length > 0
+              ? `${providerLinksCountLabel(detail.metadataSources.length)} : ${providerLinksSummary(
+                  detail.metadataSources,
+                )}.`
+              : 'Aucune plateforme connectée.'}
             {sourcesToReview.length > 0
               ? ` ${sourcesToReview.length} lien${
                   sourcesToReview.length > 1 ? 's' : ''
                 } à vérifier.`
+              : ''}
+            {detail.ignoredMetadataSources.length > 0
+              ? ` ${ignoredProviderLinksCountLabel(
+                  detail.ignoredMetadataSources.length,
+                )}.`
               : ''}
           </p>
         </div>
@@ -315,83 +343,156 @@ function ProviderLinksPanel({
         </button>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        {detail.metadataSources.map((source) => (
-          <span
-            key={source.id}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${providerLinkStatusClassName(source)}`}
-          >
-            {source.matchStatus === 'REVIEW' ? (
-              <AlertTriangle size={13} aria-hidden="true" />
-            ) : (
-              <CheckCircle2 size={13} aria-hidden="true" />
-            )}
-            {source.label}
-            {source.matchStatus !== 'CONFIDENT' ? (
-              <span className="text-current/80">· {providerLinkStatusLabel(source)}</span>
-            ) : null}
-          </span>
-        ))}
-      </div>
+      {detail.metadataSources.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {detail.metadataSources.map((source) => (
+            <span
+              key={source.id}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${providerLinkStatusClassName(source)}`}
+            >
+              {source.matchStatus === 'REVIEW' ? (
+                <AlertTriangle size={13} aria-hidden="true" />
+              ) : (
+                <CheckCircle2 size={13} aria-hidden="true" />
+              )}
+              {source.label}
+              {source.matchStatus !== 'CONFIDENT' ? (
+                <span className="text-current/80">· {providerLinkStatusLabel(source)}</span>
+              ) : null}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {isManagingSources ? (
-        <div className="mt-3 divide-y divide-white/10 rounded-lg border border-white/10 bg-white/[0.03] px-3">
-          {detail.metadataSources.map((source) => (
-            <article
-              key={source.id}
-              className="grid gap-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto]"
-            >
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-medium text-white">{source.label}</p>
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs ${providerLinkStatusClassName(source)}`}
-                  >
-                    {source.matchStatus === 'REVIEW' ? (
-                      <AlertTriangle size={13} aria-hidden="true" />
-                    ) : (
-                      <CheckCircle2 size={13} aria-hidden="true" />
-                    )}
-                    {providerLinkStatusLabel(source)}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-zinc-500">{providerLinkDetails(source)}</p>
-                {source.matchReason ? (
-                  <p className="mt-1 text-xs text-[#E9DFA8]">{source.matchReason}</p>
-                ) : null}
-                <p
-                  className="mt-1 truncate text-xs text-zinc-600"
-                  title={source.externalId}
+        <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] px-3">
+          {detail.metadataSources.length > 0 ? (
+            <div className="divide-y divide-white/10">
+              {detail.metadataSources.map((source) => (
+                <article
+                  key={source.id}
+                  className="grid gap-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto]"
                 >
-                  Référence : {providerLinkReference(source)}
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-white">{source.label}</p>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs ${providerLinkStatusClassName(source)}`}
+                      >
+                        {source.matchStatus === 'REVIEW' ? (
+                          <AlertTriangle size={13} aria-hidden="true" />
+                        ) : (
+                          <CheckCircle2 size={13} aria-hidden="true" />
+                        )}
+                        {providerLinkStatusLabel(source)}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {providerLinkDetails(source)}
+                    </p>
+                    {source.matchReason ? (
+                      <p className="mt-1 text-xs text-[#E9DFA8]">
+                        {source.matchReason}
+                      </p>
+                    ) : null}
+                    <p
+                      className="mt-1 truncate text-xs text-zinc-600"
+                      title={source.externalId}
+                    >
+                      Référence : {providerLinkReference(source)}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                    {source.url ? (
+                      <a
+                        href={source.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-xs font-medium text-zinc-300 transition hover:border-[#7C5CFF]/50 hover:text-white"
+                      >
+                        <ExternalLink size={13} aria-hidden="true" />
+                        Ouvrir
+                      </a>
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => handleDelete(source)}
+                      disabled={isSaving}
+                      className="h-8 border-rose-400/25 bg-transparent px-3 text-xs text-zinc-400 hover:border-rose-300/50 hover:bg-rose-400/10 hover:text-rose-100"
+                    >
+                      <Trash2 size={13} aria-hidden="true" />
+                      Retirer
+                    </Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
+
+          {detail.ignoredMetadataSources.length > 0 ? (
+            <div
+              className={`py-3 ${
+                detail.metadataSources.length > 0 ? 'border-t border-white/10' : ''
+              }`}
+            >
+              <div className="mb-2">
+                <p className="text-xs font-semibold uppercase text-zinc-500">
+                  Sources masquées
+                </p>
+                <p className="mt-1 text-xs text-zinc-600">
+                  Elles ne seront plus recréées automatiquement pour ce jeu.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                {source.url ? (
-                  <a
-                    href={source.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-xs font-medium text-zinc-300 transition hover:border-[#7C5CFF]/50 hover:text-white"
+              <div className="divide-y divide-white/10">
+                {detail.ignoredMetadataSources.map((source) => (
+                  <article
+                    key={source.id}
+                    className="grid gap-3 py-3 first:pt-1 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto]"
                   >
-                    <ExternalLink size={13} aria-hidden="true" />
-                    Ouvrir
-                  </a>
-                ) : null}
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => handleDelete(source)}
-                  disabled={isSaving}
-                  className="h-8 border-rose-400/25 bg-transparent px-3 text-xs text-zinc-400 hover:border-rose-300/50 hover:bg-rose-400/10 hover:text-rose-100"
-                >
-                  <Trash2 size={13} aria-hidden="true" />
-                  Retirer
-                </Button>
+                    <div className="min-w-0">
+                      <p className="font-medium text-zinc-200">{source.label}</p>
+                      <p
+                        className="mt-1 truncate text-xs text-zinc-500"
+                        title={source.externalId}
+                      >
+                        Référence : {ignoredProviderLinkReference(source)}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-600">
+                        Masquée le {formatDate(source.createdAt)}.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                      {source.url ? (
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-[#0F1117] px-3 text-xs font-medium text-zinc-300 transition hover:border-[#7C5CFF]/50 hover:text-white"
+                        >
+                          <ExternalLink size={13} aria-hidden="true" />
+                          Ouvrir
+                        </a>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => handleRestore(source)}
+                        disabled={isSaving}
+                        className="h-8 border-[#7C5CFF]/25 bg-[#7C5CFF]/10 px-3 text-xs text-[#D8D0FF] hover:border-[#7C5CFF]/50 hover:bg-[#7C5CFF]/15 hover:text-white"
+                      >
+                        <RefreshCw size={13} aria-hidden="true" />
+                        Réactiver
+                      </Button>
+                    </div>
+                  </article>
+                ))}
               </div>
-            </article>
-          ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>
@@ -423,12 +524,14 @@ function GameArchiveHero({
   onArchiveGame,
   onBack,
   onDeleteExternalGameLink,
+  onRestoreExternalGameLink,
 }: {
   detail: GameDetail
   isSaving: boolean
   onArchiveGame: () => void
   onBack: () => void
   onDeleteExternalGameLink: (input: DeleteExternalGameLinkInput) => Promise<void>
+  onRestoreExternalGameLink: (input: RestoreExternalGameLinkInput) => Promise<void>
 }) {
   return (
     <header className="game-book-spread overflow-hidden rounded-lg border border-[#C9A646]/20 bg-[#181B23]">
@@ -502,6 +605,7 @@ function GameArchiveHero({
                 detail={detail}
                 isSaving={isSaving}
                 onDeleteExternalGameLink={onDeleteExternalGameLink}
+                onRestoreExternalGameLink={onRestoreExternalGameLink}
               />
             </div>
 
@@ -591,6 +695,7 @@ export function GameDetailPage({
   onDeleteScreenshot,
   onImportScreenshotFile,
   onRefreshAvailableDlc,
+  onRestoreExternalGameLink,
   onUpdateAchievement,
   onUpdateChronicle,
   onUpdateDlc,
@@ -642,6 +747,7 @@ export function GameDetailPage({
         onArchiveGame={handleArchiveGame}
         onBack={onBack}
         onDeleteExternalGameLink={onDeleteExternalGameLink}
+        onRestoreExternalGameLink={onRestoreExternalGameLink}
       />
 
       {error ? (

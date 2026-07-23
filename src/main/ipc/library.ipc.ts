@@ -20,6 +20,7 @@ import {
   type Emotion,
   type GameStatus,
   type ImportScreenshotFileInput,
+  type RestoreExternalGameLinkInput,
   type UpdateAchievementInput,
   type UpdateChronicleInput,
   type UpdateDlcInput,
@@ -409,6 +410,17 @@ function parseDeleteExternalGameLinkInput(value: unknown): DeleteExternalGameLin
   }
 }
 
+function parseRestoreExternalGameLinkInput(value: unknown): RestoreExternalGameLinkInput {
+  if (!isRecord(value)) {
+    throw new Error('Les données de la source masquée sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de source masquée invalide.'),
+  }
+}
+
 function parseUpdateReviewInput(value: unknown): UpdateReviewInput {
   if (!isRecord(value) || typeof value['rating'] !== 'number') {
     throw new Error("Les données de l'évaluation sont invalides.")
@@ -546,6 +558,17 @@ export function registerLibraryHandlers() {
     try {
       return await gameService.deleteExternalGameLink(
         parseDeleteExternalGameLinkInput(input),
+      )
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:restoreExternalGameLink', async (_event, input: unknown) => {
+    try {
+      return await gameService.restoreExternalGameLink(
+        parseRestoreExternalGameLinkInput(input),
       )
     } catch (error) {
       logger.error('[LibraryIPC]', error)

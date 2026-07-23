@@ -2,7 +2,10 @@ import { copyFile, mkdir } from 'node:fs/promises'
 import { basename, extname, join, parse, resolve } from 'node:path'
 import { prisma } from '../database/client'
 import { fetchSteamDlcCatalog, type SteamAppDetails } from '../providers/steam'
-import { buildGameProviderLink } from './provider-link-diagnostics'
+import {
+  buildGameProviderLink,
+  buildIgnoredGameProviderLink,
+} from './provider-link-diagnostics'
 import {
   createSteamDlcDisplayName,
   filterSteamDlcCatalogDuplicates,
@@ -32,6 +35,7 @@ import type {
   GameListItem,
   GameStatus,
   ImportScreenshotFileInput,
+  RestoreExternalGameLinkInput,
   UpdateAchievementInput,
   UpdateChronicleInput,
   UpdateDlcInput,
@@ -154,6 +158,18 @@ async function fetchGameDetail(id: string) {
           provider: 'asc',
         },
       },
+      ignoredExternalGameLinks: {
+        select: {
+          id: true,
+          provider: true,
+          externalId: true,
+          sourceTitle: true,
+          createdAt: true,
+        },
+        orderBy: {
+          provider: 'asc',
+        },
+      },
       chronicles: {
         orderBy: {
           date: 'desc',
@@ -199,6 +215,9 @@ function toGameDetail(game: GameDetailWithRelations): GameDetail {
     website: game.website,
     metadataSources: game.externalGames.map((externalGame) =>
       buildGameProviderLink(game.title, externalGame),
+    ),
+    ignoredMetadataSources: game.ignoredExternalGameLinks.map((ignoredLink) =>
+      buildIgnoredGameProviderLink(ignoredLink),
     ),
     review: game.review
       ? {
@@ -1102,6 +1121,65 @@ class GameService {
       prisma.externalGame.delete({
         where: {
           id: link.id,
+        },
+      }),
+    ])
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async restoreExternalGameLink(input: RestoreExternalGameLinkInput): Promise<GameDetail> {
+    const ignoredLink = await prisma.ignoredExternalGameLink.findFirst({
+      where: {
+        id: input.id,
+        gameId: input.gameId,
+      },
+      select: {
+        id: true,
+        gameId: true,
+        provider: true,
+        externalId: true,
+        sourceTitle: true,
+      },
+    })
+
+    if (!ignoredLink) {
+      throw new Error('Source masquée introuvable.')
+    }
+
+    const existingLink = await prisma.externalGame.findUnique({
+      where: {
+        provider_externalId: {
+          provider: ignoredLink.provider,
+          externalId: ignoredLink.externalId,
+        },
+      },
+      select: {
+        gameId: true,
+      },
+    })
+
+    if (existingLink && existingLink.gameId !== input.gameId) {
+      throw new Error('Cette source est déjà liée à un autre jeu.')
+    }
+
+    await prisma.$transaction([
+      ...(existingLink
+        ? []
+        : [
+            prisma.externalGame.create({
+              data: {
+                gameId: ignoredLink.gameId,
+                provider: ignoredLink.provider,
+                externalId: ignoredLink.externalId,
+                sourceTitle: ignoredLink.sourceTitle,
+                lastSyncedAt: null,
+              },
+            }),
+          ]),
+      prisma.ignoredExternalGameLink.delete({
+        where: {
+          id: ignoredLink.id,
         },
       }),
     ])
