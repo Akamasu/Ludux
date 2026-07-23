@@ -29,6 +29,14 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.34 - 2026-07-23
+
+- Ajout d'un panneau `Configuration rapide` dans les paramètres.
+- Affichage simple des plateformes PC détectées, connexions enregistrées et sources prêtes à synchroniser.
+- Détection Epic élargie aux dossiers de bibliothèque configurés ou standards.
+- Détection GOG élargie aux bibliothèques standards sur les lecteurs Windows.
+- Remplacement de plusieurs libellés techniques `providers` par des textes orientés utilisateur.
+
 ## v0.24.33 - 2026-07-23
 
 - Affichage des sources de plateformes masquées dans la zone `Gérer` des fiches de jeu.

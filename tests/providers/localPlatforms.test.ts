@@ -3,6 +3,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
+  createEpicCandidateLibraryPaths,
+  createGogCandidateLibraryPaths,
   detectEpicLocalPlatform,
   detectGogLocalPlatform,
   parseEpicLauncherCacheFile,
@@ -17,6 +19,7 @@ import {
 const originalProgramData = process.env['PROGRAMDATA']
 const originalLocalAppData = process.env['LOCALAPPDATA']
 const originalEpicManifestPaths = process.env['LUDUX_EPIC_MANIFEST_PATHS']
+const originalEpicLibraryPaths = process.env['LUDUX_EPIC_LIBRARY_PATHS']
 const originalEpicManagedAppPaths = process.env['LUDUX_EPIC_MANAGED_APP_PATHS']
 const originalEpicWebcachePaths = process.env['LUDUX_EPIC_WEBCACHE_PATHS']
 const originalGogDbPath = process.env['LUDUX_GOG_GALAXY_DB_PATH']
@@ -65,6 +68,7 @@ afterEach(async () => {
   restoreEnv('PROGRAMDATA', originalProgramData)
   restoreEnv('LOCALAPPDATA', originalLocalAppData)
   restoreEnv('LUDUX_EPIC_MANIFEST_PATHS', originalEpicManifestPaths)
+  restoreEnv('LUDUX_EPIC_LIBRARY_PATHS', originalEpicLibraryPaths)
   restoreEnv('LUDUX_EPIC_MANAGED_APP_PATHS', originalEpicManagedAppPaths)
   restoreEnv('LUDUX_EPIC_WEBCACHE_PATHS', originalEpicWebcachePaths)
   restoreEnv('LUDUX_GOG_GALAXY_DB_PATH', originalGogDbPath)
@@ -81,6 +85,59 @@ afterEach(async () => {
 })
 
 describe('local platform detection', () => {
+  it('includes configured Epic library roots in local detection', async () => {
+    const root = await createTempRoot()
+    const epicLibrary = join(root, 'Epic Games')
+    await mkdir(epicLibrary, {
+      recursive: true,
+    })
+    process.env['PROGRAMDATA'] = root
+    process.env['LOCALAPPDATA'] = root
+    process.env['LUDUX_EPIC_LIBRARY_PATHS'] = epicLibrary
+    process.env['LUDUX_EPIC_MANIFEST_PATHS'] = ''
+    process.env['LUDUX_EPIC_MANAGED_APP_PATHS'] = ''
+    process.env['LUDUX_EPIC_WEBCACHE_PATHS'] = ''
+
+    const library = await readEpicLocalLibrary()
+
+    expect(library.libraryPaths).toContain(epicLibrary)
+
+    const detection = await detectEpicLocalPlatform()
+
+    expect(detection).toMatchObject({
+      provider: 'EPIC',
+      detected: true,
+      manifestCount: 0,
+    })
+    expect(detection.libraryPaths).toContain(epicLibrary)
+  })
+
+  it('creates broad Windows candidates for GOG libraries', () => {
+    process.env['LUDUX_GOG_LIBRARY_PATHS'] = 'X:\\Custom GOG'
+
+    const paths = createGogCandidateLibraryPaths()
+
+    expect(paths).toContain('X:\\Custom GOG')
+
+    if (process.platform === 'win32') {
+      expect(paths).toContain('E:\\GOG Games')
+      expect(paths).toContain('E:\\Games\\GOG Galaxy')
+    }
+  })
+
+  it('creates configurable Epic library candidates', () => {
+    process.env['LUDUX_EPIC_LIBRARY_PATHS'] = 'X:\\Epic'
+
+    const paths = createEpicCandidateLibraryPaths()
+
+    expect(paths).toContain('X:\\Epic')
+
+    if (process.platform === 'win32') {
+      expect(paths).toContain('E:\\Epic Games')
+      expect(paths).toContain('E:\\Games\\Epic')
+    }
+  })
+
   it('parses Epic manifests into installed games', () => {
     expect(
       parseEpicManifest(
@@ -251,13 +308,15 @@ describe('local platform detection', () => {
     process.env['LUDUX_EPIC_MANAGED_APP_PATHS'] = ''
     process.env['LUDUX_EPIC_WEBCACHE_PATHS'] = ''
 
-    await expect(detectEpicLocalPlatform()).resolves.toMatchObject({
+    const detection = await detectEpicLocalPlatform()
+
+    expect(detection).toMatchObject({
       provider: 'EPIC',
       detected: true,
       manifestCount: 1,
-      libraryPaths: [manifestDirectory],
       rootPaths: [installLocation],
     })
+    expect(detection.libraryPaths).toContain(manifestDirectory)
 
     await expect(readEpicLocalLibrary()).resolves.toMatchObject({
       manifestCount: 1,

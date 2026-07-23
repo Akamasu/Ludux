@@ -17,7 +17,7 @@ import {
   ShieldCheck,
   Trash2,
 } from 'lucide-react'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import type { GameListItem } from '../../types/game'
 import type {
   DeleteProviderConnectionInput,
@@ -416,6 +416,146 @@ function providerTokenPlaceholder(provider: ProviderConnection) {
   return 'Optionnel'
 }
 
+function SetupStepCard({
+  description,
+  icon,
+  ready,
+  title,
+}: {
+  description: string
+  icon: ReactNode
+  ready: boolean
+  title: string
+}) {
+  return (
+    <article className="rounded-lg border border-white/10 bg-[#121620] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-semibold text-white">{title}</p>
+          <p className="mt-1 text-sm leading-5 text-zinc-500">{description}</p>
+        </div>
+        <div
+          className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
+            ready
+              ? 'bg-[#7C5CFF]/10 text-[#D8D0FF]'
+              : 'bg-white/5 text-zinc-500'
+          }`}
+        >
+          {icon}
+        </div>
+      </div>
+      <span
+        className={`mt-4 inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs ${syncStatusClassName(
+          ready ? 'SYNCED' : null,
+        )}`}
+      >
+        {ready ? (
+          <CheckCircle2 size={14} aria-hidden="true" />
+        ) : (
+          <Clock3 size={14} aria-hidden="true" />
+        )}
+        {ready ? 'Prêt' : 'À compléter'}
+      </span>
+    </article>
+  )
+}
+
+function SetupAssistantPanel({
+  isBusy,
+  onRefresh,
+  onSyncAllProviders,
+  overview,
+}: {
+  isBusy: boolean
+  onRefresh: () => Promise<void>
+  onSyncAllProviders: () => Promise<void>
+  overview: SettingsOverview
+}) {
+  const localDetectedCount = overview.localPlatformOverview.detectedCount
+  const localPlatformCount = overview.localPlatformOverview.platforms.length
+  const readyProviders = overview.providerOverview.providers.filter((provider) =>
+    canSyncProvider(provider, overview),
+  )
+  const readyProviderLabels = providerQueueOrder
+    .map((providerId) =>
+      readyProviders.find((provider) => provider.provider === providerId),
+    )
+    .filter((provider): provider is ProviderConnection => provider !== undefined)
+    .map((provider) => provider.label)
+  const hasReadySync = readyProviders.length > 0
+  const setupSteps = [
+    localDetectedCount > 0,
+    overview.providerOverview.configuredCount > 0,
+    hasReadySync,
+  ]
+  const completedSteps = setupSteps.filter(Boolean).length
+
+  return (
+    <section className="rounded-lg border border-[#7C5CFF]/20 bg-[#181B23] p-5">
+      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-sm font-medium text-[#A797FF]">Configuration rapide</p>
+          <h2 className="mt-2 text-2xl font-semibold text-white">
+            {completedSteps}/3 étapes prêtes
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+            Ludux repère les plateformes locales, garde les connexions utiles et peut lancer
+            la synchronisation dès qu'une source est prête.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            onClick={onSyncAllProviders}
+            disabled={isBusy || !hasReadySync}
+          >
+            <RefreshCw
+              size={17}
+              aria-hidden="true"
+              className={isBusy ? 'animate-spin' : undefined}
+            />
+            {isBusy ? 'Synchronisation...' : 'Synchroniser'}
+          </Button>
+          <Button type="button" variant="secondary" onClick={onRefresh} disabled={isBusy}>
+            <HardDrive size={17} aria-hidden="true" />
+            Rechercher
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-3">
+        <SetupStepCard
+          ready={localDetectedCount > 0}
+          title="Plateformes PC"
+          description={
+            localPlatformCount > 0
+              ? `${localDetectedCount}/${localPlatformCount} détectée(s)`
+              : 'Diagnostic local indisponible'
+          }
+          icon={<HardDrive size={18} aria-hidden="true" />}
+        />
+        <SetupStepCard
+          ready={overview.providerOverview.configuredCount > 0}
+          title="Connexions"
+          description={`${overview.providerOverview.configuredCount} service(s) enregistré(s)`}
+          icon={<ShieldCheck size={18} aria-hidden="true" />}
+        />
+        <SetupStepCard
+          ready={hasReadySync}
+          title="Synchronisation"
+          description={
+            readyProviderLabels.length > 0
+              ? readyProviderLabels.join(', ')
+              : 'Aucune source prête'
+          }
+          icon={<Cloud size={18} aria-hidden="true" />}
+        />
+      </div>
+    </section>
+  )
+}
+
 function SyncActivityPanel({ overview }: { overview: SettingsOverview }) {
   const providersById = new Map(
     overview.providerOverview.providers.map((provider) => [provider.provider, provider]),
@@ -430,7 +570,7 @@ function SyncActivityPanel({ overview }: { overview: SettingsOverview }) {
         <div>
           <h2 className="text-lg font-semibold text-white">Activité de synchronisation</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Ordre d'exécution et derniers événements des providers connectés.
+            Ordre d'exécution et derniers événements des plateformes connectées.
           </p>
         </div>
         <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#7C5CFF]/10 text-[#D8D0FF]">
@@ -629,9 +769,9 @@ function ProvidersPanel({
     <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-white">Providers externes</h2>
+          <h2 className="text-lg font-semibold text-white">Connexions</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Comptes connectés et synchronisations automatiques selon les accès disponibles.
+            Comptes et services utilisés pour enrichir ou importer la bibliothèque.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -655,7 +795,7 @@ function ProvidersPanel({
 
       <div className="mb-5 grid gap-3 md:grid-cols-3">
         <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
-          <p className="text-xs text-zinc-500">Providers</p>
+          <p className="text-xs text-zinc-500">Services</p>
           <p className="mt-1 text-xl font-semibold text-white">
             {overview.providerOverview.totalProviders}
           </p>
@@ -1012,6 +1152,13 @@ export function SettingsPage({
       ) : null}
 
       {actionResult ? <ResultMessage result={actionResult} /> : null}
+
+      <SetupAssistantPanel
+        isBusy={isBusy}
+        overview={overview}
+        onRefresh={onRefresh}
+        onSyncAllProviders={onSyncAllProviders}
+      />
 
       <section className="grid gap-4 md:grid-cols-3">
         <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">

@@ -85,6 +85,21 @@ function uniqueTextValues(values: Array<string | null | undefined>) {
   )
 }
 
+function createWindowsDriveLibraryCandidates(names: string[]) {
+  if (process.platform !== 'win32') {
+    return []
+  }
+
+  return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').flatMap((driveLetter) => {
+    const driveRoot = `${driveLetter}:\\`
+
+    return names.flatMap((name) => [
+      join(driveRoot, name),
+      join(driveRoot, 'Games', name),
+    ])
+  })
+}
+
 function resolveEnvironmentPath(value: string | undefined) {
   return value?.trim() ? normalize(value.trim()) : null
 }
@@ -291,6 +306,8 @@ export async function detectEpicLocalPlatform(): Promise<LocalPlatformDetection>
     message:
       localLibrary.manifestCount > 0
         ? `${localLibrary.games.length} jeu(x) Epic détecté(s) depuis les fichiers locaux.`
+        : localLibrary.libraryPaths.length > 0
+          ? 'Dossier Epic repéré, en attente de fichiers de bibliothèque exploitables.'
         : localLibrary.configPaths.length > 0
           ? 'Epic détecté, mais aucune bibliothèque locale exploitable.'
           : 'Aucun fichier Epic local détecté.',
@@ -744,6 +761,31 @@ async function findEpicLauncherCacheFiles(candidateRoots: string[]) {
   return uniqueTextValues(cacheFiles)
 }
 
+export function createEpicCandidateLibraryPaths() {
+  const programFiles = resolveEnvironmentPath(process.env['ProgramFiles'])
+  const programFilesX86 = resolveEnvironmentPath(process.env['ProgramFiles(x86)'])
+
+  return uniqueTextValues([
+    ...splitConfiguredPaths(process.env['LUDUX_EPIC_LIBRARY_PATHS']),
+    programFiles ? join(programFiles, 'Epic Games') : null,
+    programFilesX86 ? join(programFilesX86, 'Epic Games') : null,
+    'C:\\Epic Games',
+    ...createWindowsDriveLibraryCandidates(['Epic Games', 'Epic']),
+  ])
+}
+
+async function findExistingDirectories(candidatePaths: string[]) {
+  const existingPaths: string[] = []
+
+  for (const candidatePath of candidatePaths) {
+    if (await directoryExists(candidatePath)) {
+      existingPaths.push(candidatePath)
+    }
+  }
+
+  return uniqueTextValues(existingPaths)
+}
+
 function dedupeEpicInstalledGames(games: EpicInstalledGame[]) {
   const gamesByExternalId = new Map<string, EpicInstalledGame>()
 
@@ -787,6 +829,9 @@ function dedupeEpicInstalledGames(games: EpicInstalledGame[]) {
 export async function readEpicLocalLibrary(): Promise<EpicLocalLibraryResult> {
   const programData = resolveEnvironmentPath(process.env['PROGRAMDATA'])
   const localAppData = resolveEnvironmentPath(process.env['LOCALAPPDATA'])
+  const existingGameLibraryRoots = await findExistingDirectories(
+    createEpicCandidateLibraryPaths(),
+  )
   const manifestDirectories = uniqueTextValues([
     ...splitConfiguredPaths(process.env['LUDUX_EPIC_MANIFEST_PATHS']),
     programData
@@ -903,6 +948,7 @@ export async function readEpicLocalLibrary(): Promise<EpicLocalLibraryResult> {
     manifestCount,
     manifestPaths,
     libraryPaths: uniqueTextValues([
+      ...existingGameLibraryRoots,
       ...existingManifestDirectories,
       ...managedAppDirectories.filter((directory) =>
         existingConfigPaths.includes(directory),
@@ -973,7 +1019,7 @@ export function parseGogGameInfo(
   })
 }
 
-function createGogCandidateLibraryPaths() {
+export function createGogCandidateLibraryPaths() {
   const programFiles = resolveEnvironmentPath(process.env['ProgramFiles'])
   const programFilesX86 = resolveEnvironmentPath(process.env['ProgramFiles(x86)'])
   const configuredGameRoots = splitConfiguredPaths(process.env['LUDUX_GOG_LIBRARY_PATHS'])
@@ -984,6 +1030,7 @@ function createGogCandidateLibraryPaths() {
     programFilesX86 ? join(programFilesX86, 'GOG Galaxy', 'Games') : null,
     'C:\\GOG Games',
     'D:\\GOG Games',
+    ...createWindowsDriveLibraryCandidates(['GOG Games', 'GOG', 'GOG Galaxy']),
     join(homedir(), 'GOG Games'),
   ])
 }
