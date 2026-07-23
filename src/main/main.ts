@@ -1,7 +1,12 @@
 import 'dotenv/config'
-import { app, BrowserWindow, Menu, shell } from 'electron'
+import { app, BrowserWindow, Menu, net, protocol, shell } from 'electron'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { prisma } from '../database/client'
+import {
+  localGameCacheProtocol,
+  resolveLocalGameCacheUrl,
+} from '../services/local-game-cache'
 import { settingsService } from '../services/settings.service'
 import { logger } from '../utils/logger'
 import { registerLibraryHandlers } from './ipc/library.ipc'
@@ -11,6 +16,31 @@ import { registerWindowHandlers } from './ipc/window.ipc'
 registerLibraryHandlers()
 registerSettingsHandlers()
 registerWindowHandlers()
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: localGameCacheProtocol,
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+    },
+  },
+])
+
+function registerLocalGameCacheProtocol() {
+  protocol.handle(localGameCacheProtocol, (request) => {
+    const resourcePath = resolveLocalGameCacheUrl(request.url)
+
+    if (!resourcePath) {
+      return new Response('Cache introuvable.', {
+        status: 404,
+      })
+    }
+
+    return net.fetch(pathToFileURL(resourcePath).toString())
+  })
+}
 
 async function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -51,6 +81,7 @@ async function createWindow() {
 
 app.whenReady().then(async () => {
   Menu.setApplicationMenu(null)
+  registerLocalGameCacheProtocol()
   await createWindow()
   settingsService.startAutoSync()
 }).catch((error: unknown) => {

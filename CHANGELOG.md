@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.35 - 2026-07-23
+
+- Ajout d'un cache local léger pour les jaquettes et instantanés de métadonnées synchronisés.
+- Les synchronisations Steam, Epic Games, RAWG et IGDB privilégient désormais les jaquettes locales quand elles sont disponibles.
+- Ajout du protocole interne `ludux-cache://` pour afficher ces médias locaux proprement dans Electron.
+- Le cache reste borné : limite par image, plafond global et nettoyage automatique des anciens fichiers.
+
 ## v0.24.34 - 2026-07-23
 
 - Ajout d'un panneau `Configuration rapide` dans les paramètres.

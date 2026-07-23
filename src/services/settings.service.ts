@@ -61,6 +61,7 @@ import {
   buildIgnoredExternalGameLinkKeySet,
   hasIgnoredExternalGameLink,
 } from './provider-link-ignore'
+import { cacheSyncedGameData } from './local-game-cache'
 
 const userDataDirectory = resolve('userdata')
 const exportDirectory = join(userDataDirectory, 'exports')
@@ -88,6 +89,7 @@ interface SteamImportStats {
   linkedGames: number
   updatedGames: number
   ignoredLinks: number
+  cachedCovers: number
   syncedSessions: number
   syncedDlc: number
   syncedAchievements: number
@@ -108,6 +110,7 @@ interface RawgEnrichmentStats {
   enrichedGames: number
   linkedGames: number
   ignoredLinks: number
+  cachedCovers: number
   notFoundGames: number
   fieldsUpdated: number
   syncedGenres: number
@@ -118,6 +121,7 @@ interface IgdbEnrichmentStats {
   enrichedGames: number
   linkedGames: number
   ignoredLinks: number
+  cachedCovers: number
   notFoundGames: number
   fieldsUpdated: number
   syncedGenres: number
@@ -129,6 +133,7 @@ interface EpicImportStats {
   linkedGames: number
   updatedGames: number
   ignoredLinks: number
+  cachedCovers: number
 }
 
 interface GogImportStats {
@@ -294,7 +299,12 @@ function isLegacySteamCoverUrl(value: string | null | undefined) {
 function shouldUpdateSteamCover(
   currentCoverUrl: string | null,
   previousSourceCoverUrl: string | null | undefined,
+  nextSourceCoverUrl: string | null,
 ) {
+  if (!nextSourceCoverUrl || currentCoverUrl === nextSourceCoverUrl) {
+    return false
+  }
+
   return (
     !currentCoverUrl ||
     currentCoverUrl === previousSourceCoverUrl ||
@@ -352,6 +362,7 @@ function createSteamSyncMessage(stats: SteamImportStats, sources: SteamSyncSourc
     `${stats.linkedGames} reliés`,
     `${stats.updatedGames} déjà connus`,
     stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
+    stats.cachedCovers > 0 ? `${stats.cachedCovers} jaquettes locales` : null,
     `${stats.syncedCollections} catégories Steam liées`,
     `${stats.syncedSessions} temps de jeu synchronisés`,
     `${stats.syncedDlc} DLC Steam détectés`,
@@ -375,6 +386,7 @@ function createRawgSyncMessage(stats: RawgEnrichmentStats) {
     `${stats.enrichedGames} enrichis`,
     `${stats.linkedGames} reliés à RAWG`,
     stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
+    stats.cachedCovers > 0 ? `${stats.cachedCovers} jaquettes locales` : null,
     `${stats.notFoundGames} introuvables`,
     `${stats.fieldsUpdated} champs ajoutés`,
     `${stats.syncedGenres} genres`,
@@ -391,6 +403,7 @@ function createIgdbSyncMessage(stats: IgdbEnrichmentStats) {
     `${stats.enrichedGames} enrichis`,
     `${stats.linkedGames} reliés à IGDB`,
     stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
+    stats.cachedCovers > 0 ? `${stats.cachedCovers} jaquettes locales` : null,
     `${stats.notFoundGames} introuvables`,
     `${stats.fieldsUpdated} champs ajoutés`,
     `${stats.syncedGenres} genres`,
@@ -408,6 +421,7 @@ function createEpicSyncMessage(stats: EpicImportStats) {
     `${stats.linkedGames} relié(s)`,
     `${stats.updatedGames} déjà connu(s)`,
     stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
+    stats.cachedCovers > 0 ? `${stats.cachedCovers} jaquettes locales` : null,
   ].join(' / ')
 }
 
@@ -1405,6 +1419,7 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
     linkedGames: 0,
     updatedGames: 0,
     ignoredLinks: 0,
+    cachedCovers: 0,
     syncedSessions: 0,
     syncedDlc: 0,
     syncedAchievements: 0,
@@ -1473,20 +1488,36 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
       continue
     }
 
+    const cachedSteamGameData = await cacheSyncedGameData({
+      provider: steamProvider,
+      externalId,
+      title: steamGame.title,
+      coverUrl: steamGame.coverUrl,
+      metadata: steamGame,
+    })
+    const cachedSteamGame = {
+      ...steamGame,
+      coverUrl: cachedSteamGameData.coverUrl ?? steamGame.coverUrl,
+    }
+
+    if (cachedSteamGameData.cachedCover) {
+      stats.cachedCovers += 1
+    }
+
     const hasSteamPlayActivity =
-      steamGame.playtimeForeverMinutes > 0 || steamGame.lastPlayedAt !== null
+      cachedSteamGame.playtimeForeverMinutes > 0 || cachedSteamGame.lastPlayedAt !== null
     const localGame =
       matchedGame ??
       (await prisma.game.create({
         data: {
-          title: steamGame.title,
-          description: steamGame.description,
-          coverUrl: steamGame.coverUrl,
-          releaseDate: parseSteamReleaseDate(steamGame.releaseDate ?? null),
-          developer: steamGame.developer,
-          publisher: steamGame.publisher,
+          title: cachedSteamGame.title,
+          description: cachedSteamGame.description,
+          coverUrl: cachedSteamGame.coverUrl,
+          releaseDate: parseSteamReleaseDate(cachedSteamGame.releaseDate ?? null),
+          developer: cachedSteamGame.developer,
+          publisher: cachedSteamGame.publisher,
           status: hasSteamPlayActivity ? 'PLAYING' : 'BACKLOG',
-          website: steamGame.website,
+          website: cachedSteamGame.website,
           platforms: {
             create: {
               platform: {
@@ -1524,23 +1555,26 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
       await ensureSteamPlatformForGame(localGame.id, steamPlatform.id)
     }
 
-    stats.syncedCollections += await syncSteamGameCollections(localGame.id, steamGame)
+    stats.syncedCollections += await syncSteamGameCollections(localGame.id, cachedSteamGame)
 
     if (
-      steamGame.coverUrl &&
-      shouldUpdateSteamCover(localGame.coverUrl, existingLink?.sourceCoverUrl)
+      shouldUpdateSteamCover(
+        localGame.coverUrl,
+        existingLink?.sourceCoverUrl,
+        cachedSteamGame.coverUrl,
+      )
     ) {
       await prisma.game.update({
         where: {
           id: localGame.id,
         },
         data: {
-          coverUrl: steamGame.coverUrl,
+          coverUrl: cachedSteamGame.coverUrl,
         },
       })
     }
 
-    const steamUpdateData = buildSteamUpdateData(localGame, steamGame)
+    const steamUpdateData = buildSteamUpdateData(localGame, cachedSteamGame)
 
     if (Object.keys(steamUpdateData).length > 0) {
       await prisma.game.update({
@@ -1555,7 +1589,7 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
       gameId: localGame.id,
       platformId: steamPlatform.id,
       playSessionId: existingLink?.playSessionId ?? null,
-      steamGame,
+      steamGame: cachedSteamGame,
     })
 
     if (playSessionId) {
@@ -1572,9 +1606,9 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
       update: {
         gameId: localGame.id,
         playSessionId,
-        sourceTitle: steamGame.title,
-        sourceCoverUrl: steamGame.coverUrl,
-        lastPlaytimeMinutes: steamGame.playtimeForeverMinutes,
+        sourceTitle: cachedSteamGame.title,
+        sourceCoverUrl: cachedSteamGame.coverUrl,
+        lastPlaytimeMinutes: cachedSteamGame.playtimeForeverMinutes,
         lastSyncedAt: new Date(),
       },
       create: {
@@ -1582,9 +1616,9 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
         playSessionId,
         provider: steamProvider,
         externalId,
-        sourceTitle: steamGame.title,
-        sourceCoverUrl: steamGame.coverUrl,
-        lastPlaytimeMinutes: steamGame.playtimeForeverMinutes,
+        sourceTitle: cachedSteamGame.title,
+        sourceCoverUrl: cachedSteamGame.coverUrl,
+        lastPlaytimeMinutes: cachedSteamGame.playtimeForeverMinutes,
         lastSyncedAt: new Date(),
       },
     })
@@ -1603,6 +1637,7 @@ async function importEpicInstalledGames(
     linkedGames: 0,
     updatedGames: 0,
     ignoredLinks: 0,
+    cachedCovers: 0,
   }
   const ignoredLinks = await readIgnoredExternalGameLinkKeys(epicProvider)
   const epicPlatform = await ensureEpicPlatform()
@@ -1659,12 +1694,28 @@ async function importEpicInstalledGames(
       continue
     }
 
+    const cachedEpicGameData = await cacheSyncedGameData({
+      provider: epicProvider,
+      externalId,
+      title: epicGame.title,
+      coverUrl: epicGame.coverUrl,
+      metadata: epicGame,
+    })
+    const cachedEpicGame = {
+      ...epicGame,
+      coverUrl: cachedEpicGameData.coverUrl ?? epicGame.coverUrl,
+    }
+
+    if (cachedEpicGameData.cachedCover) {
+      stats.cachedCovers += 1
+    }
+
     const localGame =
       matchedGame ??
       (await prisma.game.create({
         data: {
-          coverUrl: epicGame.coverUrl,
-          title: epicGame.title,
+          coverUrl: cachedEpicGame.coverUrl,
+          title: cachedEpicGame.title,
           status: 'BACKLOG',
           platforms: {
             create: {
@@ -1698,13 +1749,13 @@ async function importEpicInstalledGames(
       await ensureEpicPlatformForGame(localGame.id, epicPlatform.id)
     }
 
-    if (epicGame.coverUrl && !localGame.coverUrl) {
+    if (cachedEpicGame.coverUrl && !localGame.coverUrl) {
       await prisma.game.update({
         where: {
           id: localGame.id,
         },
         data: {
-          coverUrl: epicGame.coverUrl,
+          coverUrl: cachedEpicGame.coverUrl,
         },
       })
     }
@@ -1719,8 +1770,8 @@ async function importEpicInstalledGames(
       update: {
         gameId: localGame.id,
         playSessionId: null,
-        sourceTitle: epicGame.title,
-        sourceCoverUrl: epicGame.coverUrl,
+        sourceTitle: cachedEpicGame.title,
+        sourceCoverUrl: cachedEpicGame.coverUrl,
         lastPlaytimeMinutes: 0,
         lastSyncedAt: new Date(),
       },
@@ -1728,8 +1779,8 @@ async function importEpicInstalledGames(
         gameId: localGame.id,
         provider: epicProvider,
         externalId,
-        sourceTitle: epicGame.title,
-        sourceCoverUrl: epicGame.coverUrl,
+        sourceTitle: cachedEpicGame.title,
+        sourceCoverUrl: cachedEpicGame.coverUrl,
         lastPlaytimeMinutes: 0,
         lastSyncedAt: new Date(),
       },
@@ -1876,6 +1927,7 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
     enrichedGames: 0,
     linkedGames: 0,
     ignoredLinks: 0,
+    cachedCovers: 0,
     notFoundGames: 0,
     fieldsUpdated: 0,
     syncedGenres: 0,
@@ -1947,11 +1999,6 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
         },
       },
     })
-    const rawgGameData = {
-      sourceTitle: metadata.title,
-      sourceCoverUrl: metadata.coverUrl,
-      lastSyncedAt: new Date(),
-    }
 
     if (
       !existingLink &&
@@ -1963,6 +2010,27 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
     ) {
       stats.ignoredLinks += 1
       continue
+    }
+
+    const cachedRawgGameData = await cacheSyncedGameData({
+      provider: rawgProvider,
+      externalId,
+      title: metadata.title,
+      coverUrl: metadata.coverUrl,
+      metadata,
+    })
+    const cachedMetadata = {
+      ...metadata,
+      coverUrl: cachedRawgGameData.coverUrl ?? metadata.coverUrl,
+    }
+    const rawgGameData = {
+      sourceTitle: cachedMetadata.title,
+      sourceCoverUrl: cachedMetadata.coverUrl,
+      lastSyncedAt: new Date(),
+    }
+
+    if (cachedRawgGameData.cachedCover) {
+      stats.cachedCovers += 1
     }
 
     if (!existingLink) {
@@ -1984,9 +2052,9 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
       })
     }
 
-    stats.syncedGenres += await syncGameGenres(game.id, metadata.genres, rawgProvider)
+    stats.syncedGenres += await syncGameGenres(game.id, cachedMetadata.genres, rawgProvider)
 
-    const data = buildRawgUpdateData(game, metadata)
+    const data = buildRawgUpdateData(game, cachedMetadata)
     const updatedFieldCount = Object.keys(data).length
 
     if (updatedFieldCount > 0) {
@@ -2016,6 +2084,7 @@ async function enrichLocalGamesWithIgdb({
     enrichedGames: 0,
     linkedGames: 0,
     ignoredLinks: 0,
+    cachedCovers: 0,
     notFoundGames: 0,
     fieldsUpdated: 0,
     syncedGenres: 0,
@@ -2088,11 +2157,6 @@ async function enrichLocalGamesWithIgdb({
         },
       },
     })
-    const igdbGameData = {
-      sourceTitle: metadata.title,
-      sourceCoverUrl: metadata.coverUrl,
-      lastSyncedAt: new Date(),
-    }
 
     if (
       !existingLink &&
@@ -2104,6 +2168,27 @@ async function enrichLocalGamesWithIgdb({
     ) {
       stats.ignoredLinks += 1
       continue
+    }
+
+    const cachedIgdbGameData = await cacheSyncedGameData({
+      provider: igdbProvider,
+      externalId,
+      title: metadata.title,
+      coverUrl: metadata.coverUrl,
+      metadata,
+    })
+    const cachedMetadata = {
+      ...metadata,
+      coverUrl: cachedIgdbGameData.coverUrl ?? metadata.coverUrl,
+    }
+    const igdbGameData = {
+      sourceTitle: cachedMetadata.title,
+      sourceCoverUrl: cachedMetadata.coverUrl,
+      lastSyncedAt: new Date(),
+    }
+
+    if (cachedIgdbGameData.cachedCover) {
+      stats.cachedCovers += 1
     }
 
     if (!existingLink) {
@@ -2125,9 +2210,9 @@ async function enrichLocalGamesWithIgdb({
       })
     }
 
-    stats.syncedGenres += await syncGameGenres(game.id, metadata.genres, igdbProvider)
+    stats.syncedGenres += await syncGameGenres(game.id, cachedMetadata.genres, igdbProvider)
 
-    const data = buildIgdbUpdateData(game, metadata)
+    const data = buildIgdbUpdateData(game, cachedMetadata)
     const updatedFieldCount = Object.keys(data).length
 
     if (updatedFieldCount > 0) {
