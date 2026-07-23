@@ -41,17 +41,18 @@ model Game {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  platforms       GamePlatform[]
-  versions        GameVersion[]
-  dlcs            Dlc[]
-  achievements    Achievement[]
-  sessions        PlaySession[]
-  chronicles      Chronicle[]
-  screenshots     Screenshot[]
-  externalGames   ExternalGame[]
-  review          Review?
-  collectionGames CollectionGame[]
-  gameGenres      GameGenre[]
+  platforms                GamePlatform[]
+  versions                 GameVersion[]
+  dlcs                     Dlc[]
+  achievements             Achievement[]
+  sessions                 PlaySession[]
+  chronicles               Chronicle[]
+  screenshots              Screenshot[]
+  externalGames            ExternalGame[]
+  ignoredExternalGameLinks IgnoredExternalGameLink[]
+  review                   Review?
+  collectionGames          CollectionGame[]
+  gameGenres               GameGenre[]
 
   @@index([title])
   @@index([status])
@@ -317,6 +318,22 @@ model ExternalGame {
   @@index([gameId])
   @@index([playSessionId])
   @@index([provider])
+}
+
+model IgnoredExternalGameLink {
+  id          String   @id @default(uuid())
+  gameId      String
+  provider    String
+  externalId  String
+  sourceTitle String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, provider, externalId])
+  @@index([gameId])
+  @@index([provider, externalId])
 }
 
 model Statistics {

@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.32 - 2026-07-23
+
+- Ajout d'une mémoire locale des liens de plateformes retirés depuis une fiche de jeu.
+- Les synchronisations Steam, Epic, GOG, RAWG et IGDB ne recréent plus automatiquement un lien retiré pour le même jeu.
+- Les messages de synchronisation indiquent quand des liens sont volontairement ignorés.
+- Ajout d'une migration Prisma dédiée et de tests pour verrouiller cette logique.
+
 ## v0.24.31 - 2026-07-23
 
 - Simplification de l'affichage des plateformes connectées sur les fiches de jeu.

@@ -1062,16 +1062,49 @@ class GameService {
   }
 
   async deleteExternalGameLink(input: DeleteExternalGameLinkInput): Promise<GameDetail> {
-    const result = await prisma.externalGame.deleteMany({
+    const link = await prisma.externalGame.findFirst({
       where: {
         id: input.id,
         gameId: input.gameId,
       },
+      select: {
+        id: true,
+        gameId: true,
+        provider: true,
+        externalId: true,
+        sourceTitle: true,
+      },
     })
 
-    if (result.count === 0) {
+    if (!link) {
       throw new Error('Lien provider introuvable.')
     }
+
+    await prisma.$transaction([
+      prisma.ignoredExternalGameLink.upsert({
+        where: {
+          gameId_provider_externalId: {
+            gameId: link.gameId,
+            provider: link.provider,
+            externalId: link.externalId,
+          },
+        },
+        update: {
+          sourceTitle: link.sourceTitle,
+        },
+        create: {
+          gameId: link.gameId,
+          provider: link.provider,
+          externalId: link.externalId,
+          sourceTitle: link.sourceTitle,
+        },
+      }),
+      prisma.externalGame.delete({
+        where: {
+          id: link.id,
+        },
+      }),
+    ])
 
     return toGameDetail(await requireGameDetail(input.gameId))
   }

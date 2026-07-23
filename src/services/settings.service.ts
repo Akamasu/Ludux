@@ -57,6 +57,10 @@ import {
   hasResolvedSteamDlcName,
   shouldMergeSteamDlcCandidate,
 } from './steam-dlc.service'
+import {
+  buildIgnoredExternalGameLinkKeySet,
+  hasIgnoredExternalGameLink,
+} from './provider-link-ignore'
 
 const userDataDirectory = resolve('userdata')
 const exportDirectory = join(userDataDirectory, 'exports')
@@ -83,6 +87,7 @@ interface SteamImportStats {
   importedGames: number
   linkedGames: number
   updatedGames: number
+  ignoredLinks: number
   syncedSessions: number
   syncedDlc: number
   syncedAchievements: number
@@ -102,6 +107,7 @@ interface RawgEnrichmentStats {
   scannedGames: number
   enrichedGames: number
   linkedGames: number
+  ignoredLinks: number
   notFoundGames: number
   fieldsUpdated: number
   syncedGenres: number
@@ -111,6 +117,7 @@ interface IgdbEnrichmentStats {
   scannedGames: number
   enrichedGames: number
   linkedGames: number
+  ignoredLinks: number
   notFoundGames: number
   fieldsUpdated: number
   syncedGenres: number
@@ -121,6 +128,7 @@ interface EpicImportStats {
   importedGames: number
   linkedGames: number
   updatedGames: number
+  ignoredLinks: number
 }
 
 interface GogImportStats {
@@ -128,6 +136,7 @@ interface GogImportStats {
   importedGames: number
   linkedGames: number
   updatedGames: number
+  ignoredLinks: number
 }
 
 interface LocalGameMetadata {
@@ -207,6 +216,21 @@ function readSteamAchievementSyncLimit() {
   return Number.isFinite(rawValue) && rawValue > 0
     ? Math.trunc(rawValue)
     : defaultSteamAchievementSyncLimit
+}
+
+async function readIgnoredExternalGameLinkKeys(provider: ExternalProvider) {
+  const ignoredLinks = await prisma.ignoredExternalGameLink.findMany({
+    where: {
+      provider,
+    },
+    select: {
+      gameId: true,
+      provider: true,
+      externalId: true,
+    },
+  })
+
+  return buildIgnoredExternalGameLinkKeySet(ignoredLinks)
 }
 
 function encryptSecret(value: string | undefined) {
@@ -327,6 +351,7 @@ function createSteamSyncMessage(stats: SteamImportStats, sources: SteamSyncSourc
     `${stats.importedGames} ajoutés`,
     `${stats.linkedGames} reliés`,
     `${stats.updatedGames} déjà connus`,
+    stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
     `${stats.syncedCollections} catégories Steam liées`,
     `${stats.syncedSessions} temps de jeu synchronisés`,
     `${stats.syncedDlc} DLC Steam détectés`,
@@ -349,6 +374,7 @@ function createRawgSyncMessage(stats: RawgEnrichmentStats) {
     `${stats.scannedGames} jeux analysés`,
     `${stats.enrichedGames} enrichis`,
     `${stats.linkedGames} reliés à RAWG`,
+    stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
     `${stats.notFoundGames} introuvables`,
     `${stats.fieldsUpdated} champs ajoutés`,
     `${stats.syncedGenres} genres`,
@@ -364,6 +390,7 @@ function createIgdbSyncMessage(stats: IgdbEnrichmentStats) {
     `${stats.scannedGames} jeux analysés`,
     `${stats.enrichedGames} enrichis`,
     `${stats.linkedGames} reliés à IGDB`,
+    stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
     `${stats.notFoundGames} introuvables`,
     `${stats.fieldsUpdated} champs ajoutés`,
     `${stats.syncedGenres} genres`,
@@ -380,6 +407,7 @@ function createEpicSyncMessage(stats: EpicImportStats) {
     `${stats.importedGames} ajouté(s)`,
     `${stats.linkedGames} relié(s)`,
     `${stats.updatedGames} déjà connu(s)`,
+    stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
   ].join(' / ')
 }
 
@@ -393,6 +421,7 @@ function createGogSyncMessage(stats: GogImportStats) {
     `${stats.importedGames} ajouté(s)`,
     `${stats.linkedGames} relié(s)`,
     `${stats.updatedGames} déjà connu(s)`,
+    stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
   ].join(' / ')
 }
 
@@ -1375,12 +1404,14 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
     importedGames: 0,
     linkedGames: 0,
     updatedGames: 0,
+    ignoredLinks: 0,
     syncedSessions: 0,
     syncedDlc: 0,
     syncedAchievements: 0,
     syncedAchievementGames: 0,
     syncedCollections: 0,
   }
+  const ignoredLinks = await readIgnoredExternalGameLinkKeys(steamProvider)
   const steamPlatform = await ensureSteamPlatform()
   const localGames = await prisma.game.findMany({
     where: {
@@ -1428,6 +1459,20 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
           },
         })
       : (gamesByTitle.get(normalizeTitle(steamGame.title)) ?? null)
+
+    if (
+      !existingLink &&
+      matchedGame &&
+      hasIgnoredExternalGameLink(ignoredLinks, {
+        gameId: matchedGame.id,
+        provider: steamProvider,
+        externalId,
+      })
+    ) {
+      stats.ignoredLinks += 1
+      continue
+    }
+
     const hasSteamPlayActivity =
       steamGame.playtimeForeverMinutes > 0 || steamGame.lastPlayedAt !== null
     const localGame =
@@ -1557,7 +1602,9 @@ async function importEpicInstalledGames(
     importedGames: 0,
     linkedGames: 0,
     updatedGames: 0,
+    ignoredLinks: 0,
   }
+  const ignoredLinks = await readIgnoredExternalGameLinkKeys(epicProvider)
   const epicPlatform = await ensureEpicPlatform()
   const localGames = await prisma.game.findMany({
     where: {
@@ -1598,6 +1645,20 @@ async function importEpicInstalledGames(
           },
         })
       : (gamesByTitle.get(normalizeTitle(epicGame.title)) ?? null)
+
+    if (
+      !existingLink &&
+      matchedGame &&
+      hasIgnoredExternalGameLink(ignoredLinks, {
+        gameId: matchedGame.id,
+        provider: epicProvider,
+        externalId,
+      })
+    ) {
+      stats.ignoredLinks += 1
+      continue
+    }
+
     const localGame =
       matchedGame ??
       (await prisma.game.create({
@@ -1687,7 +1748,9 @@ async function importGogInstalledGames(
     importedGames: 0,
     linkedGames: 0,
     updatedGames: 0,
+    ignoredLinks: 0,
   }
+  const ignoredLinks = await readIgnoredExternalGameLinkKeys(gogProvider)
   const gogPlatform = await ensureGogPlatform()
   const localGames = await prisma.game.findMany({
     where: {
@@ -1726,6 +1789,20 @@ async function importGogInstalledGames(
           },
         })
       : (gamesByTitle.get(normalizeTitle(gogGame.title)) ?? null)
+
+    if (
+      !existingLink &&
+      matchedGame &&
+      hasIgnoredExternalGameLink(ignoredLinks, {
+        gameId: matchedGame.id,
+        provider: gogProvider,
+        externalId,
+      })
+    ) {
+      stats.ignoredLinks += 1
+      continue
+    }
+
     const localGame =
       matchedGame ??
       (await prisma.game.create({
@@ -1798,10 +1875,12 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
     scannedGames: 0,
     enrichedGames: 0,
     linkedGames: 0,
+    ignoredLinks: 0,
     notFoundGames: 0,
     fieldsUpdated: 0,
     syncedGenres: 0,
   }
+  const ignoredLinks = await readIgnoredExternalGameLinkKeys(rawgProvider)
   const games = await prisma.game.findMany({
     where: {
       archived: false,
@@ -1874,6 +1953,18 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
       lastSyncedAt: new Date(),
     }
 
+    if (
+      !existingLink &&
+      hasIgnoredExternalGameLink(ignoredLinks, {
+        gameId: game.id,
+        provider: rawgProvider,
+        externalId,
+      })
+    ) {
+      stats.ignoredLinks += 1
+      continue
+    }
+
     if (!existingLink) {
       await prisma.externalGame.create({
         data: {
@@ -1924,10 +2015,12 @@ async function enrichLocalGamesWithIgdb({
     scannedGames: 0,
     enrichedGames: 0,
     linkedGames: 0,
+    ignoredLinks: 0,
     notFoundGames: 0,
     fieldsUpdated: 0,
     syncedGenres: 0,
   }
+  const ignoredLinks = await readIgnoredExternalGameLinkKeys(igdbProvider)
   const games = await prisma.game.findMany({
     where: {
       archived: false,
@@ -1999,6 +2092,18 @@ async function enrichLocalGamesWithIgdb({
       sourceTitle: metadata.title,
       sourceCoverUrl: metadata.coverUrl,
       lastSyncedAt: new Date(),
+    }
+
+    if (
+      !existingLink &&
+      hasIgnoredExternalGameLink(ignoredLinks, {
+        gameId: game.id,
+        provider: igdbProvider,
+        externalId,
+      })
+    ) {
+      stats.ignoredLinks += 1
+      continue
     }
 
     if (!existingLink) {
