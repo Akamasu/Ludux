@@ -46,7 +46,7 @@ function buildBrowserLifeEvents(games: GameListItem[]): LifeBookEvent[] {
   )
 }
 
-export function useLifeBook(games: GameListItem[]) {
+export function useLifeBook(games: GameListItem[], enabled = true) {
   const gamesRef = useRef(games)
   const [events, setEvents] = useState<LifeBookEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -75,16 +75,18 @@ export function useLifeBook(games: GameListItem[]) {
   }, [])
 
   useEffect(() => {
-    void refresh()
-  }, [refresh])
+    if (enabled) {
+      void refresh()
+    }
+  }, [enabled, refresh])
 
   useEffect(() => {
     gamesRef.current = games
 
-    if (!window.ludux) {
+    if (enabled && !window.ludux) {
       void refresh()
     }
-  }, [games, refresh])
+  }, [enabled, games, refresh])
 
   return {
     events,

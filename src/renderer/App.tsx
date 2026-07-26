@@ -1,4 +1,10 @@
-import { useCallback, useState, type ReactNode } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react'
 import { AppShell } from './components/layout/AppShell'
 import { useChronicles } from './hooks/useChronicles'
 import { useGameDetail } from './hooks/useGameDetail'
@@ -6,17 +12,47 @@ import { useLifeBook } from './hooks/useLifeBook'
 import { useLibraryOverview } from './hooks/useLibraryOverview'
 import { useLibraryStatistics } from './hooks/useLibraryStatistics'
 import { useSettings } from './hooks/useSettings'
-import { ChroniclesPage } from './pages/ChroniclesPage'
-import { GameDetailPage } from './pages/GameDetailPage'
 import { HomePage } from './pages/HomePage'
-import { LifeBookPage } from './pages/LifeBookPage'
-import { LibraryPage } from './pages/LibraryPage'
-import { MuseumPage } from './pages/MuseumPage'
-import { SettingsPage } from './pages/SettingsPage'
-import { StatisticsPage } from './pages/StatisticsPage'
 import type { AppView } from './types/navigation'
 
+const ChroniclesPage = lazy(() =>
+  import('./pages/ChroniclesPage').then((module) => ({
+    default: module.ChroniclesPage,
+  })),
+)
+const GameDetailPage = lazy(() =>
+  import('./pages/GameDetailPage').then((module) => ({
+    default: module.GameDetailPage,
+  })),
+)
+const LifeBookPage = lazy(() =>
+  import('./pages/LifeBookPage').then((module) => ({
+    default: module.LifeBookPage,
+  })),
+)
+const LibraryPage = lazy(() =>
+  import('./pages/LibraryPage').then((module) => ({
+    default: module.LibraryPage,
+  })),
+)
+const MuseumPage = lazy(() =>
+  import('./pages/MuseumPage').then((module) => ({
+    default: module.MuseumPage,
+  })),
+)
+const SettingsPage = lazy(() =>
+  import('./pages/SettingsPage').then((module) => ({
+    default: module.SettingsPage,
+  })),
+)
+const StatisticsPage = lazy(() =>
+  import('./pages/StatisticsPage').then((module) => ({
+    default: module.StatisticsPage,
+  })),
+)
+
 const LAUNCH_VIEW_STORAGE_KEY = 'ludux.launchView'
+const SETUP_ASSISTANT_STORAGE_KEY = 'ludux.setupAssistantCompleted'
 const launchableViews: AppView[] = [
   'home',
   'library',
@@ -40,20 +76,56 @@ function readLaunchView(): AppView {
   return 'home'
 }
 
+function readSetupAssistantPending() {
+  if (!window.ludux) {
+    return false
+  }
+
+  try {
+    return window.localStorage.getItem(SETUP_ASSISTANT_STORAGE_KEY) !== 'true'
+  } catch {
+    return false
+  }
+}
+
+function ViewLoading() {
+  return (
+    <div className="grid min-h-[50vh] place-items-center" role="status">
+      <div className="flex items-center gap-3 text-sm text-zinc-500">
+        <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#7C5CFF]" />
+        Ouverture...
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const [launchView, setLaunchViewState] = useState<AppView>(readLaunchView)
-  const [activeView, setActiveView] = useState<AppView>(() => launchView)
+  const [isSetupAssistantPending, setIsSetupAssistantPending] = useState(
+    readSetupAssistantPending,
+  )
+  const [activeView, setActiveView] = useState<AppView>(() =>
+    isSetupAssistantPending ? 'settings' : launchView,
+  )
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
   const libraryState = useLibraryOverview()
-  const chroniclesState = useChronicles(libraryState.games)
-  const lifeBookState = useLifeBook(libraryState.games)
-  const statisticsState = useLibraryStatistics(libraryState.games)
-  const settingsState = useSettings()
-  const refreshChronicles = chroniclesState.refresh
+  const chroniclesState = useChronicles(
+    libraryState.games,
+    activeView === 'chronicles' && selectedGameId === null,
+  )
+  const lifeBookState = useLifeBook(
+    libraryState.games,
+    activeView === 'lifeBook' && selectedGameId === null,
+  )
+  const statisticsState = useLibraryStatistics(
+    libraryState.games,
+    activeView === 'statistics' && selectedGameId === null,
+  )
+  const settingsState = useSettings(
+    activeView === 'settings' && selectedGameId === null,
+  )
   const refreshLibrary = libraryState.refresh
-  const refreshLifeBook = lifeBookState.refresh
   const refreshSettings = settingsState.refresh
-  const refreshStatistics = statisticsState.refresh
   const selectedListItem =
     libraryState.games.find((game) => game.id === selectedGameId) ?? null
   const gameDetailState = useGameDetail(
@@ -63,6 +135,11 @@ export default function App() {
   )
 
   function navigate(view: AppView) {
+    if (isSetupAssistantPending && view !== 'settings') {
+      completeSetupAssistant(view)
+      return
+    }
+
     setSelectedGameId(null)
     setActiveView(view)
   }
@@ -78,32 +155,18 @@ export default function App() {
     setActiveView('library')
   }
 
-  const refreshContent = useCallback(async () => {
-    await Promise.all([
-      refreshLibrary(),
-      refreshChronicles(),
-      refreshLifeBook(),
-      refreshStatistics(),
-    ])
-  }, [
-    refreshChronicles,
-    refreshLibrary,
-    refreshLifeBook,
-    refreshStatistics,
-  ])
-
   async function refreshSettingsView() {
-    await Promise.all([refreshSettings(), refreshContent()])
+    await refreshSettings()
   }
 
   async function syncProvider(input: Parameters<typeof settingsState.syncProvider>[0]) {
     await settingsState.syncProvider(input)
-    await refreshContent()
+    await refreshLibrary()
   }
 
   async function syncAllProviders() {
     await settingsState.syncAllProviders()
-    await refreshContent()
+    await refreshLibrary()
   }
 
   function changeLaunchView(view: AppView) {
@@ -115,6 +178,24 @@ export default function App() {
       // The in-memory state is still useful if localStorage is unavailable.
     }
   }
+
+  function completeSetupAssistant(destination: AppView = launchView) {
+    setIsSetupAssistantPending(false)
+    setSelectedGameId(null)
+    setActiveView(destination)
+
+    try {
+      window.localStorage.setItem(SETUP_ASSISTANT_STORAGE_KEY, 'true')
+    } catch {
+      // The assistant can still be dismissed for the current session.
+    }
+  }
+
+  useEffect(() => {
+    if (isSetupAssistantPending && activeView !== 'settings') {
+      setActiveView('settings')
+    }
+  }, [activeView, isSetupAssistantPending])
 
   let content: ReactNode = null
 
@@ -208,6 +289,7 @@ export default function App() {
         error={settingsState.error ?? libraryState.error}
         actionResult={settingsState.actionResult}
         archivedGames={libraryState.archivedGames}
+        isInitialSetup={isSetupAssistantPending}
         launchView={launchView}
         onChangeLaunchView={changeLaunchView}
         onClearGameCache={settingsState.clearGameCache}
@@ -215,6 +297,7 @@ export default function App() {
         onDeleteProviderConnection={settingsState.deleteProviderConnection}
         onDeleteGame={libraryState.deleteGame}
         onExportLibrary={settingsState.exportLibrary}
+        onFinishInitialSetup={() => completeSetupAssistant()}
         onOpenDataFolder={settingsState.openDataFolder}
         onRefresh={refreshSettingsView}
         onRestoreGame={libraryState.restoreGame}
@@ -231,7 +314,7 @@ export default function App() {
         key={selectedGameId ? `game-${selectedGameId}` : activeView}
         className="view-transition min-w-0"
       >
-        {content}
+        <Suspense fallback={<ViewLoading />}>{content}</Suspense>
       </div>
     </AppShell>
   )

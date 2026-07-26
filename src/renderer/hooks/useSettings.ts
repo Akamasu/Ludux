@@ -46,7 +46,7 @@ const BROWSER_OVERVIEW: SettingsOverview = {
 const ELECTRON_ONLY_ACTION_MESSAGE =
   "Cette action est disponible dans la fenêtre Electron de Ludux. Lance npm run dev et utilise la fenêtre qui s'ouvre, pas l'URL du navigateur."
 
-export function useSettings() {
+export function useSettings(enabled = true) {
   const [overview, setOverview] = useState<SettingsOverview>(BROWSER_OVERVIEW)
   const [isLoading, setIsLoading] = useState(true)
   const [isBusy, setIsBusy] = useState(false)
@@ -269,8 +269,10 @@ export function useSettings() {
   }, [runAction])
 
   useEffect(() => {
-    void refresh()
-  }, [refresh])
+    if (enabled) {
+      void refresh()
+    }
+  }, [enabled, refresh])
 
   return {
     overview,

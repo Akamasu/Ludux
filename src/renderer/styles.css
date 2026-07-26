@@ -191,6 +191,16 @@ button:disabled {
   contain-intrinsic-size: auto 680px;
 }
 
+.library-card-item {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 360px;
+}
+
+.library-row-item {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 96px;
+}
+
 .drag-region {
   -webkit-app-region: drag;
 }

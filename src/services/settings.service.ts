@@ -50,7 +50,10 @@ import {
   buildProviderSyncActivity,
   sortProviderSyncRecords,
 } from './provider-sync-activity'
-import { sortConfiguredSyncProviders } from './provider-sync-order'
+import {
+  filterProvidersDueForAutoSync,
+  sortConfiguredSyncProviders,
+} from './provider-sync-order'
 import {
   createSteamDlcDisplayName,
   filterSteamDlcCatalogDuplicates,
@@ -731,12 +734,19 @@ async function buildProviderOverview(): Promise<ProviderOverview> {
   const sortedSyncRecords = sortProviderSyncRecords(syncRecords)
   const providers = EXTERNAL_PROVIDER_DEFINITIONS.map((definition) => {
     const account = accounts.find((item) => item.provider === definition.provider) ?? null
+    const configuredFromEnvironment =
+      (definition.provider === rawgProvider && Boolean(readEnvValue('RAWG_API_KEY'))) ||
+      (definition.provider === igdbProvider &&
+        Boolean(
+          readEnvValue('IGDB_CLIENT_ID') &&
+            readEnvValue('IGDB_CLIENT_SECRET'),
+        ))
     const sync =
       sortedSyncRecords.find((item) => item.provider === definition.provider) ?? null
 
     return {
       ...definition,
-      configured: account !== null,
+      configured: account !== null || configuredFromEnvironment,
       account: account
         ? {
             id: account.id,
@@ -2525,7 +2535,7 @@ function createSingleGameSyncMessage(gameTitle: string, summary: SingleGameSyncS
   return parts.filter((part): part is string => part !== null).join(' ')
 }
 
-const AUTO_SYNC_STARTUP_DELAY_MS = 15_000
+const AUTO_SYNC_STARTUP_DELAY_MS = 30_000
 
 class SettingsService {
   private autoSyncTimer: NodeJS.Timeout | null = null
@@ -2570,7 +2580,31 @@ class SettingsService {
     this.isAutoSyncRunning = true
 
     try {
-      await this.runConfiguredProviderSyncs()
+      const providers = await this.getConfiguredSyncProviders()
+      const intervalMs = readAutoSyncIntervalMinutes() * 60_000
+      const syncRecords = await prisma.syncData.findMany({
+        where: {
+          provider: {
+            in: providers,
+          },
+          lastSync: {
+            not: null,
+          },
+        },
+        select: {
+          provider: true,
+          lastSync: true,
+        },
+      })
+      const providersDueForSync = filterProvidersDueForAutoSync(
+        providers,
+        syncRecords,
+        intervalMs,
+      )
+
+      if (providersDueForSync.length > 0) {
+        await this.runConfiguredProviderSyncs(providersDueForSync)
+      }
     } catch (error) {
       logger.error('[SettingsAutoSync]', error)
     } finally {
@@ -2619,12 +2653,14 @@ class SettingsService {
     return sortConfiguredSyncProviders(providers)
   }
 
-  private async runConfiguredProviderSyncs() {
-    const providers = await this.getConfiguredSyncProviders()
+  private async runConfiguredProviderSyncs(
+    providers?: ExternalProvider[],
+  ) {
+    const providersToSync = providers ?? await this.getConfiguredSyncProviders()
     const results: string[] = []
     const errors: string[] = []
 
-    for (const provider of providers) {
+    for (const provider of providersToSync) {
       const providerLabel = getExternalProviderLabel(provider)
 
       try {
@@ -2640,7 +2676,7 @@ class SettingsService {
     }
 
     return {
-      providers,
+      providers: providersToSync,
       results,
       errors,
     }

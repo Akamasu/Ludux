@@ -1,7 +1,7 @@
 import { Clock3, Star } from 'lucide-react'
-import type { CSSProperties } from 'react'
 import { GAME_STATUS_LABELS, type GameListItem } from '../../../types/game'
 import { formatHours } from '../../utils/formatters'
+import { GameCover } from './GameCover'
 import { GameGenreChips } from './GameGenreChips'
 
 interface GameListRowProps {
@@ -9,26 +9,23 @@ interface GameListRowProps {
   onOpen?: (gameId: string) => void
 }
 
-function coverBackgroundStyle(coverUrl: string): CSSProperties {
-  return {
-    backgroundImage: `url(${JSON.stringify(coverUrl)})`,
-  }
-}
-
 export function GameListRow({ game, onOpen }: GameListRowProps) {
   return (
-    <article>
+    <article className="library-row-item">
       <button
         type="button"
         onClick={() => onOpen?.(game.id)}
         className="book-row group relative grid w-full overflow-hidden rounded-lg border border-white/10 bg-[#181B23] p-4 text-left transition duration-200 hover:border-[#C9A646]/35 md:grid-cols-[1.4fr_0.8fr_0.6fr_0.6fr] md:items-center"
       >
         {game.coverUrl ? (
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 bg-cover bg-center opacity-20 saturate-125 transition duration-200 group-hover:opacity-28"
-            style={coverBackgroundStyle(game.coverUrl)}
-          />
+          <div aria-hidden="true" className="absolute inset-0">
+            <GameCover
+              title={game.title}
+              coverUrl={game.coverUrl}
+              className="opacity-20 saturate-125 transition duration-200 group-hover:opacity-28"
+              initialClassName="text-3xl"
+            />
+          </div>
         ) : null}
         <div
           aria-hidden="true"

@@ -29,6 +29,14 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.39 - 2026-07-26
+
+- Ajout d'un assistant de première ouverture avec détection locale et accès direct aux connexions utiles.
+- Les pages Chroniques, Livre de Vie, Statistiques et Paramètres chargent maintenant leurs données uniquement lorsqu'elles sont ouvertes.
+- La synchronisation automatique respecte un délai de fraîcheur et ne relance plus les sources déjà mises à jour récemment.
+- Chargement différé des jaquettes et rendu progressif des grandes bibliothèques pour réduire les ralentissements pendant le défilement.
+- Les clés RAWG et IGDB présentes dans `.env` sont reconnues comme des connexions prêtes sans exposer leurs secrets.
+
 ## v0.24.38 - 2026-07-26
 
 - Ajout du bouton `Synchroniser ce jeu` sur les fiches pour relancer uniquement les sources utiles à un jeu précis.

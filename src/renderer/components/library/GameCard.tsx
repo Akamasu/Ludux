@@ -11,7 +11,7 @@ interface GameCardProps {
 
 export function GameCard({ game, onOpen }: GameCardProps) {
   return (
-    <article className="book-card group h-full overflow-hidden rounded-lg border border-white/10 bg-[#181B23] transition duration-200 hover:-translate-y-0.5 hover:border-[#C9A646]/35">
+    <article className="book-card library-card-item group h-full overflow-hidden rounded-lg border border-white/10 bg-[#181B23] transition duration-200 hover:-translate-y-0.5 hover:border-[#C9A646]/35">
       <button
         type="button"
         onClick={() => onOpen?.(game.id)}
@@ -19,7 +19,7 @@ export function GameCard({ game, onOpen }: GameCardProps) {
       >
         <div className="relative aspect-video bg-[#121620]">
           <GameCover title={game.title} coverUrl={game.coverUrl} />
-          <span className="absolute left-3 top-3 rounded-lg bg-black/55 px-3 py-1 text-xs font-medium text-white backdrop-blur">
+          <span className="absolute left-3 top-3 rounded-lg bg-black/70 px-3 py-1 text-xs font-medium text-white">
             {GAME_STATUS_LABELS[game.status]}
           </span>
         </div>

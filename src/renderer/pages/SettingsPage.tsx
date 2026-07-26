@@ -1,6 +1,7 @@
 import {
   Activity,
   AlertTriangle,
+  ArrowRight,
   Archive,
   CheckCircle2,
   Clock3,
@@ -39,6 +40,7 @@ interface SettingsPageProps {
   error: string | null
   actionResult: SettingsActionResult | null
   archivedGames: GameListItem[]
+  isInitialSetup: boolean
   launchView: AppView
   onChangeLaunchView: (view: AppView) => void
   onClearGameCache: () => Promise<void>
@@ -46,6 +48,7 @@ interface SettingsPageProps {
   onDeleteGame: (gameId: string) => Promise<void>
   onDeleteProviderConnection: (input: DeleteProviderConnectionInput) => Promise<void>
   onExportLibrary: () => Promise<void>
+  onFinishInitialSetup: () => void
   onOpenDataFolder: () => Promise<void>
   onRefresh: () => Promise<void>
   onRestoreGame: (gameId: string) => Promise<void>
@@ -459,6 +462,13 @@ function canSyncProvider(
     return Boolean(localPlatformForProvider(overview, provider)?.detected)
   }
 
+  if (
+    (provider.provider === 'RAWG' || provider.provider === 'IGDB') &&
+    provider.configured
+  ) {
+    return true
+  }
+
   if (!provider.account) {
     return false
   }
@@ -526,19 +536,23 @@ function SetupStepCard({
         ) : (
           <Clock3 size={14} aria-hidden="true" />
         )}
-        {ready ? 'Prêt' : 'À compléter'}
+        {ready ? 'Connecté' : 'À configurer'}
       </span>
     </article>
   )
 }
 
 function SetupAssistantPanel({
+  isInitialSetup,
   isBusy,
+  onFinishInitialSetup,
   onRefresh,
   onSyncAllProviders,
   overview,
 }: {
+  isInitialSetup: boolean
   isBusy: boolean
+  onFinishInitialSetup: () => void
   onRefresh: () => Promise<void>
   onSyncAllProviders: () => Promise<void>
   overview: SettingsOverview
@@ -593,6 +607,17 @@ function SetupAssistantPanel({
             <HardDrive size={17} aria-hidden="true" />
             Rechercher
           </Button>
+          {isInitialSetup ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onFinishInitialSetup}
+              disabled={isBusy}
+            >
+              Entrer dans Ludux
+              <ArrowRight size={17} aria-hidden="true" />
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -1183,6 +1208,7 @@ export function SettingsPage({
   archivedGames,
   error,
   isBusy,
+  isInitialSetup,
   isLoading,
   launchView,
   onChangeLaunchView,
@@ -1191,6 +1217,7 @@ export function SettingsPage({
   onDeleteGame,
   onDeleteProviderConnection,
   onExportLibrary,
+  onFinishInitialSetup,
   onOpenDataFolder,
   onRefresh,
   onRestoreGame,
@@ -1205,11 +1232,12 @@ export function SettingsPage({
         <div>
           <p className="text-sm font-medium text-[#A797FF]">Paramètres</p>
           <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
-            Contrôle local des données
+            {isInitialSetup ? 'Bienvenue dans Ludux' : 'Contrôle local des données'}
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-            Sauvegardez la base locale, exportez un instantané JSON et gardez les
-            chemins essentiels sous les yeux.
+            {isInitialSetup
+              ? 'Ludux recherche les plateformes présentes sur cette machine. Vous pourrez compléter les connexions utiles, puis laisser la synchronisation travailler.'
+              : 'Sauvegardez la base locale, exportez un instantané JSON et gardez les chemins essentiels sous les yeux.'}
           </p>
         </div>
         <Button className="w-full sm:w-auto" type="button" variant="secondary" onClick={onRefresh} disabled={isBusy}>
@@ -1227,8 +1255,10 @@ export function SettingsPage({
       {actionResult ? <ResultMessage result={actionResult} /> : null}
 
       <SetupAssistantPanel
+        isInitialSetup={isInitialSetup}
         isBusy={isBusy}
         overview={overview}
+        onFinishInitialSetup={onFinishInitialSetup}
         onRefresh={onRefresh}
         onSyncAllProviders={onSyncAllProviders}
       />
