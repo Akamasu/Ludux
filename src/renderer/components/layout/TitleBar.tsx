@@ -11,7 +11,7 @@ export function TitleBar() {
     <header className="drag-region fixed inset-x-0 top-0 z-50 flex h-11 items-center border-b border-[#C9A646]/15 bg-[#0C0E13]/95 text-zinc-400 shadow-[0_1px_20px_rgba(0,0,0,0.24)] backdrop-blur">
       <div className="flex min-w-0 flex-1 items-center gap-2 px-3">
         <img
-          src="/ludux-logo.png"
+          src="./ludux-logo.png"
           alt=""
           className="h-6 w-6 rounded-md border border-white/10 object-cover"
         />

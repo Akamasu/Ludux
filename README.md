@@ -10,7 +10,13 @@
 
 Ludux est une application desktop qui rassemble votre bibliothèque de jeux, votre temps de jeu, vos succès, vos DLC, vos souvenirs et vos notes personnelles.
 
-Version courante : `v0.24.40`
+Version courante : `v0.25.0`
+
+## Installation
+
+1. Téléchargez `Ludux-Setup-0.25.0-x64.exe`.
+2. Lancez l'installateur.
+3. Ouvrez Ludux et laissez l'assistant détecter vos plateformes.
 
 ## Pour les joueurs
 
@@ -42,7 +48,7 @@ Les fiches privilégient les textes français quand les plateformes les fourniss
 
 ## Données
 
-Ludux est pensé local-first : les données restent sur votre machine dans une base SQLite locale.
+Ludux est pensé local-first : les données restent sur votre machine dans une base SQLite locale, stockée dans votre profil Windows.
 
 Les jaquettes et métadonnées utiles à l'affichage peuvent être gardées dans un cache local léger et limité en taille. Ludux ne copie jamais les dossiers de jeux.
 

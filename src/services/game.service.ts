@@ -1,5 +1,5 @@
 import { copyFile, mkdir } from 'node:fs/promises'
-import { basename, extname, join, parse, resolve } from 'node:path'
+import { basename, extname, join, parse } from 'node:path'
 import { prisma } from '../database/client'
 import { fetchSteamDlcCatalog, type SteamAppDetails } from '../providers/steam'
 import {
@@ -44,8 +44,9 @@ import type {
   UpdateReviewInput,
   UpdateScreenshotInput,
 } from '../types/game'
+import { getLuduxDataPath } from './app-data'
 
-const screenshotMediaDirectory = resolve('userdata', 'media', 'screenshots')
+const screenshotMediaDirectory = getLuduxDataPath('media', 'screenshots')
 const steamProvider = 'STEAM'
 const manualGenreSource = 'MANUAL'
 

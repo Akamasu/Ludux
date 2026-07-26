@@ -1,6 +1,6 @@
 import { app, dialog, safeStorage, shell } from 'electron'
 import { copyFile, mkdir, readdir, stat, writeFile } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join } from 'node:path'
 import { getDatabaseFilePath, prisma } from '../database/client'
 import {
   fetchSteamAppDetails,
@@ -73,10 +73,11 @@ import {
   readLocalGameCacheOverview,
   shouldCacheRemoteAsset,
 } from './local-game-cache'
+import { getLuduxDataDirectory, getLuduxDataPath } from './app-data'
 
-const userDataDirectory = resolve('userdata')
-const exportDirectory = join(userDataDirectory, 'exports')
-const backupDirectory = join(userDataDirectory, 'backups')
+const userDataDirectory = getLuduxDataDirectory()
+const exportDirectory = getLuduxDataPath('exports')
+const backupDirectory = getLuduxDataPath('backups')
 const steamProvider: ExternalProvider = 'STEAM'
 const steamPlatformName = 'Steam'
 const steamCollectionDescription = 'Catégorie Steam synchronisée.'

@@ -2,8 +2,9 @@ import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { extname, isAbsolute, join, relative, resolve } from 'node:path'
 import type { LocalGameCacheOverview } from '../types/settings'
 import { logger } from '../utils/logger'
+import { getLuduxDataPath } from './app-data'
 
-const gameCacheDirectory = resolve('userdata', 'cache', 'games')
+const gameCacheDirectory = getLuduxDataPath('cache', 'games')
 const coverCacheDirectory = join(gameCacheDirectory, 'covers')
 const metadataCacheDirectory = join(gameCacheDirectory, 'metadata')
 const defaultMaxCoverBytes = 1_500_000
@@ -549,7 +550,7 @@ export async function readLocalGameCacheCoverFallbacks() {
 
 export async function clearLocalGameCache(): Promise<LocalGameCacheOverview> {
   const overview = await readLocalGameCacheOverview()
-  const cacheParentDirectory = resolve('userdata', 'cache')
+  const cacheParentDirectory = getLuduxDataPath('cache')
 
   if (!isPathInside(gameCacheDirectory, cacheParentDirectory)) {
     throw new Error('Chemin de cache invalide.')

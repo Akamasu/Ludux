@@ -28,6 +28,17 @@ Le projet suit des versions de développement simples :
 - `v0.22.x` : stabilisation du connecteur Steam.
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
+- `v0.25.x` : stockage Windows, migrations sécurisées et installateur public.
+
+## v0.25.0 - 2026-07-26
+
+- Ajout d'un installateur Windows x64 avec l'identité, le logo et les raccourcis de Ludux.
+- Déplacement des données locales dans le profil Windows afin que les installations et mises à jour ne touchent plus à la bibliothèque.
+- Migration automatique de l'ancien dossier `userdata` avec sauvegarde préalable et conservation des fichiers d'origine.
+- Exécution des migrations SQLite embarquées au démarrage avec sauvegarde de la base avant toute évolution du schéma.
+- Ajout d'un test Electron dédié aux migrations et aux sauvegardes.
+- Allègement du paquet en retirant les dépendances d'interface déjà compilées et les langues Electron inutilisées.
+- Correction du titre de fenêtre et des chemins du logo dans l'application installée.
 
 ## v0.24.40 - 2026-07-26
 

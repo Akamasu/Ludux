@@ -9,6 +9,7 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: {
+          'database-migrations': resolve(__dirname, 'src/database/migrations.ts'),
           main: resolve(__dirname, 'src/main/main.ts'),
         },
       },

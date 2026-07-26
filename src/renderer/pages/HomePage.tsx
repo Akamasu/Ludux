@@ -31,7 +31,7 @@ export function HomePage({
       <header className="flex flex-col items-start justify-between gap-5 border-b border-white/10 pb-7 xl:flex-row">
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:gap-5">
           <img
-            src="/ludux-logo.png"
+            src="./ludux-logo.png"
             alt=""
             className="h-20 w-20 rounded-lg border border-[#C9A646]/20 object-cover sm:h-24 sm:w-24"
           />
