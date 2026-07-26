@@ -29,7 +29,43 @@ jobs:
       - name: Vérifier le projet
         run: npm run check
 
-      - name: Publier l’installeur et les métadonnées de mise à jour
-        run: npm run release:win
+      - name: Construire l'installeur Windows
+        run: npm run package:win
+
+      - name: Publier la release et ses fichiers
+        shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $package = Get-Content -Raw package.json | ConvertFrom-Json
+          $version = $package.version
+          $tag = $env:GITHUB_REF_NAME
+
+          if ($tag -ne "v$version") {
+            throw "Le tag $tag ne correspond pas à la version $version de package.json."
+          }
+
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag `
+              --repo $env:GITHUB_REPOSITORY `
+              --title "Ludux $version" `
+              --notes "Installeur Windows de Ludux $version. Les prochaines mises à jour seront proposées automatiquement dans l'application."
+            if ($LASTEXITCODE -ne 0) {
+              throw "La release GitHub $tag n'a pas pu être créée."
+            }
+          }
+
+          $assets = @(
+            "release/Ludux-Setup-$version-x64.exe"
+            "release/Ludux-Setup-$version-x64.exe.blockmap"
+            "release/latest.yml"
+          )
+
+          gh release upload $tag $assets `
+            --repo $env:GITHUB_REPOSITORY `
+            --clobber
+          if ($LASTEXITCODE -ne 0) {
+            throw "Les fichiers de la release GitHub $tag n'ont pas pu être publiés."
+          }
