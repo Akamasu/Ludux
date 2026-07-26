@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import { app, BrowserWindow, Menu, net, protocol, shell } from 'electron'
+import { access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { prisma } from '../database/client'
@@ -29,10 +30,18 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 function registerLocalGameCacheProtocol() {
-  protocol.handle(localGameCacheProtocol, (request) => {
+  protocol.handle(localGameCacheProtocol, async (request) => {
     const resourcePath = resolveLocalGameCacheUrl(request.url)
 
     if (!resourcePath) {
+      return new Response('Cache introuvable.', {
+        status: 404,
+      })
+    }
+
+    try {
+      await access(resourcePath)
+    } catch {
       return new Response('Cache introuvable.', {
         status: 404,
       })

@@ -29,6 +29,11 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.40 - 2026-07-26
+
+- Les anciennes références vers des jaquettes absentes du cache retournent maintenant une réponse locale propre.
+- Suppression des erreurs Electron répétées `ERR_FILE_NOT_FOUND` pendant l'affichage des images de secours.
+
 ## v0.24.39 - 2026-07-26
 
 - Ajout d'un assistant de première ouverture avec détection locale et accès direct aux connexions utiles.
