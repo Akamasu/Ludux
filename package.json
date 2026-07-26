@@ -15,7 +15,7 @@
     "lint": "oxlint .",
     "postinstall": "prisma generate && electron-builder install-app-deps",
     "package:dir": "npm run build && electron-builder --dir",
-    "package:win": "npm run build && electron-builder --win nsis --x64",
+    "package:win": "npm run build && electron-builder --win nsis --x64 --publish never",
     "release:win": "npm run build && electron-builder --win nsis --x64 --publish always",
     "preview": "electron-vite preview",
     "prisma:generate": "prisma generate",
