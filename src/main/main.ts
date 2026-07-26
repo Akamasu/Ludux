@@ -16,11 +16,13 @@ import {
   getLuduxDatabasePath,
   migrateLegacyLuduxData,
 } from '../services/app-data'
+import { startAppUpdater } from '../services/app-updater'
 import { logger } from '../utils/logger'
 import { registerWindowHandlers } from './ipc/window.ipc'
 
 const localGameCacheProtocol = 'ludux-cache'
 let stopAutoSync: (() => void) | null = null
+let stopAppUpdater: (() => void) | null = null
 let disconnectDatabase: (() => Promise<void>) | null = null
 let runtimeReady = false
 
@@ -165,6 +167,7 @@ async function initializeApplication() {
   Menu.setApplicationMenu(null)
   await createWindow()
   settingsService.startAutoSync()
+  stopAppUpdater = startAppUpdater()
   runtimeReady = true
 }
 
@@ -193,5 +196,6 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   stopAutoSync?.()
+  stopAppUpdater?.()
   void disconnectDatabase?.()
 })

@@ -69,6 +69,16 @@ const launchViewOptions: {
 ]
 
 const providerQueueOrder = ['STEAM', 'EPIC', 'GOG', 'RAWG', 'IGDB'] as const
+const providerDisplayOrder = [
+  'STEAM',
+  'EPIC',
+  'EA_APP',
+  'UBISOFT',
+  'BATTLENET',
+  'GOG',
+  'RAWG',
+  'IGDB',
+] as const
 
 function formatBytes(bytes: number) {
   if (bytes === 0) {
@@ -446,7 +456,13 @@ function localPlatformForProvider(
 }
 
 function isLocalLibraryProvider(provider: ProviderConnection | undefined) {
-  return provider?.provider === 'EPIC' || provider?.provider === 'GOG'
+  return (
+    provider?.provider === 'EPIC' ||
+    provider?.provider === 'EA_APP' ||
+    provider?.provider === 'UBISOFT' ||
+    provider?.provider === 'BATTLENET' ||
+    provider?.provider === 'GOG'
+  )
 }
 
 function isSyncableProvider(provider: ProviderConnection | undefined) {
@@ -628,7 +644,7 @@ function ProvidersPanel({
   onSyncProvider: (input: SyncProviderInput) => Promise<void>
   onUpsertProviderConnection: (input: UpsertProviderConnectionInput) => Promise<void>
 }) {
-  const providers = providerQueueOrder
+  const providers = providerDisplayOrder
     .map((providerId) =>
       overview.providerOverview.providers.find(
         (provider) => provider.provider === providerId,
@@ -816,20 +832,22 @@ function ProvidersPanel({
               </p>
             </div>
 
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleSyncProvider}
-              disabled={isBusy || !selectedProviderCanSync}
-              className="mt-5"
-            >
-              <RefreshCw
-                size={17}
-                aria-hidden="true"
-                className={isBusy ? 'animate-spin' : undefined}
-              />
-              {isBusy ? 'Synchronisation...' : `Synchroniser ${selectedProvider.label}`}
-            </Button>
+            {isSyncableProvider(selectedProvider) ? (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleSyncProvider}
+                disabled={isBusy || !selectedProviderCanSync}
+                className="mt-5"
+              >
+                <RefreshCw
+                  size={17}
+                  aria-hidden="true"
+                  className={isBusy ? 'animate-spin' : undefined}
+                />
+                {isBusy ? 'Synchronisation...' : `Synchroniser ${selectedProvider.label}`}
+              </Button>
+            ) : null}
           </div>
         ) : selectedProvider ? (
           <form className="border-t border-white/10 pt-4" onSubmit={handleSubmit}>

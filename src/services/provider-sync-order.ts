@@ -3,6 +3,9 @@ import type { ExternalProvider } from '../types/settings'
 const providerSyncOrder: ExternalProvider[] = [
   'STEAM',
   'EPIC',
+  'EA_APP',
+  'UBISOFT',
+  'BATTLENET',
   'GOG',
   'XBOX',
   'PLAYSTATION',

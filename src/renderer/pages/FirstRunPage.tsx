@@ -26,7 +26,24 @@ interface FirstRunPageProps {
   onRefresh: () => Promise<void>
 }
 
-const FIRST_RUN_PROVIDER_ORDER = ['STEAM', 'EPIC', 'GOG', 'RAWG', 'IGDB'] as const
+const FIRST_RUN_PROVIDER_ORDER = [
+  'STEAM',
+  'EPIC',
+  'EA_APP',
+  'UBISOFT',
+  'BATTLENET',
+  'GOG',
+  'RAWG',
+  'IGDB',
+] as const
+
+const localProviderIds = new Set([
+  'EPIC',
+  'EA_APP',
+  'UBISOFT',
+  'BATTLENET',
+  'GOG',
+])
 
 function collectPlatformPaths(platform: LocalPlatformDetection) {
   return Array.from(
@@ -38,7 +55,7 @@ function connectionIsReady(
   provider: ProviderConnection,
   platforms: LocalPlatformDetection[],
 ) {
-  if (provider.provider === 'EPIC' || provider.provider === 'GOG') {
+  if (localProviderIds.has(provider.provider)) {
     return platforms.some(
       (platform) => platform.provider === provider.provider && platform.detected,
     )

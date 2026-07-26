@@ -11,9 +11,13 @@ import {
   parseEpicLauncherInstalledDatabase,
   parseEpicManagedApp,
   parseEpicManifest,
+  parseBattleNetConfig,
+  parseGogGalaxyAchievementRows,
+  parseGogGalaxyDlcRows,
   parseGogGalaxyLibraryRows,
   parseGogGameInfo,
   parseGogRegistryGames,
+  parseUbisoftInstallRegistry,
   readEpicLocalLibrary,
   readGogLocalLibrary,
 } from '../../src/providers/local-platforms'
@@ -383,6 +387,52 @@ HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\GOG.com\Games\invalid
     ])
   })
 
+  it('parses Ubisoft Connect installations from the Windows registry', () => {
+    const registryOutput = String.raw`
+HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs\1803
+    Language    REG_SZ    fr-FR
+    InstallDir    REG_SZ    E:/Games/Far Cry 5/
+`
+
+    expect(parseUbisoftInstallRegistry(registryOutput)).toEqual([
+      {
+        externalId: '1803',
+        installPath: 'E:\\Games\\Far Cry 5\\',
+        registryPath:
+          'HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Ubisoft\\Launcher\\Installs\\1803',
+      },
+    ])
+  })
+
+  it('reads Battle.net products without retaining account information', () => {
+    expect(
+      parseBattleNetConfig(
+        JSON.stringify({
+          Client: {
+            Install: {
+              DefaultInstallPath: 'D:\\Games',
+            },
+          },
+          installation: {
+            Path: 'C:\\Program Files (x86)\\Battle.net',
+          },
+          Games: {
+            battle_net: {
+              ServerUid: 'battle.net',
+            },
+            hs_beta: {
+              LastActioned: '1726423092',
+            },
+          },
+        }),
+      ),
+    ).toEqual({
+      clientPath: 'C:\\Program Files (x86)\\Battle.net',
+      defaultInstallPath: 'D:\\Games',
+      productIds: ['hs_beta'],
+    })
+  })
+
   it('parses owned GOG Galaxy games and ignores DLC entries', () => {
     expect(
       parseGogGalaxyLibraryRows(
@@ -392,6 +442,9 @@ HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\GOG.com\Games\invalid
             titleJson: JSON.stringify({ title: 'Cyberpunk 2077' }),
             imagesJson: JSON.stringify({
               verticalCover: 'https://images.gog.com/cyberpunk.webp',
+            }),
+            dlcKeysJson: JSON.stringify({
+              dlcs: ['gog_1256837418'],
             }),
             installationPath: 'C:\\GOG Games\\Cyberpunk 2077',
             minutesInGame: 125,
@@ -427,6 +480,62 @@ HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\GOG.com\Games\invalid
         ownedAt: '2024-12-08T12:16:56.000Z',
         playtimeMinutes: 125,
         title: 'Cyberpunk 2077',
+      },
+    ])
+  })
+
+  it('parses GOG Galaxy DLC ownership without exposing numeric placeholders', () => {
+    expect(
+      parseGogGalaxyDlcRows([
+        {
+          releaseKey: 'gog_1256837418',
+          titleJson: JSON.stringify({
+            title: 'Cyberpunk 2077: Phantom Liberty',
+          }),
+          purchaseDate: '2024-01-12 18:30:00',
+          addedDate: null,
+          isOwned: 1,
+        },
+        {
+          releaseKey: 'gog_999',
+          titleJson: null,
+          purchaseDate: null,
+          addedDate: null,
+          isOwned: 0,
+        },
+      ]),
+    ).toEqual([
+      {
+        externalId: '1256837418',
+        title: 'Cyberpunk 2077: Phantom Liberty',
+        owned: true,
+        ownedAt: '2024-01-12T18:30:00.000Z',
+      },
+    ])
+  })
+
+  it('prefers localized GOG achievement data and keeps unlock dates', () => {
+    expect(
+      parseGogGalaxyAchievementRows([
+        {
+          gameReleaseKey: 'gog_1423049311',
+          apikey: 'ACH_THE_FOOL',
+          name: 'Le Fou',
+          description: 'Devenir mercenaire.',
+          iconUrl: 'https://images.gog.com/the-fool.jpg',
+          isUnlocked: 1,
+          unlockTime: '2026-07-20 22:10:00',
+        },
+      ]),
+    ).toEqual([
+      {
+        gameReleaseKey: 'gog_1423049311',
+        externalId: 'ACH_THE_FOOL',
+        name: 'Le Fou',
+        description: 'Devenir mercenaire.',
+        iconUrl: 'https://images.gog.com/the-fool.jpg',
+        unlocked: true,
+        unlockDate: '2026-07-20T22:10:00.000Z',
       },
     ])
   })

@@ -157,6 +157,9 @@ interface GogImportStats {
   ignoredLinks: number
   coversFound: number
   syncedSessions: number
+  syncedDlc: number
+  syncedAchievements: number
+  syncedAchievementGames: number
 }
 
 interface LocalGameMetadata {
@@ -561,6 +564,10 @@ function createGogSyncMessage(stats: GogImportStats) {
     stats.coversFound > 0 ? `${stats.coversFound} jaquette(s)` : null,
     stats.syncedSessions > 0
       ? `${stats.syncedSessions} temps de jeu synchronisé(s)`
+      : null,
+    stats.syncedDlc > 0 ? `${stats.syncedDlc} DLC` : null,
+    stats.syncedAchievements > 0
+      ? `${stats.syncedAchievements} succès sur ${stats.syncedAchievementGames} jeu(x)`
       : null,
   ]
     .filter((value): value is string => Boolean(value))
@@ -1316,6 +1323,211 @@ async function upsertGogPlaySession({
   return session.id
 }
 
+function datesMatch(left: Date | null, right: Date | null) {
+  return left?.getTime() === right?.getTime()
+}
+
+function readSyncedDate(value: string | null) {
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+async function syncGogDlc(gameId: string, gogGame: GogInstalledGame) {
+  const dlcs = gogGame.dlcs ?? []
+
+  if (dlcs.length === 0) {
+    return 0
+  }
+
+  const existingDlcs = await prisma.dlc.findMany({
+    where: {
+      gameId,
+    },
+  })
+  const providerDlcsByExternalId = new Map(
+    existingDlcs
+      .filter(
+        (dlc) =>
+          dlc.provider === gogProvider &&
+          typeof dlc.externalId === 'string',
+      )
+      .map((dlc) => [dlc.externalId as string, dlc]),
+  )
+  const manualDlcsByName = new Map(
+    existingDlcs
+      .filter((dlc) => !dlc.provider && !dlc.externalId)
+      .map((dlc) => [normalizeTitle(dlc.name), dlc]),
+  )
+  const newDlcs: Array<{
+    gameId: string
+    name: string
+    owned: boolean
+    ownedAt: Date | null
+    provider: string
+    externalId: string
+  }> = []
+
+  for (const dlc of dlcs) {
+    const ownedAt = readSyncedDate(dlc.ownedAt)
+    const existing =
+      providerDlcsByExternalId.get(dlc.externalId) ??
+      manualDlcsByName.get(normalizeTitle(dlc.title))
+
+    if (!existing) {
+      newDlcs.push({
+        gameId,
+        name: dlc.title,
+        owned: dlc.owned,
+        ownedAt,
+        provider: gogProvider,
+        externalId: dlc.externalId,
+      })
+      continue
+    }
+
+    if (
+      existing.name === dlc.title &&
+      existing.owned === dlc.owned &&
+      datesMatch(existing.ownedAt, ownedAt) &&
+      existing.provider === gogProvider &&
+      existing.externalId === dlc.externalId
+    ) {
+      continue
+    }
+
+    await prisma.dlc.update({
+      where: {
+        id: existing.id,
+      },
+      data: {
+        name: dlc.title,
+        owned: dlc.owned,
+        ownedAt,
+        provider: gogProvider,
+        externalId: dlc.externalId,
+      },
+    })
+  }
+
+  if (newDlcs.length > 0) {
+    await prisma.dlc.createMany({
+      data: newDlcs,
+    })
+  }
+
+  return dlcs.length
+}
+
+async function syncGogAchievements(
+  gameId: string,
+  gogGame: GogInstalledGame,
+) {
+  const achievements = gogGame.achievements ?? []
+
+  if (achievements.length === 0) {
+    return 0
+  }
+
+  const existingAchievements = await prisma.achievement.findMany({
+    where: {
+      gameId,
+    },
+  })
+  const providerAchievementsByExternalId = new Map(
+    existingAchievements
+      .filter(
+        (achievement) =>
+          achievement.provider === gogProvider &&
+          typeof achievement.externalId === 'string',
+      )
+      .map((achievement) => [
+        achievement.externalId as string,
+        achievement,
+      ]),
+  )
+  const manualAchievementsByName = new Map(
+    existingAchievements
+      .filter(
+        (achievement) =>
+          !achievement.provider && !achievement.externalId,
+      )
+      .map((achievement) => [
+        normalizeTitle(achievement.name),
+        achievement,
+      ]),
+  )
+  const newAchievements: Array<{
+    gameId: string
+    name: string
+    description: string | null
+    iconUrl: string | null
+    unlocked: boolean
+    unlockDate: Date | null
+    provider: string
+    externalId: string
+  }> = []
+
+  for (const achievement of achievements) {
+    const unlockDate = readSyncedDate(achievement.unlockDate)
+    const existing =
+      providerAchievementsByExternalId.get(achievement.externalId) ??
+      manualAchievementsByName.get(normalizeTitle(achievement.name))
+
+    if (!existing) {
+      newAchievements.push({
+        gameId,
+        name: achievement.name,
+        description: achievement.description,
+        iconUrl: achievement.iconUrl,
+        unlocked: achievement.unlocked,
+        unlockDate,
+        provider: gogProvider,
+        externalId: achievement.externalId,
+      })
+      continue
+    }
+
+    if (
+      existing.name === achievement.name &&
+      existing.description === achievement.description &&
+      existing.iconUrl === achievement.iconUrl &&
+      existing.unlocked === achievement.unlocked &&
+      datesMatch(existing.unlockDate, unlockDate) &&
+      existing.provider === gogProvider &&
+      existing.externalId === achievement.externalId
+    ) {
+      continue
+    }
+
+    await prisma.achievement.update({
+      where: {
+        id: existing.id,
+      },
+      data: {
+        name: achievement.name,
+        description: achievement.description,
+        iconUrl: achievement.iconUrl,
+        unlocked: achievement.unlocked,
+        unlockDate,
+        provider: gogProvider,
+        externalId: achievement.externalId,
+      },
+    })
+  }
+
+  if (newAchievements.length > 0) {
+    await prisma.achievement.createMany({
+      data: newAchievements,
+    })
+  }
+
+  return achievements.length
+}
+
 async function findSteamLinkedGames(games: SteamOwnedGame[]) {
   const externalIds = games.map((game) => String(game.appid))
   const links = await prisma.externalGame.findMany({
@@ -2022,6 +2234,9 @@ async function importGogInstalledGames(
     ignoredLinks: 0,
     coversFound: games.filter((game) => game.coverUrl).length,
     syncedSessions: 0,
+    syncedDlc: 0,
+    syncedAchievements: 0,
+    syncedAchievementGames: 0,
   }
   const ignoredLinks = await readIgnoredExternalGameLinkKeys(gogProvider)
   const gogPlatform = await ensureGogPlatform()
@@ -2141,6 +2356,17 @@ async function importGogInstalledGames(
 
     if (playSessionId) {
       stats.syncedSessions += 1
+    }
+
+    stats.syncedDlc += await syncGogDlc(localGame.id, gogGame)
+    const syncedAchievements = await syncGogAchievements(
+      localGame.id,
+      gogGame,
+    )
+    stats.syncedAchievements += syncedAchievements
+
+    if (syncedAchievements > 0) {
+      stats.syncedAchievementGames += 1
     }
 
     await prisma.externalGame.upsert({

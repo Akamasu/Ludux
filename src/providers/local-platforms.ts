@@ -39,6 +39,24 @@ export interface GogInstalledGame {
   lastPlayedAt: string | null
   ownedAt: string | null
   playtimeMinutes: number
+  dlcs?: GogDlc[]
+  achievements?: GogAchievement[]
+}
+
+export interface GogDlc {
+  externalId: string
+  title: string
+  owned: boolean
+  ownedAt: string | null
+}
+
+export interface GogAchievement {
+  externalId: string
+  name: string
+  description: string | null
+  iconUrl: string | null
+  unlocked: boolean
+  unlockDate: string | null
 }
 
 export interface GogLocalLibraryResult {
@@ -49,6 +67,18 @@ export interface GogLocalLibraryResult {
   configPaths: string[]
   galaxyGameCount: number
   registryGameCount: number
+}
+
+export interface UbisoftLocalInstall {
+  externalId: string
+  installPath: string
+  registryPath: string
+}
+
+export interface BattleNetLocalConfig {
+  clientPath: string | null
+  defaultInstallPath: string | null
+  productIds: string[]
 }
 
 const localPlatformCacheTtlMs = 30_000
@@ -163,6 +193,10 @@ function readJsonObject(value: string) {
 
 function readOptionalText(value: unknown) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
+}
+
+function readObject(value: unknown) {
+  return isJsonObject(value) ? value : null
 }
 
 function decodeLocalTextFile(buffer: Buffer) {
@@ -1069,12 +1103,110 @@ export interface GogGalaxyLibraryRow {
   releaseKey: unknown
   titleJson: unknown
   imagesJson: unknown
+  dlcKeysJson?: unknown
   installationPath: unknown
   minutesInGame: unknown
   lastPlayedDate: unknown
   purchaseDate: unknown
   addedDate: unknown
   isDlc: unknown
+}
+
+export interface GogGalaxyDlcRow {
+  releaseKey: unknown
+  titleJson: unknown
+  purchaseDate: unknown
+  addedDate: unknown
+  isOwned: unknown
+}
+
+export interface GogGalaxyAchievementRow {
+  gameReleaseKey: unknown
+  apikey: unknown
+  name: unknown
+  description: unknown
+  iconUrl: unknown
+  isUnlocked: unknown
+  unlockTime: unknown
+}
+
+function readGogExternalId(value: unknown) {
+  return readOptionalText(value)?.match(/^gog_(\d+)$/i)?.[1] ?? null
+}
+
+function readGogReleaseKeys(value: unknown) {
+  if (typeof value !== 'string') {
+    return []
+  }
+
+  try {
+    const parsedValue = JSON.parse(value)
+    const releaseKeys = Array.isArray(parsedValue)
+      ? parsedValue
+      : isJsonObject(parsedValue) && Array.isArray(parsedValue['dlcs'])
+        ? parsedValue['dlcs']
+        : []
+
+    return releaseKeys
+      .map((item) => readOptionalText(item))
+      .filter((item): item is string => Boolean(item))
+  } catch {
+    return []
+  }
+}
+
+export function parseGogGalaxyDlcRows(rows: GogGalaxyDlcRow[]) {
+  return rows.flatMap((row) => {
+    const externalId = readGogExternalId(row.releaseKey)
+    const titlePayload =
+      typeof row.titleJson === 'string' ? readJsonObject(row.titleJson) : null
+    const title = readOptionalText(titlePayload?.['title'])
+
+    if (!externalId || !title) {
+      return []
+    }
+
+    const owned = Number(row.isOwned) === 1
+
+    return [
+      {
+        externalId,
+        title,
+        owned,
+        ownedAt: owned
+          ? parseGogLocalDate(row.purchaseDate) ??
+            parseGogLocalDate(row.addedDate)
+          : null,
+      },
+    ]
+  })
+}
+
+export function parseGogGalaxyAchievementRows(
+  rows: GogGalaxyAchievementRow[],
+) {
+  return rows.flatMap((row) => {
+    const externalId = readOptionalText(row.apikey)
+    const name = readOptionalText(row.name)
+
+    if (!externalId || !name) {
+      return []
+    }
+
+    const unlocked = Number(row.isUnlocked) === 1
+
+    return [
+      {
+        externalId,
+        name,
+        description: readOptionalText(row.description),
+        iconUrl: readOptionalText(row.iconUrl),
+        unlocked,
+        unlockDate: unlocked ? parseGogLocalDate(row.unlockTime) : null,
+        gameReleaseKey: readOptionalText(row.gameReleaseKey),
+      },
+    ]
+  })
 }
 
 export function parseGogGalaxyLibraryRows(
@@ -1258,7 +1390,10 @@ async function readGogRegistryLibrary() {
   }
 }
 
-async function readGogGalaxyGames(databasePath: string) {
+async function readGogGalaxyGames(
+  databasePath: string,
+  includeDetails: boolean,
+) {
   try {
     const { default: Database } = await import('better-sqlite3')
     const database = new Database(databasePath, {
@@ -1316,6 +1451,15 @@ async function readGogGalaxyGames(databasePath: string) {
                  AND imageType.type = 'originalImages'
                LIMIT 1
              ) AS imagesJson,
+             (
+               SELECT dlcPiece.value
+               FROM GamePieces dlcPiece
+               JOIN GamePieceTypes dlcType
+                 ON dlcType.id = dlcPiece.gamePieceTypeId
+               WHERE dlcPiece.releaseKey = library.releaseKey
+                 AND dlcType.type = 'dlcs'
+               LIMIT 1
+             ) AS dlcKeysJson,
              installed.installationPath AS installationPath,
              COALESCE(gameTime.minutesInGame, 0) AS minutesInGame,
              lastPlayed.lastPlayedDate AS lastPlayedDate,
@@ -1340,7 +1484,194 @@ async function readGogGalaxyGames(databasePath: string) {
         )
         .all() as GogGalaxyLibraryRow[]
 
-      return parseGogGalaxyLibraryRows(rows, databasePath)
+      const games = parseGogGalaxyLibraryRows(rows, databasePath)
+      const dlcsByReleaseKey = new Map<string, GogDlc>()
+      const achievementsByReleaseKey = new Map<string, GogAchievement[]>()
+
+      if (includeDetails && availableTables.has('LicensedReleases')) {
+        const dlcRows = database
+          .prepare(
+            `SELECT
+               properties.releaseKey AS releaseKey,
+               (
+                 SELECT titlePiece.value
+                 FROM GamePieces titlePiece
+                 JOIN GamePieceTypes titleType
+                   ON titleType.id = titlePiece.gamePieceTypeId
+                 WHERE titlePiece.releaseKey = properties.releaseKey
+                   AND titleType.type = 'title'
+                 LIMIT 1
+               ) AS titleJson,
+               purchase.purchaseDate AS purchaseDate,
+               purchase.addedDate AS addedDate,
+               COALESCE(licensed.isOwned, 0) AS isOwned
+             FROM ReleaseProperties properties
+             LEFT JOIN LibraryReleases library
+               ON library.releaseKey = properties.releaseKey
+             LEFT JOIN LicensedReleases licensed
+               ON licensed.libraryId = library.id
+             LEFT JOIN ProductPurchaseDates purchase
+               ON purchase.gameReleaseKey = properties.releaseKey
+              AND purchase.userId = library.userId
+             WHERE properties.releaseKey LIKE 'gog_%'
+               AND properties.isDlc = 1`,
+          )
+          .all() as GogGalaxyDlcRow[]
+
+        for (const dlc of parseGogGalaxyDlcRows(dlcRows)) {
+          dlcsByReleaseKey.set(`gog_${dlc.externalId}`, dlc)
+        }
+      }
+
+      const achievementTables = [
+        'Achievements',
+        'LocalizedAchievements',
+        'UserAchievements',
+      ]
+
+      if (
+        includeDetails &&
+        achievementTables.every((tableName) =>
+          availableTables.has(tableName),
+        )
+      ) {
+        const preferredLanguageId = availableTables.has(
+          'UserRecentClientLanguages',
+        )
+          ? (
+              database
+                .prepare(
+                  `SELECT languageId
+                   FROM UserRecentClientLanguages
+                   ORDER BY lastUsed DESC
+                   LIMIT 1`,
+                )
+                .get() as { languageId?: number } | undefined
+            )?.languageId ?? 24
+          : 24
+        const achievementRows = database
+          .prepare(
+            `SELECT
+               achievement.gameReleaseKey AS gameReleaseKey,
+               achievement.apikey AS apikey,
+               COALESCE(
+                 (
+                   SELECT localized.name
+                   FROM LocalizedAchievements localized
+                   WHERE localized.gameReleaseKey = achievement.gameReleaseKey
+                     AND localized.apikey = achievement.apikey
+                     AND localized.languageId = @preferredLanguageId
+                   ORDER BY localized.isLocalized DESC
+                   LIMIT 1
+                 ),
+                 (
+                   SELECT english.name
+                   FROM LocalizedAchievements english
+                   WHERE english.gameReleaseKey = achievement.gameReleaseKey
+                     AND english.apikey = achievement.apikey
+                     AND english.languageId = 16
+                   ORDER BY english.isLocalized DESC
+                   LIMIT 1
+                 )
+               ) AS name,
+               COALESCE(
+                 (
+                   SELECT localized.description
+                   FROM LocalizedAchievements localized
+                   WHERE localized.gameReleaseKey = achievement.gameReleaseKey
+                     AND localized.apikey = achievement.apikey
+                     AND localized.languageId = @preferredLanguageId
+                   ORDER BY localized.isLocalized DESC
+                   LIMIT 1
+                 ),
+                 (
+                   SELECT english.description
+                   FROM LocalizedAchievements english
+                   WHERE english.gameReleaseKey = achievement.gameReleaseKey
+                     AND english.apikey = achievement.apikey
+                     AND english.languageId = 16
+                   ORDER BY english.isLocalized DESC
+                   LIMIT 1
+                 )
+               ) AS description,
+               COALESCE(
+                 achievement.imageUnlockedUrl,
+                 achievement.imageLockedUrl
+               ) AS iconUrl,
+               COALESCE(userAchievement.isUnlocked, 0) AS isUnlocked,
+               userAchievement.unlockTime AS unlockTime
+             FROM Achievements achievement
+             LEFT JOIN UserAchievements userAchievement
+               ON userAchievement.gameReleaseKey = achievement.gameReleaseKey
+              AND userAchievement.apikey = achievement.apikey
+              AND userAchievement.userId = (
+                SELECT library.userId
+                FROM LibraryReleases library
+                WHERE library.releaseKey = achievement.gameReleaseKey
+                LIMIT 1
+              )
+             WHERE achievement.gameReleaseKey IN (
+               SELECT library.releaseKey
+               FROM LibraryReleases library
+               LEFT JOIN ReleaseProperties properties
+                 ON properties.releaseKey = library.releaseKey
+               WHERE library.releaseKey LIKE 'gog_%'
+                 AND COALESCE(properties.isDlc, 0) = 0
+             )
+               AND COALESCE(achievement.isVisible, 1) = 1`,
+          )
+          .all({ preferredLanguageId }) as GogGalaxyAchievementRow[]
+
+        for (const achievement of parseGogGalaxyAchievementRows(
+          achievementRows,
+        )) {
+          if (!achievement.gameReleaseKey) {
+            continue
+          }
+
+          const releaseAchievements =
+            achievementsByReleaseKey.get(achievement.gameReleaseKey) ?? []
+          releaseAchievements.push({
+            externalId: achievement.externalId,
+            name: achievement.name,
+            description: achievement.description,
+            iconUrl: achievement.iconUrl,
+            unlocked: achievement.unlocked,
+            unlockDate: achievement.unlockDate,
+          })
+          achievementsByReleaseKey.set(
+            achievement.gameReleaseKey,
+            releaseAchievements,
+          )
+        }
+      }
+
+      const rowsByReleaseKey = new Map(
+        rows.flatMap((row) => {
+          const releaseKey = readOptionalText(row.releaseKey)
+          return releaseKey ? [[releaseKey, row] as const] : []
+        }),
+      )
+
+      if (!includeDetails) {
+        return games
+      }
+
+      return games.map((game) => {
+        const releaseKey = `gog_${game.externalId}`
+        const dlcKeys = readGogReleaseKeys(
+          rowsByReleaseKey.get(releaseKey)?.dlcKeysJson,
+        )
+
+        return {
+          ...game,
+          dlcs: dlcKeys.flatMap((dlcKey) => {
+            const dlc = dlcsByReleaseKey.get(dlcKey)
+            return dlc ? [dlc] : []
+          }),
+          achievements: achievementsByReleaseKey.get(releaseKey) ?? [],
+        }
+      })
     } finally {
       database.close()
     }
@@ -1416,6 +1747,14 @@ function dedupeGogInstalledGames(games: GogInstalledGame[]) {
         existingGame.playtimeMinutes,
         game.playtimeMinutes,
       ),
+      dlcs: dedupeGogDlcs([
+        ...(existingGame.dlcs ?? []),
+        ...(game.dlcs ?? []),
+      ]),
+      achievements: dedupeGogAchievements([
+        ...(existingGame.achievements ?? []),
+        ...(game.achievements ?? []),
+      ]),
     })
   }
 
@@ -1427,7 +1766,29 @@ function dedupeGogInstalledGames(games: GogInstalledGame[]) {
   )
 }
 
-export async function readGogLocalLibrary(): Promise<GogLocalLibraryResult> {
+function dedupeGogDlcs(dlcs: GogDlc[]) {
+  return Array.from(
+    new Map(dlcs.map((dlc) => [dlc.externalId, dlc])).values(),
+  )
+}
+
+function dedupeGogAchievements(achievements: GogAchievement[]) {
+  return Array.from(
+    new Map(
+      achievements.map((achievement) => [
+        achievement.externalId,
+        achievement,
+      ]),
+    ).values(),
+  )
+}
+
+export async function readGogLocalLibrary(
+  options: {
+    includeDetails?: boolean
+  } = {},
+): Promise<GogLocalLibraryResult> {
+  const includeDetails = options.includeDetails ?? true
   const gameRoots = createGogCandidateLibraryPaths()
   const databasePaths = createGogCandidateDatabasePaths()
   const existingConfigPaths: string[] = []
@@ -1439,7 +1800,9 @@ export async function readGogLocalLibrary(): Promise<GogLocalLibraryResult> {
   for (const databasePath of databasePaths) {
     if (await pathExists(databasePath)) {
       existingConfigPaths.push(databasePath)
-      galaxyGames.push(...(await readGogGalaxyGames(databasePath)))
+      galaxyGames.push(
+        ...(await readGogGalaxyGames(databasePath, includeDetails)),
+      )
     }
   }
 
@@ -1478,7 +1841,9 @@ export async function readGogLocalLibrary(): Promise<GogLocalLibraryResult> {
 }
 
 export async function detectGogLocalPlatform(): Promise<LocalPlatformDetection> {
-  const localLibrary = await readGogLocalLibrary()
+  const localLibrary = await readGogLocalLibrary({
+    includeDetails: false,
+  })
   const detectedSources = [
     localLibrary.galaxyGameCount > 0
       ? `${localLibrary.galaxyGameCount} dans Galaxy`
@@ -1510,6 +1875,274 @@ export async function detectGogLocalPlatform(): Promise<LocalPlatformDetection> 
   })
 }
 
+export function createEaAppCandidatePaths() {
+  const programData = resolveEnvironmentPath(process.env['PROGRAMDATA'])
+  const programFiles = resolveEnvironmentPath(process.env['ProgramFiles'])
+  const programFilesX86 = resolveEnvironmentPath(process.env['ProgramFiles(x86)'])
+
+  return uniqueTextValues([
+    ...splitConfiguredPaths(process.env['LUDUX_EA_APP_PATHS']),
+    programFiles
+      ? join(programFiles, 'Electronic Arts', 'EA Desktop', 'EA Desktop')
+      : null,
+    programFilesX86
+      ? join(programFilesX86, 'Electronic Arts', 'EA Desktop', 'EA Desktop')
+      : null,
+    programData ? join(programData, 'EA Desktop') : null,
+  ])
+}
+
+export async function detectEaAppLocalPlatform(): Promise<LocalPlatformDetection> {
+  const programData = resolveEnvironmentPath(process.env['PROGRAMDATA'])
+  const installDataPath = programData
+    ? join(programData, 'EA Desktop', 'InstallData')
+    : null
+  const rootPaths = await findExistingDirectories(
+    createEaAppCandidatePaths(),
+  )
+  const gameEntries = installDataPath
+    ? (await readDirectoryIfExists(installDataPath)).filter((entry) =>
+        entry.isDirectory(),
+      )
+    : []
+  const configPaths = await findExistingDirectories(
+    installDataPath ? [installDataPath] : [],
+  )
+
+  if (programData) {
+    for (const fileName of ['machine.ini', 'backgroundservice.ini']) {
+      const configPath = join(programData, 'EA Desktop', fileName)
+
+      if (await fileExists(configPath)) {
+        configPaths.push(configPath)
+      }
+    }
+  }
+
+  return createDetection({
+    provider: 'EA_APP',
+    label: 'EA App',
+    rootPaths,
+    configPaths,
+    manifestCount: gameEntries.length,
+    message:
+      gameEntries.length > 0
+        ? `${gameEntries.length} jeu(x) repéré(s) dans les données locales EA.`
+        : rootPaths.length > 0 || configPaths.length > 0
+          ? 'EA App détectée. La lecture de sa bibliothèque sera ajoutée progressivement.'
+          : 'EA App n’a pas été détectée.',
+  })
+}
+
+export function createUbisoftCandidatePaths() {
+  const programFiles = resolveEnvironmentPath(process.env['ProgramFiles'])
+  const programFilesX86 = resolveEnvironmentPath(process.env['ProgramFiles(x86)'])
+
+  return uniqueTextValues([
+    ...splitConfiguredPaths(process.env['LUDUX_UBISOFT_CONNECT_PATHS']),
+    programFiles
+      ? join(programFiles, 'Ubisoft', 'Ubisoft Game Launcher')
+      : null,
+    programFilesX86
+      ? join(programFilesX86, 'Ubisoft', 'Ubisoft Game Launcher')
+      : null,
+  ])
+}
+
+function createUbisoftRegistryPaths() {
+  const configuredPaths = process.env['LUDUX_UBISOFT_REGISTRY_PATHS']
+
+  if (configuredPaths !== undefined) {
+    return splitConfiguredPaths(configuredPaths)
+  }
+
+  return [
+    'HKLM\\SOFTWARE\\WOW6432Node\\Ubisoft\\Launcher\\Installs',
+    'HKLM\\SOFTWARE\\Ubisoft\\Launcher\\Installs',
+    'HKCU\\SOFTWARE\\Ubisoft\\Launcher\\Installs',
+  ]
+}
+
+export function parseUbisoftInstallRegistry(output: string) {
+  const installs: UbisoftLocalInstall[] = []
+  let registryPath: string | null = null
+  let installPath: string | null = null
+
+  function appendInstall() {
+    const externalId = registryPath?.split('\\').filter(Boolean).pop()
+
+    if (registryPath && externalId && installPath) {
+      installs.push({
+        externalId,
+        installPath: normalize(installPath.replace(/\//g, '\\')),
+        registryPath,
+      })
+    }
+  }
+
+  for (const line of output.split(/\r?\n/)) {
+    const trimmedLine = line.trim()
+
+    if (/^HKEY_/i.test(trimmedLine)) {
+      appendInstall()
+      registryPath = trimmedLine
+      installPath = null
+      continue
+    }
+
+    const installPathMatch = line.match(
+      /^\s+InstallDir\s+REG_(?:SZ|EXPAND_SZ)\s*(.*)$/i,
+    )
+
+    if (installPathMatch) {
+      installPath = readOptionalText(installPathMatch[1])
+    }
+  }
+
+  appendInstall()
+  return installs
+}
+
+async function readUbisoftRegistryInstalls() {
+  if (process.platform !== 'win32') {
+    return {
+      installs: [] as UbisoftLocalInstall[],
+      registryPaths: [] as string[],
+    }
+  }
+
+  const installs: UbisoftLocalInstall[] = []
+  const registryPaths: string[] = []
+
+  for (const registryPath of createUbisoftRegistryPaths()) {
+    try {
+      const { stdout } = await execFileAsync(
+        'reg',
+        ['query', registryPath, '/s'],
+        {
+          encoding: 'utf8',
+          maxBuffer: 2 * 1024 * 1024,
+          timeout: 5_000,
+          windowsHide: true,
+        },
+      )
+      const parsedInstalls = parseUbisoftInstallRegistry(stdout)
+
+      if (parsedInstalls.length > 0) {
+        registryPaths.push(registryPath)
+        installs.push(...parsedInstalls)
+      }
+    } catch {
+      // Missing registry roots are expected when Ubisoft Connect is absent.
+    }
+  }
+
+  return {
+    installs,
+    registryPaths,
+  }
+}
+
+export async function detectUbisoftConnectLocalPlatform(): Promise<LocalPlatformDetection> {
+  const [rootPaths, registryLibrary] = await Promise.all([
+    findExistingDirectories(createUbisoftCandidatePaths()),
+    readUbisoftRegistryInstalls(),
+  ])
+
+  return createDetection({
+    provider: 'UBISOFT',
+    label: 'Ubisoft Connect',
+    rootPaths,
+    libraryPaths: registryLibrary.installs.map(
+      (install) => install.installPath,
+    ),
+    configPaths: registryLibrary.registryPaths,
+    manifestCount: registryLibrary.installs.length,
+    message:
+      registryLibrary.installs.length > 0
+        ? `${registryLibrary.installs.length} installation(s) Ubisoft repérée(s).`
+        : rootPaths.length > 0
+          ? 'Ubisoft Connect détecté. La bibliothèque locale sera enrichie progressivement.'
+          : 'Ubisoft Connect n’a pas été détecté.',
+  })
+}
+
+export function parseBattleNetConfig(content: string): BattleNetLocalConfig {
+  const payload = readJsonObject(content)
+  const client = readObject(payload?.['Client'])
+  const install = readObject(client?.['Install'])
+  const games = readObject(payload?.['Games'])
+  const clientPath =
+    Object.entries(payload ?? {})
+      .filter(([key]) => key !== 'Client' && key !== 'Games')
+      .map(([, value]) => readOptionalText(readObject(value)?.['Path']))
+      .find((value): value is string => Boolean(value)) ?? null
+
+  return {
+    clientPath,
+    defaultInstallPath: readOptionalText(install?.['DefaultInstallPath']),
+    productIds: Object.keys(games ?? {}).filter(
+      (productId) => productId !== 'battle_net',
+    ),
+  }
+}
+
+export function createBattleNetCandidatePaths() {
+  const programFiles = resolveEnvironmentPath(process.env['ProgramFiles'])
+  const programFilesX86 = resolveEnvironmentPath(process.env['ProgramFiles(x86)'])
+
+  return uniqueTextValues([
+    ...splitConfiguredPaths(process.env['LUDUX_BATTLENET_PATHS']),
+    programFiles ? join(programFiles, 'Battle.net') : null,
+    programFilesX86 ? join(programFilesX86, 'Battle.net') : null,
+  ])
+}
+
+export async function detectBattleNetLocalPlatform(): Promise<LocalPlatformDetection> {
+  const appData = resolveEnvironmentPath(process.env['APPDATA'])
+  const localAppData = resolveEnvironmentPath(process.env['LOCALAPPDATA'])
+  const configCandidates = uniqueTextValues([
+    appData ? join(appData, 'Battle.net', 'Battle.net.config') : null,
+    localAppData ? join(localAppData, 'Battle.net', 'CachedData.db') : null,
+  ])
+  const configPaths: string[] = []
+  let config: BattleNetLocalConfig = {
+    clientPath: null,
+    defaultInstallPath: null,
+    productIds: [],
+  }
+
+  for (const configPath of configCandidates) {
+    if (!(await fileExists(configPath))) {
+      continue
+    }
+
+    configPaths.push(configPath)
+
+    if (configPath.toLocaleLowerCase('en-US').endsWith('.config')) {
+      config = parseBattleNetConfig(await readLocalTextFile(configPath))
+    }
+  }
+
+  const rootPaths = await findExistingDirectories([
+    ...createBattleNetCandidatePaths(),
+    ...(config.clientPath ? [config.clientPath] : []),
+  ])
+  return createDetection({
+    provider: 'BATTLENET',
+    label: 'Battle.net',
+    rootPaths,
+    configPaths,
+    manifestCount: config.productIds.length,
+    message:
+      config.productIds.length > 0
+        ? `${config.productIds.length} produit(s) Battle.net repéré(s) dans la configuration locale.`
+        : rootPaths.length > 0 || configPaths.length > 0
+          ? 'Battle.net détecté. La bibliothèque locale sera enrichie progressivement.'
+          : 'Battle.net n’a pas été détecté.',
+  })
+}
+
 export async function detectLocalPlatforms() {
   if (
     cachedLocalPlatformOverview &&
@@ -1528,6 +2161,9 @@ export async function detectLocalPlatforms() {
     ),
     detectEpicLocalPlatform(),
     detectGogLocalPlatform(),
+    detectEaAppLocalPlatform(),
+    detectUbisoftConnectLocalPlatform(),
+    detectBattleNetLocalPlatform(),
   ])
 
   cachedLocalPlatformOverview = {

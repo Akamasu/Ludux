@@ -30,6 +30,18 @@ Le projet suit des versions de développement simples :
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 - `v0.25.x` : stockage Windows, migrations sécurisées et installateur public.
 - `v0.26.x` : première ouverture guidée et interface simplifiée pour les joueurs.
+- `v0.27.x` : enrichissement GOG, détection des lanceurs et mises à jour automatiques.
+
+## v0.27.0 - 2026-07-26
+
+- Synchronisation des DLC GOG reliés à chaque jeu avec leur statut de possession et leur date d'obtention.
+- Synchronisation des succès GOG, de leur progression, de leur date de déblocage et des textes français disponibles dans Galaxy.
+- Lecture détaillée de Galaxy réservée aux synchronisations afin de garder la détection initiale légère.
+- Détection automatique de EA App, Ubisoft Connect et Battle.net sur Windows.
+- Présentation simple des nouveaux lanceurs sans formulaire ni action de synchronisation trompeuse.
+- Conservation de l'import Epic Games depuis les manifests, la base d'installation et le cache local du launcher.
+- Vérification automatique des nouvelles versions, téléchargement en arrière-plan et installation à la fermeture.
+- Publication Windows automatisée sur GitHub avec l'installeur NSIS et les métadonnées nécessaires à l'auto-update.
 
 ## v0.26.0 - 2026-07-26
 

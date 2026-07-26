@@ -44,6 +44,10 @@ app
           "userId" INTEGER,
           "releaseKey" TEXT
         );
+        CREATE TABLE "LicensedReleases" (
+          "libraryId" INTEGER,
+          "isOwned" INTEGER
+        );
         CREATE TABLE "ProductPurchaseDates" (
           "gameReleaseKey" TEXT,
           "userId" INTEGER,
@@ -54,14 +58,59 @@ app
           "releaseKey" TEXT,
           "isDlc" INTEGER
         );
+        CREATE TABLE "Achievements" (
+          "gameReleaseKey" TEXT,
+          "apikey" TEXT,
+          "backendId" TEXT,
+          "imageUnlockedUrl" TEXT,
+          "imageLockedUrl" TEXT,
+          "isVisible" INTEGER,
+          "rarity" REAL,
+          "raritySlug" TEXT
+        );
+        CREATE TABLE "LocalizedAchievements" (
+          "gameReleaseKey" TEXT,
+          "apikey" TEXT,
+          "name" TEXT,
+          "description" TEXT,
+          "languageId" INTEGER,
+          "isLocalized" INTEGER
+        );
+        CREATE TABLE "UserAchievements" (
+          "gameReleaseKey" TEXT,
+          "userId" INTEGER,
+          "apikey" TEXT,
+          "unlockTime" TEXT,
+          "isUnlocked" INTEGER
+        );
+        CREATE TABLE "UserRecentClientLanguages" (
+          "languageId" INTEGER,
+          "userId" INTEGER,
+          "lastUsed" TEXT
+        );
 
         INSERT INTO "GamePieceTypes" VALUES (493, 'title');
         INSERT INTO "GamePieceTypes" VALUES (445, 'originalImages');
+        INSERT INTO "GamePieceTypes" VALUES (443, 'dlcs');
         INSERT INTO "GamePieces" VALUES (
           'gog_1423049311',
           493,
           NULL,
           '{"title":"Cyberpunk 2077"}',
+          NULL
+        );
+        INSERT INTO "GamePieces" VALUES (
+          'gog_1423049311',
+          443,
+          NULL,
+          '{"dlcs":["gog_1256837418"]}',
+          NULL
+        );
+        INSERT INTO "GamePieces" VALUES (
+          'gog_1256837418',
+          493,
+          NULL,
+          '{"title":"Cyberpunk 2077: Phantom Liberty"}',
           NULL
         );
         INSERT INTO "GamePieces" VALUES (
@@ -82,6 +131,9 @@ app
           '2026-07-22 21:15:00'
         );
         INSERT INTO "LibraryReleases" VALUES (1, 1, 'gog_1423049311');
+        INSERT INTO "LibraryReleases" VALUES (2, 1, 'gog_1256837418');
+        INSERT INTO "LicensedReleases" VALUES (1, 1);
+        INSERT INTO "LicensedReleases" VALUES (2, 1);
         INSERT INTO "ProductPurchaseDates" VALUES (
           'gog_1423049311',
           1,
@@ -89,6 +141,37 @@ app
           '2024-12-08 12:16:56'
         );
         INSERT INTO "ReleaseProperties" VALUES ('gog_1423049311', 0);
+        INSERT INTO "ReleaseProperties" VALUES ('gog_1256837418', 1);
+        INSERT INTO "Achievements" VALUES (
+          'gog_1423049311',
+          'ACH_THE_FOOL',
+          '1',
+          'https://images.gog.com/the-fool.jpg',
+          NULL,
+          1,
+          10,
+          'common'
+        );
+        INSERT INTO "LocalizedAchievements" VALUES (
+          'gog_1423049311',
+          'ACH_THE_FOOL',
+          'Le Fou',
+          'Devenir mercenaire.',
+          24,
+          1
+        );
+        INSERT INTO "UserAchievements" VALUES (
+          'gog_1423049311',
+          1,
+          'ACH_THE_FOOL',
+          '2026-07-20 22:10:00',
+          1
+        );
+        INSERT INTO "UserRecentClientLanguages" VALUES (
+          24,
+          1,
+          '2026-07-22 21:15:00'
+        );
       `)
       database.close()
 
@@ -110,7 +193,12 @@ app
         !game ||
         game.title !== 'Cyberpunk 2077' ||
         game.playtimeMinutes !== 125 ||
-        game.coverUrl !== 'https://images.gog.com/cyberpunk.webp'
+        game.coverUrl !== 'https://images.gog.com/cyberpunk.webp' ||
+        game.dlcs?.[0]?.title !==
+          'Cyberpunk 2077: Phantom Liberty' ||
+        game.dlcs?.[0]?.owned !== true ||
+        game.achievements?.[0]?.name !== 'Le Fou' ||
+        game.achievements?.[0]?.unlocked !== true
       ) {
         throw new Error('La bibliothèque GOG Galaxy locale est incomplète.')
       }

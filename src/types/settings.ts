@@ -5,6 +5,9 @@ export const EXTERNAL_PROVIDER_VALUES = [
   'NINTENDO',
   'GOG',
   'EPIC',
+  'EA_APP',
+  'UBISOFT',
+  'BATTLENET',
   'IGDB',
   'RAWG',
 ] as const
