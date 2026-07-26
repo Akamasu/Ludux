@@ -61,6 +61,7 @@ import {
   type UpdateReviewInput,
   type UpdateScreenshotInput,
 } from '../../types/game'
+import type { SettingsActionResult } from '../../types/settings'
 import { GameCover } from '../components/library/GameCover'
 import { GameGenreChips } from '../components/library/GameGenreChips'
 import { Button } from '../components/ui/Button'
@@ -74,6 +75,7 @@ interface GameDetailPageProps {
   detail: GameDetail | null
   availableDlc: AvailableDlcListItem[]
   error: string | null
+  syncResult: SettingsActionResult | null
   isLoading: boolean
   isLoadingAvailableDlc: boolean
   isSaving: boolean
@@ -94,6 +96,7 @@ interface GameDetailPageProps {
   onImportScreenshotFile: (input: ImportScreenshotFileInput) => Promise<void>
   onRefreshAvailableDlc: () => Promise<void>
   onRestoreExternalGameLink: (input: RestoreExternalGameLinkInput) => Promise<void>
+  onSyncGame: () => Promise<void>
   onUpdateAchievement: (input: UpdateAchievementInput) => Promise<void>
   onUpdateChronicle: (input: UpdateChronicleInput) => Promise<void>
   onUpdateDlc: (input: UpdateDlcInput) => Promise<void>
@@ -525,6 +528,7 @@ function GameArchiveHero({
   onBack,
   onDeleteExternalGameLink,
   onRestoreExternalGameLink,
+  onSyncGame,
 }: {
   detail: GameDetail
   isSaving: boolean
@@ -532,6 +536,7 @@ function GameArchiveHero({
   onBack: () => void
   onDeleteExternalGameLink: (input: DeleteExternalGameLinkInput) => Promise<void>
   onRestoreExternalGameLink: (input: RestoreExternalGameLinkInput) => Promise<void>
+  onSyncGame: () => Promise<void>
 }) {
   return (
     <header className="game-book-spread overflow-hidden rounded-lg border border-[#C9A646]/20 bg-[#181B23]">
@@ -545,6 +550,15 @@ function GameArchiveHero({
             <BookOpen size={15} aria-hidden="true" />
             Volume Ludux
           </span>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onSyncGame}
+            disabled={isSaving}
+          >
+            <RefreshCw size={17} aria-hidden="true" />
+            Synchroniser ce jeu
+          </Button>
           <Button
             type="button"
             variant="secondary"
@@ -676,6 +690,7 @@ export function GameDetailPage({
   availableDlc,
   detail,
   error,
+  syncResult,
   isLoading,
   isLoadingAvailableDlc,
   isSaving,
@@ -696,6 +711,7 @@ export function GameDetailPage({
   onImportScreenshotFile,
   onRefreshAvailableDlc,
   onRestoreExternalGameLink,
+  onSyncGame,
   onUpdateAchievement,
   onUpdateChronicle,
   onUpdateDlc,
@@ -748,11 +764,24 @@ export function GameDetailPage({
         onBack={onBack}
         onDeleteExternalGameLink={onDeleteExternalGameLink}
         onRestoreExternalGameLink={onRestoreExternalGameLink}
+        onSyncGame={onSyncGame}
       />
 
       {error ? (
         <div className="rounded-lg border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
           {error}
+        </div>
+      ) : null}
+
+      {syncResult ? (
+        <div
+          className={`rounded-lg border px-4 py-3 text-sm ${
+            syncResult.canceled
+              ? 'border-white/10 bg-white/5 text-zinc-300'
+              : 'border-[#7C5CFF]/30 bg-[#7C5CFF]/10 text-[#D8D0FF]'
+          }`}
+        >
+          {syncResult.message}
         </div>
       ) : null}
 

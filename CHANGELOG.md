@@ -29,6 +29,13 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 
+## v0.24.38 - 2026-07-26
+
+- Ajout du bouton `Synchroniser ce jeu` sur les fiches pour relancer uniquement les sources utiles à un jeu précis.
+- La synchronisation ciblée peut enrichir la fiche avec Steam, RAWG et IGDB sans relancer toute la file.
+- Nettoyage de messages visibles pour remplacer les termes techniques `provider` par des libellés orientés utilisateur.
+- Correction de petits libellés d'interface dans les paramètres.
+
 ## v0.24.37 - 2026-07-23
 
 - Le vidage du cache restaure maintenant les jaquettes distantes connues avant de supprimer les fichiers locaux.

@@ -990,7 +990,7 @@ function ProvidersPanel({
               <div className="grid gap-3 md:grid-cols-2">
                 <label>
                   <span className="mb-2 block text-xs font-medium text-zinc-500">
-                    Nom affiche
+                    Nom affiché
                   </span>
                   <input
                     value={username}
@@ -1080,7 +1080,7 @@ function ProvidersPanel({
                   {selectedProvider.account.externalId}
                 </p>
                 <p className="mt-2 text-xs text-zinc-600">
-                  Mis a jour le {formatDate(selectedProvider.account.updatedAt)}
+                  Mis à jour le {formatDate(selectedProvider.account.updatedAt)}
                 </p>
                 {selectedProvider.sync?.message ? (
                   <p className="mt-2 text-xs text-[#C9D6FF]">

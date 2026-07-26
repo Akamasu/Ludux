@@ -31,6 +31,7 @@ import type {
   ProviderOverview,
   SettingsActionResult,
   SettingsOverview,
+  SyncGameInput,
   SyncProviderInput,
   UpsertProviderConnectionInput,
 } from '../types/settings'
@@ -169,6 +170,12 @@ interface GameMetadataUpdateData {
   developer?: string
   publisher?: string
   website?: string
+}
+
+interface SingleGameSyncSummary {
+  errors: string[]
+  syncedSources: string[]
+  updatedFields: number
 }
 
 interface CacheReferenceCleanupResult {
@@ -387,6 +394,13 @@ function hasProviderToken(provider: ExternalProvider, tokenHint: string | null) 
 
 function isExternalProvider(value: string): value is ExternalProvider {
   return EXTERNAL_PROVIDER_VALUES.includes(value as ExternalProvider)
+}
+
+function getExternalProviderLabel(provider: ExternalProvider) {
+  return (
+    EXTERNAL_PROVIDER_DEFINITIONS.find((definition) => definition.provider === provider)
+      ?.label ?? provider
+  )
 }
 
 function normalizeTitle(value: string) {
@@ -2022,8 +2036,8 @@ async function importGogInstalledGames(
   return stats
 }
 
-async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentStats> {
-  const stats: RawgEnrichmentStats = {
+function createRawgEnrichmentStats(): RawgEnrichmentStats {
+  return {
     scannedGames: 0,
     enrichedGames: 0,
     linkedGames: 0,
@@ -2033,8 +2047,23 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
     fieldsUpdated: 0,
     syncedGenres: 0,
   }
-  const ignoredLinks = await readIgnoredExternalGameLinkKeys(rawgProvider)
-  const games = await prisma.game.findMany({
+}
+
+function createIgdbEnrichmentStats(): IgdbEnrichmentStats {
+  return {
+    scannedGames: 0,
+    enrichedGames: 0,
+    linkedGames: 0,
+    ignoredLinks: 0,
+    cachedCovers: 0,
+    notFoundGames: 0,
+    fieldsUpdated: 0,
+    syncedGenres: 0,
+  }
+}
+
+async function listGamesForMetadataEnrichment(): Promise<LocalGameMetadata[]> {
+  return prisma.game.findMany({
     where: {
       archived: false,
       OR: [
@@ -2077,7 +2106,17 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
       title: 'asc',
     },
   })
+}
 
+async function enrichRawgGames({
+  apiKey,
+  games,
+}: {
+  apiKey: string
+  games: LocalGameMetadata[]
+}): Promise<RawgEnrichmentStats> {
+  const stats = createRawgEnrichmentStats()
+  const ignoredLinks = await readIgnoredExternalGameLinkKeys(rawgProvider)
   stats.scannedGames = games.length
 
   for (const game of games) {
@@ -2173,6 +2212,13 @@ async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentS
   return stats
 }
 
+async function enrichLocalGamesWithRawg(apiKey: string): Promise<RawgEnrichmentStats> {
+  return enrichRawgGames({
+    apiKey,
+    games: await listGamesForMetadataEnrichment(),
+  })
+}
+
 async function enrichLocalGamesWithIgdb({
   accessToken,
   clientId,
@@ -2180,61 +2226,24 @@ async function enrichLocalGamesWithIgdb({
   accessToken: string
   clientId: string
 }): Promise<IgdbEnrichmentStats> {
-  const stats: IgdbEnrichmentStats = {
-    scannedGames: 0,
-    enrichedGames: 0,
-    linkedGames: 0,
-    ignoredLinks: 0,
-    cachedCovers: 0,
-    notFoundGames: 0,
-    fieldsUpdated: 0,
-    syncedGenres: 0,
-  }
-  const ignoredLinks = await readIgnoredExternalGameLinkKeys(igdbProvider)
-  const games = await prisma.game.findMany({
-    where: {
-      archived: false,
-      OR: [
-        {
-          description: null,
-        },
-        {
-          coverUrl: null,
-        },
-        {
-          releaseDate: null,
-        },
-        {
-          developer: null,
-        },
-        {
-          publisher: null,
-        },
-        {
-          website: null,
-        },
-        {
-          gameGenres: {
-            none: {},
-          },
-        },
-      ],
-    },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      coverUrl: true,
-      releaseDate: true,
-      developer: true,
-      publisher: true,
-      website: true,
-    },
-    orderBy: {
-      title: 'asc',
-    },
+  return enrichIgdbGames({
+    accessToken,
+    clientId,
+    games: await listGamesForMetadataEnrichment(),
   })
+}
 
+async function enrichIgdbGames({
+  accessToken,
+  clientId,
+  games,
+}: {
+  accessToken: string
+  clientId: string
+  games: LocalGameMetadata[]
+}): Promise<IgdbEnrichmentStats> {
+  const stats = createIgdbEnrichmentStats()
+  const ignoredLinks = await readIgnoredExternalGameLinkKeys(igdbProvider)
   stats.scannedGames = games.length
 
   for (const game of games) {
@@ -2329,6 +2338,191 @@ async function enrichLocalGamesWithIgdb({
   }
 
   return stats
+}
+
+function applySingleMetadataSyncResult(
+  summary: SingleGameSyncSummary,
+  sourceLabel: string,
+  stats: RawgEnrichmentStats | IgdbEnrichmentStats,
+) {
+  if (stats.notFoundGames > 0) {
+    summary.errors.push(`${sourceLabel} n'a pas trouvé ce jeu`)
+    return
+  }
+
+  if (stats.ignoredLinks > 0) {
+    summary.errors.push(`${sourceLabel} est masqué pour ce jeu`)
+    return
+  }
+
+  summary.syncedSources.push(sourceLabel)
+  summary.updatedFields += stats.fieldsUpdated
+}
+
+async function readLocalGameMetadata(gameId: string) {
+  return prisma.game.findFirst({
+    where: {
+      id: gameId,
+      archived: false,
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      coverUrl: true,
+      releaseDate: true,
+      developer: true,
+      publisher: true,
+      website: true,
+    },
+  })
+}
+
+function createFallbackSteamGame({
+  appid,
+  detail,
+  game,
+  sourceCoverUrl,
+}: {
+  appid: number
+  detail: SteamAppDetails
+  game: LocalGameMetadata
+  sourceCoverUrl: string | null
+}): SteamOwnedGame {
+  const coverUrl =
+    detail.coverUrl ??
+    [sourceCoverUrl, game.coverUrl].find((cover) => shouldCacheRemoteAsset(cover)) ??
+    ''
+
+  return {
+    appid,
+    title: detail.title ?? game.title,
+    coverUrl,
+    iconUrl: null,
+    playtimeForeverMinutes: 0,
+    lastPlayedAt: null,
+    categories: [],
+    description: detail.description,
+    developer: detail.developer,
+    publisher: detail.publisher,
+    releaseDate: detail.releaseDate,
+    website: detail.website,
+  }
+}
+
+async function syncSingleSteamGame({
+  apiKey,
+  game,
+  sourceCoverUrl,
+  steamAppId,
+  steamId,
+}: {
+  apiKey: string | undefined
+  game: LocalGameMetadata
+  sourceCoverUrl: string | null
+  steamAppId: number
+  steamId: string
+}) {
+  const localLibrary = await readSteamLocalLibrary({
+    ownerSteamId: steamId,
+  })
+  const localGames = localLibrary.games.filter((localGame) => localGame.appid === steamAppId)
+  const localActivities = localLibrary.activities.filter(
+    (activity) => activity.appid === steamAppId,
+  )
+  const localCategories = localLibrary.categories.filter(
+    (category) => category.appid === steamAppId,
+  )
+  let remoteGames: SteamOwnedGame[] = []
+
+  if (apiKey) {
+    try {
+      const ownedGames = await fetchSteamOwnedGames({
+        apiKey,
+        steamId,
+      })
+      remoteGames = ownedGames.games.filter(
+        (steamGame) => steamGame.appid === steamAppId,
+      )
+    } catch (caughtError) {
+      if (localGames.length === 0) {
+        throw caughtError
+      }
+
+      logger.error('[SteamSingleGame]', caughtError)
+    }
+  }
+
+  const mergedGames = mergeSteamGames(
+    remoteGames,
+    localGames,
+    localActivities,
+    localCategories,
+  )
+  let steamAppDetails: SteamAppDetails[] = []
+  let gamesToImport = mergedGames
+
+  try {
+    steamAppDetails = await fetchSteamAppDetails({
+      allowPartial: true,
+      appids: [steamAppId],
+    })
+    gamesToImport =
+      mergedGames.length > 0
+        ? mergeSteamAppDetails(mergedGames, steamAppDetails)
+        : steamAppDetails.map((detail) =>
+            createFallbackSteamGame({
+              appid: steamAppId,
+              detail,
+              game,
+              sourceCoverUrl,
+            }),
+          )
+  } catch (caughtError) {
+    logger.error('[SteamSingleGameDetails]', caughtError)
+  }
+
+  if (gamesToImport.length === 0) {
+    throw new Error('Steam ne trouve pas ce jeu pour le moment.')
+  }
+
+  const stats = await importSteamOwnedGames(gamesToImport)
+
+  if (steamAppDetails.length > 0) {
+    try {
+      stats.syncedDlc = await syncSteamDlcCatalog(gamesToImport, steamAppDetails)
+    } catch (caughtError) {
+      logger.error('[SteamSingleGameDlcCatalog]', caughtError)
+    }
+  }
+
+  if (apiKey) {
+    const achievementStats = await syncSteamAchievements({
+      apiKey,
+      games: gamesToImport,
+      steamId,
+    })
+    stats.syncedAchievements = achievementStats.syncedAchievements
+    stats.syncedAchievementGames = achievementStats.syncedAchievementGames
+  }
+
+  return stats
+}
+
+function createSingleGameSyncMessage(gameTitle: string, summary: SingleGameSyncSummary) {
+  if (summary.syncedSources.length === 0) {
+    return `Aucune source prête pour "${gameTitle}". Connectez Steam, RAWG ou IGDB dans les paramètres.`
+  }
+
+  const parts = [
+    `"${gameTitle}" synchronisé avec ${summary.syncedSources.join(', ')}.`,
+    summary.updatedFields > 0 ? `${summary.updatedFields} champ(s) complété(s).` : null,
+    summary.errors.length > 0
+      ? `Sources ignorées : ${summary.errors.join(' / ')}.`
+      : null,
+  ]
+
+  return parts.filter((part): part is string => part !== null).join(' ')
 }
 
 const AUTO_SYNC_STARTUP_DELAY_MS = 15_000
@@ -2431,15 +2625,17 @@ class SettingsService {
     const errors: string[] = []
 
     for (const provider of providers) {
+      const providerLabel = getExternalProviderLabel(provider)
+
       try {
         const result = await this.syncProvider({
           provider,
         })
-        results.push(`${provider} : ${result.message}`)
+        results.push(`${providerLabel} : ${result.message}`)
       } catch (caughtError) {
         const message =
           caughtError instanceof Error ? caughtError.message : 'Erreur inconnue.'
-        errors.push(`${provider} : ${message}`)
+        errors.push(`${providerLabel} : ${message}`)
       }
     }
 
@@ -2469,7 +2665,7 @@ class SettingsService {
         return {
           canceled: true,
           path: null,
-          message: 'Aucun provider configuré à synchroniser.',
+          message: 'Aucune source configurée à synchroniser.',
           createdAt: syncedAt.toISOString(),
         }
       }
@@ -2477,7 +2673,7 @@ class SettingsService {
       const successCount = summary.results.length
       const errorCount = summary.errors.length
       const messageParts = [
-        `${successCount} provider(s) synchronisé(s)`,
+        `${successCount} source(s) synchronisée(s)`,
         errorCount > 0 ? `${errorCount} erreur(s)` : null,
         ...summary.results,
         ...summary.errors,
@@ -2514,7 +2710,7 @@ class SettingsService {
     input: UpsertProviderConnectionInput,
   ): Promise<SettingsOverview> {
     if (!isExternalProvider(input.provider)) {
-      throw new Error('Provider invalide.')
+      throw new Error('Source invalide.')
     }
 
     const externalId = resolveProviderExternalId(input)
@@ -2564,7 +2760,7 @@ class SettingsService {
     input: DeleteProviderConnectionInput,
   ): Promise<SettingsOverview> {
     if (!isExternalProvider(input.provider)) {
-      throw new Error('Provider invalide.')
+      throw new Error('Source invalide.')
     }
 
     const result = await prisma.externalAccount.deleteMany({
@@ -2582,7 +2778,7 @@ class SettingsService {
       data: {
         provider: input.provider,
         status: 'NOT_CONFIGURED',
-          message: 'Connexion locale retirée.',
+        message: 'Connexion locale retirée.',
       },
     })
 
@@ -2884,9 +3080,162 @@ class SettingsService {
     }
   }
 
+  async syncGame(input: SyncGameInput): Promise<SettingsActionResult> {
+    if (this.isAutoSyncRunning) {
+      return {
+        canceled: true,
+        path: null,
+        message: 'Une synchronisation est déjà en cours.',
+      }
+    }
+
+    this.isAutoSyncRunning = true
+
+    try {
+      return await this.runGameSync(input)
+    } finally {
+      this.isAutoSyncRunning = false
+    }
+  }
+
+  private async runGameSync(input: SyncGameInput): Promise<SettingsActionResult> {
+    let game = await readLocalGameMetadata(input.gameId)
+
+    if (!game) {
+      throw new Error('Jeu introuvable.')
+    }
+
+    const summary: SingleGameSyncSummary = {
+      errors: [],
+      syncedSources: [],
+      updatedFields: 0,
+    }
+    const linkedSources = await prisma.externalGame.findMany({
+      where: {
+        gameId: game.id,
+      },
+      select: {
+        provider: true,
+        externalId: true,
+        sourceCoverUrl: true,
+      },
+    })
+    const steamLink = linkedSources.find((source) => source.provider === steamProvider)
+
+    if (steamLink) {
+      const steamAppId = Number(steamLink.externalId)
+      const account = await prisma.externalAccount.findFirst({
+        where: {
+          provider: steamProvider,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      })
+
+      if (!account) {
+        summary.errors.push('Steam non connecté')
+      } else if (!Number.isInteger(steamAppId) || steamAppId <= 0) {
+        summary.errors.push('lien Steam invalide')
+      } else {
+        try {
+          const apiKey =
+            decryptSecret(account.tokenHint) ?? readEnvValue('STEAM_WEB_API_KEY')
+          await syncSingleSteamGame({
+            apiKey,
+            game,
+            sourceCoverUrl: steamLink.sourceCoverUrl,
+            steamAppId,
+            steamId: account.externalId,
+          })
+          summary.syncedSources.push('Steam')
+          game = (await readLocalGameMetadata(game.id)) ?? game
+        } catch (caughtError) {
+          summary.errors.push(
+            `Steam ${
+              caughtError instanceof Error ? caughtError.message : 'indisponible'
+            }`,
+          )
+        }
+      }
+    }
+
+    const rawgAccount = await prisma.externalAccount.findFirst({
+      where: {
+        provider: rawgProvider,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    })
+    const rawgApiKey = decryptSecret(rawgAccount?.tokenHint) ?? readEnvValue('RAWG_API_KEY')
+
+    if (rawgApiKey) {
+      try {
+        const stats = await enrichRawgGames({
+          apiKey: rawgApiKey,
+          games: [game],
+        })
+        applySingleMetadataSyncResult(summary, 'RAWG', stats)
+        game = (await readLocalGameMetadata(game.id)) ?? game
+      } catch (caughtError) {
+        summary.errors.push(
+          `RAWG ${caughtError instanceof Error ? caughtError.message : 'indisponible'}`,
+        )
+      }
+    }
+
+    const igdbAccount = await prisma.externalAccount.findFirst({
+      where: {
+        provider: igdbProvider,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    })
+    const igdbClientId =
+      igdbAccount?.externalId && igdbAccount.externalId !== igdbExternalId
+        ? igdbAccount.externalId
+        : readEnvValue('IGDB_CLIENT_ID')
+    const igdbClientSecret =
+      decryptSecret(igdbAccount?.tokenHint) ?? readEnvValue('IGDB_CLIENT_SECRET')
+
+    if (igdbClientId && igdbClientSecret) {
+      try {
+        const token = await fetchIgdbAccessToken({
+          clientId: igdbClientId,
+          clientSecret: igdbClientSecret,
+        })
+        const stats = await enrichIgdbGames({
+          accessToken: token.accessToken,
+          clientId: igdbClientId,
+          games: [game],
+        })
+        applySingleMetadataSyncResult(summary, 'IGDB', stats)
+      } catch (caughtError) {
+        summary.errors.push(
+          `IGDB ${caughtError instanceof Error ? caughtError.message : 'indisponible'}`,
+        )
+      }
+    }
+
+    if (summary.syncedSources.length === 0 && summary.errors.length > 0) {
+      throw new Error(summary.errors.join(' / '))
+    }
+
+    const syncedAt = new Date()
+
+    return {
+      canceled: summary.syncedSources.length === 0,
+      path: null,
+      message: createSingleGameSyncMessage(game.title, summary),
+      createdAt: syncedAt.toISOString(),
+    }
+  }
+
   async syncProvider(input: SyncProviderInput): Promise<SettingsActionResult> {
     if (!isExternalProvider(input.provider)) {
-      throw new Error('Provider invalide.')
+      throw new Error('Source invalide.')
     }
 
     if (input.provider === steamProvider) {

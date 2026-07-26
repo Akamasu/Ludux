@@ -124,6 +124,7 @@ export default function App() {
         detail={gameDetailState.detail}
         availableDlc={gameDetailState.availableDlc}
         error={gameDetailState.error}
+        syncResult={gameDetailState.syncResult}
         isLoading={gameDetailState.isLoading}
         isLoadingAvailableDlc={gameDetailState.isLoadingAvailableDlc}
         isSaving={gameDetailState.isSaving}
@@ -144,6 +145,7 @@ export default function App() {
         onImportScreenshotFile={gameDetailState.importScreenshotFile}
         onRefreshAvailableDlc={gameDetailState.loadAvailableDlc}
         onRestoreExternalGameLink={gameDetailState.restoreExternalGameLink}
+        onSyncGame={gameDetailState.syncGame}
         onUpdateAchievement={gameDetailState.updateAchievement}
         onUpdateChronicle={gameDetailState.updateChronicle}
         onUpdateDlc={gameDetailState.updateDlc}

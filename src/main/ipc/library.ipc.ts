@@ -300,7 +300,7 @@ function parseAddAvailableDlcInput(value: unknown): AddAvailableDlcInput {
 
   return {
     gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
-    provider: readRequiredString(value['provider'], 'Fournisseur de DLC invalide.'),
+    provider: readRequiredString(value['provider'], 'Source du DLC invalide.'),
     externalId: readRequiredString(value['externalId'], 'Identifiant de DLC invalide.'),
   }
 }
@@ -332,7 +332,7 @@ function parseUpdateAchievementInput(value: unknown): UpdateAchievementInput {
     name: readOptionalString(value['name']),
     description: readNullableString(value['description'], 'Description invalide.'),
     iconUrl: readNullableString(value['iconUrl'], 'Icône invalide.'),
-    provider: readNullableString(value['provider'], 'Fournisseur invalide.'),
+    provider: readNullableString(value['provider'], 'Source invalide.'),
     unlocked: readOptionalBoolean(value['unlocked'], 'État de déblocage invalide.'),
     unlockDate: readNullableString(value['unlockDate'], 'Date de déblocage invalide.'),
   }
@@ -401,12 +401,12 @@ function parseDeleteScreenshotInput(value: unknown): DeleteScreenshotInput {
 
 function parseDeleteExternalGameLinkInput(value: unknown): DeleteExternalGameLinkInput {
   if (!isRecord(value)) {
-    throw new Error('Les données du lien provider sont invalides.')
+    throw new Error('Les données de la source sont invalides.')
   }
 
   return {
     gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
-    id: readRequiredString(value['id'], 'Identifiant de lien provider invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de source invalide.'),
   }
 }
 

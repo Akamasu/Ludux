@@ -120,3 +120,7 @@ export interface DeleteProviderConnectionInput {
 export interface SyncProviderInput {
   provider: ExternalProvider
 }
+
+export interface SyncGameInput {
+  gameId: string
+}

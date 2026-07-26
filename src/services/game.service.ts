@@ -1096,7 +1096,7 @@ class GameService {
     })
 
     if (!link) {
-      throw new Error('Lien provider introuvable.')
+      throw new Error('Source introuvable.')
     }
 
     await prisma.$transaction([

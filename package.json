@@ -1,7 +1,7 @@
 {
   "name": "ludux",
   "private": true,
-  "version": "0.24.37",
+  "version": "0.24.38",
   "type": "module",
   "main": "./out/main/main.js",
   "scripts": {

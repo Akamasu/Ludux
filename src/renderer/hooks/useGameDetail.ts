@@ -25,6 +25,7 @@ import type {
   UpdateReviewInput,
   UpdateScreenshotInput,
 } from '../../types/game'
+import type { SettingsActionResult } from '../../types/settings'
 
 function sortChroniclesByDate<T extends { date: string }>(chronicles: T[]) {
   return [...chronicles].sort(
@@ -70,6 +71,7 @@ export function useGameDetail(
   const [isLoadingAvailableDlc, setIsLoadingAvailableDlc] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [syncResult, setSyncResult] = useState<SettingsActionResult | null>(null)
 
   const refresh = useCallback(async () => {
     if (!gameId) {
@@ -120,8 +122,42 @@ export function useGameDetail(
     }
   }, [gameId])
 
+  const syncGame = useCallback(async () => {
+    if (!gameId) {
+      return
+    }
+
+    const api = window.ludux
+    setIsSaving(true)
+    setError(null)
+    setSyncResult(null)
+
+    try {
+      if (!api) {
+        setSyncResult({
+          canceled: true,
+          path: null,
+          message: 'Cette action est disponible dans la fenêtre Electron de Ludux.',
+        })
+        return
+      }
+
+      const result = await api.settings.syncGame({
+        gameId,
+      })
+      setSyncResult(result)
+      setDetail(await api.games.getById(gameId))
+      await onChanged()
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [gameId, onChanged])
+
   useEffect(() => {
     setAvailableDlc([])
+    setSyncResult(null)
   }, [gameId])
 
   const updateGame = useCallback(
@@ -993,11 +1029,13 @@ export function useGameDetail(
     availableDlc,
     detail,
     error,
+    syncResult,
     isLoading,
     isLoadingAvailableDlc,
     isSaving,
     refresh,
     loadAvailableDlc,
+    syncGame,
     updateGame,
     updateReview,
     createDlc,

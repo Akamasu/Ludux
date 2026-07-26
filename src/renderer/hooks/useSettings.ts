@@ -191,7 +191,7 @@ export function useSettings() {
         setActionResult({
           canceled: false,
           path: null,
-          message: 'Connexion provider enregistrée localement.',
+          message: 'Connexion enregistrée localement.',
         })
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
@@ -224,7 +224,7 @@ export function useSettings() {
         setActionResult({
           canceled: false,
           path: null,
-          message: 'Connexion provider retirée.',
+          message: 'Connexion retirée.',
         })
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
