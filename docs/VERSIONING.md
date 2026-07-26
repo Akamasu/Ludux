@@ -59,3 +59,4 @@ Le tag `v0.1.0` correspond au bootstrap initial de Ludux : socle Electron/React,
 - `v0.25.1` : tri naturel de la bibliothèque et synchronisation locale GOG.
 - `v0.26.0` : première ouverture séparée et paramètres simplifiés pour les joueurs.
 - `v0.27.0` : enrichissement GOG, détection des lanceurs Windows et mises à jour automatiques.
+- `v0.28.0` : import local EA App, Ubisoft Connect et Battle.net.

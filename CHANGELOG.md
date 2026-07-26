@@ -31,6 +31,19 @@ Le projet suit des versions de développement simples :
 - `v0.25.x` : stockage Windows, migrations sécurisées et installateur public.
 - `v0.26.x` : première ouverture guidée et interface simplifiée pour les joueurs.
 - `v0.27.x` : enrichissement GOG, détection des lanceurs et mises à jour automatiques.
+- `v0.28.x` : import local EA App, Ubisoft Connect et Battle.net.
+
+## v0.28.0 - 2026-07-26
+
+- Import des jeux réellement installés depuis EA App, Ubisoft Connect et Battle.net.
+- Fusion par titre avec les jeux Ludux existants afin d'éviter les doublons entre plateformes.
+- Vérification physique des dossiers de jeux avant l'import.
+- Exclusion des anciennes traces laissées par les jeux désinstallés.
+- Ajout des trois plateformes à `Synchroniser tout` et à la synchronisation automatique lorsqu'un jeu importable est présent.
+- Ajout d'une action de synchronisation dédiée dans les paramètres pour chaque bibliothèque locale prête.
+- Messages simplifiés indiquant clairement si le lanceur est détecté, sans jeu installé, ou prêt à synchroniser.
+- Ajout de variables facultatives pour corriger manuellement les chemins sur les configurations Windows atypiques.
+- Extension des tests locaux et Electron à 97 tests unitaires validés.
 
 ## v0.27.0 - 2026-07-26
 

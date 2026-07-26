@@ -40,20 +40,20 @@ export const EXTERNAL_PROVIDER_DEFINITIONS: ExternalProviderDefinition[] = [
   {
     provider: 'EA_APP',
     label: 'EA App',
-    description: 'Détection locale du lanceur et de ses données d’installation.',
-    capabilities: ['Détection automatique', 'Chemins locaux'],
+    description: 'Jeux EA installés détectés automatiquement sur cet ordinateur.',
+    capabilities: ['Bibliothèque locale', 'Jeux installés'],
   },
   {
     provider: 'UBISOFT',
     label: 'Ubisoft Connect',
-    description: 'Détection locale du lanceur et des installations Ubisoft.',
-    capabilities: ['Détection automatique', 'Jeux installés'],
+    description: 'Jeux Ubisoft installés détectés automatiquement sur cet ordinateur.',
+    capabilities: ['Bibliothèque locale', 'Jeux installés'],
   },
   {
     provider: 'BATTLENET',
     label: 'Battle.net',
-    description: 'Détection locale du lanceur et de sa configuration.',
-    capabilities: ['Détection automatique', 'Configuration locale'],
+    description: 'Jeux Battle.net installés détectés automatiquement sur cet ordinateur.',
+    capabilities: ['Bibliothèque locale', 'Jeux installés'],
   },
   {
     provider: 'IGDB',

@@ -5,8 +5,11 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   createEpicCandidateLibraryPaths,
   createGogCandidateLibraryPaths,
+  detectBattleNetLocalPlatform,
+  detectEaAppLocalPlatform,
   detectEpicLocalPlatform,
   detectGogLocalPlatform,
+  parseEaInstallRegistry,
   parseEpicLauncherCacheFile,
   parseEpicLauncherInstalledDatabase,
   parseEpicManagedApp,
@@ -18,10 +21,13 @@ import {
   parseGogGameInfo,
   parseGogRegistryGames,
   parseUbisoftInstallRegistry,
+  readBattleNetLocalLibrary,
+  readEaAppLocalLibrary,
   readEpicLocalLibrary,
   readGogLocalLibrary,
 } from '../../src/providers/local-platforms'
 
+const originalAppData = process.env['APPDATA']
 const originalProgramData = process.env['PROGRAMDATA']
 const originalLocalAppData = process.env['LOCALAPPDATA']
 const originalEpicManifestPaths = process.env['LUDUX_EPIC_MANIFEST_PATHS']
@@ -31,6 +37,12 @@ const originalEpicWebcachePaths = process.env['LUDUX_EPIC_WEBCACHE_PATHS']
 const originalGogDbPath = process.env['LUDUX_GOG_GALAXY_DB_PATH']
 const originalGogLibraryPaths = process.env['LUDUX_GOG_LIBRARY_PATHS']
 const originalGogRegistryPaths = process.env['LUDUX_GOG_REGISTRY_PATHS']
+const originalEaAppPaths = process.env['LUDUX_EA_APP_PATHS']
+const originalEaLibraryPaths = process.env['LUDUX_EA_LIBRARY_PATHS']
+const originalEaRegistryPaths = process.env['LUDUX_EA_REGISTRY_PATHS']
+const originalBattleNetPaths = process.env['LUDUX_BATTLENET_PATHS']
+const originalBattleNetLibraryPaths =
+  process.env['LUDUX_BATTLENET_LIBRARY_PATHS']
 const tempRoots: string[] = []
 
 function restoreEnv(name: string, value: string | undefined) {
@@ -72,6 +84,7 @@ function createEpicCacheRecord(fields: Array<[string, Buffer | string | true]>) 
 }
 
 afterEach(async () => {
+  restoreEnv('APPDATA', originalAppData)
   restoreEnv('PROGRAMDATA', originalProgramData)
   restoreEnv('LOCALAPPDATA', originalLocalAppData)
   restoreEnv('LUDUX_EPIC_MANIFEST_PATHS', originalEpicManifestPaths)
@@ -81,6 +94,14 @@ afterEach(async () => {
   restoreEnv('LUDUX_GOG_GALAXY_DB_PATH', originalGogDbPath)
   restoreEnv('LUDUX_GOG_LIBRARY_PATHS', originalGogLibraryPaths)
   restoreEnv('LUDUX_GOG_REGISTRY_PATHS', originalGogRegistryPaths)
+  restoreEnv('LUDUX_EA_APP_PATHS', originalEaAppPaths)
+  restoreEnv('LUDUX_EA_LIBRARY_PATHS', originalEaLibraryPaths)
+  restoreEnv('LUDUX_EA_REGISTRY_PATHS', originalEaRegistryPaths)
+  restoreEnv('LUDUX_BATTLENET_PATHS', originalBattleNetPaths)
+  restoreEnv(
+    'LUDUX_BATTLENET_LIBRARY_PATHS',
+    originalBattleNetLibraryPaths,
+  )
 
   await Promise.all(
     tempRoots.splice(0).map((root) =>
@@ -387,6 +408,78 @@ HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\GOG.com\Games\invalid
     ])
   })
 
+  it('parses installed EA games from the Windows registry', () => {
+    const registryOutput = String.raw`
+HKEY_LOCAL_MACHINE\SOFTWARE\EA Games\Battlefield 6
+    DisplayName    REG_SZ    Battlefield 6
+    Install Dir    REG_SZ    E:/EA Games/Battlefield 6/
+
+HKEY_LOCAL_MACHINE\SOFTWARE\EA Games\Uninstalled
+    DisplayName    REG_SZ    Ancien jeu
+`
+
+    expect(parseEaInstallRegistry(registryOutput)).toEqual([
+      {
+        title: 'Battlefield 6',
+        installPath: 'E:\\EA Games\\Battlefield 6\\',
+        registryPath:
+          'HKEY_LOCAL_MACHINE\\SOFTWARE\\EA Games\\Battlefield 6',
+      },
+    ])
+  })
+
+  it('imports only EA games whose installation directory still exists', async () => {
+    const root = await createTempRoot()
+    const installData = join(root, 'EA Desktop', 'InstallData')
+    const library = join(root, 'EA Games')
+    const apexInstall = join(library, 'Apex')
+    const apexManifest = join(
+      installData,
+      'Apex',
+      'base-Origin.SFT.50.0000848',
+      'map.eacrc',
+    )
+    const staleManifest = join(
+      installData,
+      'Ancien jeu',
+      'base-Origin.SFT.50.0000999',
+      'map.eacrc',
+    )
+    await mkdir(apexInstall, {
+      recursive: true,
+    })
+    await mkdir(join(apexManifest, '..'), {
+      recursive: true,
+    })
+    await mkdir(join(staleManifest, '..'), {
+      recursive: true,
+    })
+    await writeFile(apexManifest, 'manifest')
+    await writeFile(staleManifest, 'manifest')
+    process.env['PROGRAMDATA'] = root
+    process.env['LUDUX_EA_APP_PATHS'] = ''
+    process.env['LUDUX_EA_LIBRARY_PATHS'] = library
+    process.env['LUDUX_EA_REGISTRY_PATHS'] = ''
+
+    await expect(readEaAppLocalLibrary()).resolves.toMatchObject({
+      games: [
+        {
+          externalId: 'Origin.SFT.50.0000848',
+          installPath: apexInstall,
+          manifestPath: apexManifest,
+          title: 'Apex',
+        },
+      ],
+      sourceCount: 2,
+    })
+
+    await expect(detectEaAppLocalPlatform()).resolves.toMatchObject({
+      provider: 'EA_APP',
+      detected: true,
+      manifestCount: 1,
+    })
+  })
+
   it('parses Ubisoft Connect installations from the Windows registry', () => {
     const registryOutput = String.raw`
 HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs\1803
@@ -430,6 +523,62 @@ HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs\1803
       clientPath: 'C:\\Program Files (x86)\\Battle.net',
       defaultInstallPath: 'D:\\Games',
       productIds: ['hs_beta'],
+    })
+  })
+
+  it('imports Battle.net products only when a game marker exists', async () => {
+    const root = await createTempRoot()
+    const battleConfigDirectory = join(root, 'Battle.net')
+    const library = join(root, 'Games')
+    const hearthstoneInstall = join(library, 'Hearthstone')
+    const manifestPath = join(hearthstoneInstall, '.build.info')
+    await mkdir(battleConfigDirectory, {
+      recursive: true,
+    })
+    await mkdir(hearthstoneInstall, {
+      recursive: true,
+    })
+    await writeFile(
+      join(battleConfigDirectory, 'Battle.net.config'),
+      JSON.stringify({
+        Client: {
+          Install: {
+            DefaultInstallPath: library,
+          },
+        },
+        Games: {
+          battle_net: {},
+          hs_beta: {
+            LastActioned: '1726423092',
+          },
+          wow: {
+            LastActioned: '1726423093',
+          },
+        },
+      }),
+    )
+    await writeFile(manifestPath, 'build')
+    process.env['APPDATA'] = root
+    process.env['LOCALAPPDATA'] = root
+    process.env['LUDUX_BATTLENET_PATHS'] = ''
+    process.env['LUDUX_BATTLENET_LIBRARY_PATHS'] = library
+
+    await expect(readBattleNetLocalLibrary()).resolves.toMatchObject({
+      games: [
+        {
+          externalId: 'hs_beta',
+          installPath: hearthstoneInstall,
+          manifestPath,
+          title: 'Hearthstone',
+        },
+      ],
+      sourceCount: 2,
+    })
+
+    await expect(detectBattleNetLocalPlatform()).resolves.toMatchObject({
+      provider: 'BATTLENET',
+      detected: true,
+      manifestCount: 1,
     })
   })
 

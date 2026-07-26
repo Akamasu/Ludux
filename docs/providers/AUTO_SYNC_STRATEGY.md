@@ -23,18 +23,18 @@ Steam est le premier provider actif :
 - validation SteamID64 et erreurs réseau explicites ;
 - fallback local via `libraryfolders.vdf`, `appmanifest_*.acf` et `localconfig.vdf`.
 
-Epic et GOG importent les jeux installés détectés localement avant les enrichissements catalogue.
+Epic, GOG, EA App, Ubisoft Connect et Battle.net importent leurs jeux locaux avant les enrichissements catalogue. EA App, Ubisoft Connect et Battle.net vérifient le dossier d'installation afin d'ignorer les anciennes traces laissées après une désinstallation.
 
 RAWG et IGDB sont les providers de métadonnées actifs :
 
 - connexion locale avec une clé API RAWG ou fallback `RAWG_API_KEY` ;
 - connexion locale avec Client ID et Client Secret IGDB ou fallback `.env` ;
 - enrichissement manuel depuis les paramètres ;
-- enrichissement automatique dans `Synchroniser tout`, après Steam/Epic/GOG ;
+- enrichissement automatique dans `Synchroniser tout`, après les imports de bibliothèques ;
 - ajout des champs manquants : description, jaquette, date, développeur, éditeur, site officiel et genres ;
 - préservation des données déjà saisies dans Ludux.
 
-Les autres providers restent au stade de préparation tant qu'un accès officiel exploitable n'est pas branché.
+Xbox, PlayStation et Nintendo restent au stade de préparation tant qu'un accès officiel exploitable n'est pas branché.
 
 ## Stratégie Publique
 
@@ -54,6 +54,9 @@ Pour une v1 publique, Ludux ne doit pas embarquer une clé Steam commune dans l'
 | Steam | Clé Web API + SteamID64 + fichiers locaux | Oui si les détails de jeux sont visibles, avec fallback jeux installés | Actif |
 | Epic | OAuth/EOS selon projet | Pas de route publique simple pour toute la bibliothèque EGS | Import local actif, officiel à préparer |
 | GOG | GOG Galaxy SDK / accès développeur | SDK orienté jeu, pas import universel simple | Import local actif, officiel à préparer |
+| EA App | Compte EA non utilisé | Lecture de la bibliothèque complète non exposée simplement | Import des jeux installés actif |
+| Ubisoft Connect | Compte Ubisoft non utilisé | Lecture de la bibliothèque complète non exposée simplement | Import des jeux installés actif |
+| Battle.net | Compte Battle.net non utilisé | Produits locaux identifiés par le client | Import des jeux installés reconnus actif |
 | Xbox | Microsoft/Xbox Services | Accès contraint par programme développeur | Attendre accès officiel |
 | PlayStation | PlayStation Partners | Accès partenaire | Attendre accès officiel |
 | Nintendo | Nintendo Developer Portal | Accès partenaire | Attendre accès officiel |

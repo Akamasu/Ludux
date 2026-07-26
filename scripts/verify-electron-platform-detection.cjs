@@ -12,7 +12,10 @@ app
       detectBattleNetLocalPlatform,
       detectEaAppLocalPlatform,
       detectUbisoftConnectLocalPlatform,
+      readBattleNetLocalLibrary,
+      readEaAppLocalLibrary,
       readGogLocalLibrary,
+      readUbisoftConnectLocalLibrary,
     } = await import(moduleUrl)
     const detections = await Promise.all([
       detectEaAppLocalPlatform(),
@@ -32,6 +35,20 @@ app
         .map(
           (detection) =>
             `${detection.label}: ${detection.detected ? 'détecté' : 'absent'}`,
+        )
+        .join(' / '),
+    )
+    const localLibraries = await Promise.all([
+      readEaAppLocalLibrary(),
+      readUbisoftConnectLocalLibrary(),
+      readBattleNetLocalLibrary(),
+    ])
+
+    console.log(
+      localLibraries
+        .map(
+          (library, index) =>
+            `${detections[index].label}: ${library.games.length} jeu(x) installé(s)`,
         )
         .join(' / '),
     )

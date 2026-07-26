@@ -68,7 +68,16 @@ const launchViewOptions: {
   { value: 'statistics', label: 'Statistiques' },
 ]
 
-const providerQueueOrder = ['STEAM', 'EPIC', 'GOG', 'RAWG', 'IGDB'] as const
+const providerQueueOrder = [
+  'STEAM',
+  'EPIC',
+  'EA_APP',
+  'UBISOFT',
+  'BATTLENET',
+  'GOG',
+  'RAWG',
+  'IGDB',
+] as const
 const providerDisplayOrder = [
   'STEAM',
   'EPIC',
@@ -469,6 +478,9 @@ function isSyncableProvider(provider: ProviderConnection | undefined) {
   return (
     provider?.provider === 'STEAM' ||
     provider?.provider === 'EPIC' ||
+    provider?.provider === 'EA_APP' ||
+    provider?.provider === 'UBISOFT' ||
+    provider?.provider === 'BATTLENET' ||
     provider?.provider === 'GOG' ||
     provider?.provider === 'IGDB' ||
     provider?.provider === 'RAWG'
@@ -484,7 +496,11 @@ function canSyncProvider(
   }
 
   if (isLocalLibraryProvider(provider)) {
-    return Boolean(localPlatformForProvider(overview, provider)?.detected)
+    const localPlatform = localPlatformForProvider(overview, provider)
+    return Boolean(
+      localPlatform?.detected &&
+      localPlatform.manifestCount > 0,
+    )
   }
 
   if (
@@ -666,6 +682,7 @@ function ProvidersPanel({
   const isIgdbProvider = selectedProvider?.provider === 'IGDB'
   const selectedLocalPlatform = localPlatformForProvider(overview, selectedProvider)
   const selectedProviderCanSync = canSyncProvider(selectedProvider, overview)
+  const selectedLocalPlatformDetected = Boolean(selectedLocalPlatform?.detected)
 
   useEffect(() => {
     setExternalId(
@@ -815,29 +832,33 @@ function ProvidersPanel({
 
             <div
               className={`mt-5 rounded-lg border px-4 py-4 text-sm ${
-                selectedLocalPlatform?.detected
+                selectedProviderCanSync
                   ? 'border-emerald-400/25 bg-emerald-400/10 text-emerald-100'
                   : 'border-white/10 bg-[#0F1117] text-zinc-400'
               }`}
             >
               <p className="font-medium">
-                {selectedLocalPlatform?.detected
+                {selectedProviderCanSync
                   ? `${selectedProvider.label} est prêt`
+                  : selectedLocalPlatformDetected
+                    ? `${selectedProvider.label} est détecté`
                   : `${selectedProvider.label} n'a pas été trouvé`}
               </p>
               <p className="mt-1 leading-6 opacity-80">
-                {selectedLocalPlatform?.detected
-                  ? 'Ludux utilisera directement les fichiers présents sur cet ordinateur.'
+                {selectedProviderCanSync
+                  ? `${selectedLocalPlatform?.manifestCount ?? 0} jeu(x) prêt(s) à synchroniser depuis cet ordinateur.`
+                  : selectedLocalPlatformDetected
+                    ? 'Aucun jeu installé à importer pour le moment.'
                   : 'Ouvrez la plateforme une première fois, puis relancez la détection.'}
               </p>
             </div>
 
-            {isSyncableProvider(selectedProvider) ? (
+            {selectedProviderCanSync ? (
               <Button
                 type="button"
                 variant="secondary"
                 onClick={handleSyncProvider}
-                disabled={isBusy || !selectedProviderCanSync}
+                disabled={isBusy}
                 className="mt-5"
               >
                 <RefreshCw

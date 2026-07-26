@@ -7,8 +7,26 @@ import {
 describe('provider sync order', () => {
   it('imports library providers before metadata enrichment providers', () => {
     expect(
-      sortConfiguredSyncProviders(['IGDB', 'RAWG', 'GOG', 'EPIC', 'STEAM']),
-    ).toEqual(['STEAM', 'EPIC', 'GOG', 'RAWG', 'IGDB'])
+      sortConfiguredSyncProviders([
+        'IGDB',
+        'BATTLENET',
+        'RAWG',
+        'GOG',
+        'UBISOFT',
+        'EPIC',
+        'EA_APP',
+        'STEAM',
+      ]),
+    ).toEqual([
+      'STEAM',
+      'EPIC',
+      'EA_APP',
+      'UBISOFT',
+      'BATTLENET',
+      'GOG',
+      'RAWG',
+      'IGDB',
+    ])
   })
 
   it('keeps each provider only once', () => {

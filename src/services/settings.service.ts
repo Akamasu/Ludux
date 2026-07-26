@@ -38,10 +38,15 @@ import type {
 import { EXTERNAL_PROVIDER_DEFINITIONS } from '../providers/registry'
 import {
   detectLocalPlatforms,
+  readBattleNetLocalLibrary,
+  readEaAppLocalLibrary,
   readEpicLocalLibrary,
   readGogLocalLibrary,
+  readUbisoftConnectLocalLibrary,
   type EpicInstalledGame,
   type GogInstalledGame,
+  type LocalLauncherGame,
+  type LocalLauncherLibraryResult,
 } from '../providers/local-platforms'
 import { libraryService } from './library.service'
 import { logger } from '../utils/logger'
@@ -87,6 +92,12 @@ const epicPlatformName = 'Epic Games'
 const gogProvider: ExternalProvider = 'GOG'
 const gogPlatformName = 'GOG'
 const gogTotalSessionNote = 'Temps total GOG Galaxy synchronisé.'
+const eaAppProvider: ExternalProvider = 'EA_APP'
+const eaAppPlatformName = 'EA App'
+const ubisoftProvider: ExternalProvider = 'UBISOFT'
+const ubisoftPlatformName = 'Ubisoft Connect'
+const battleNetProvider: ExternalProvider = 'BATTLENET'
+const battleNetPlatformName = 'Battle.net'
 const rawgProvider: ExternalProvider = 'RAWG'
 const rawgExternalId = 'catalogue'
 const igdbProvider: ExternalProvider = 'IGDB'
@@ -160,6 +171,15 @@ interface GogImportStats {
   syncedDlc: number
   syncedAchievements: number
   syncedAchievementGames: number
+}
+
+interface LocalLauncherImportStats {
+  scannedSources: number
+  detectedGames: number
+  importedGames: number
+  linkedGames: number
+  updatedGames: number
+  ignoredLinks: number
 }
 
 interface LocalGameMetadata {
@@ -569,6 +589,27 @@ function createGogSyncMessage(stats: GogImportStats) {
     stats.syncedAchievements > 0
       ? `${stats.syncedAchievements} succès sur ${stats.syncedAchievementGames} jeu(x)`
       : null,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(' / ')
+}
+
+function createLocalLauncherSyncMessage(
+  label: string,
+  stats: LocalLauncherImportStats,
+) {
+  if (stats.detectedGames === 0) {
+    return stats.scannedSources > 0
+      ? `${label} est détecté, mais aucun jeu encore installé n’a été trouvé.`
+      : `Aucune installation de jeu ${label} n’a été trouvée.`
+  }
+
+  return [
+    `${stats.detectedGames} jeu(x) installé(s) détecté(s)`,
+    `${stats.importedGames} ajouté(s)`,
+    `${stats.linkedGames} relié(s)`,
+    `${stats.updatedGames} déjà connu(s)`,
+    stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
   ]
     .filter((value): value is string => Boolean(value))
     .join(' / ')
@@ -1030,6 +1071,65 @@ async function ensureGogPlatformForGame(
       platformId,
       owned: true,
       played,
+    },
+  })
+}
+
+async function ensureLocalLauncherPlatform(
+  name: string,
+  manufacturer: string,
+) {
+  return prisma.platform.upsert({
+    where: {
+      name,
+    },
+    update: {
+      manufacturer,
+    },
+    create: {
+      name,
+      manufacturer,
+    },
+  })
+}
+
+async function ensureLocalLauncherPlatformForGame(
+  gameId: string,
+  platformId: string,
+) {
+  const existingPlatform = await prisma.gamePlatform.findFirst({
+    where: {
+      gameId,
+      platformId,
+      version: null,
+    },
+    select: {
+      id: true,
+      owned: true,
+    },
+  })
+
+  if (existingPlatform) {
+    if (!existingPlatform.owned) {
+      await prisma.gamePlatform.update({
+        where: {
+          id: existingPlatform.id,
+        },
+        data: {
+          owned: true,
+        },
+      })
+    }
+
+    return
+  }
+
+  await prisma.gamePlatform.create({
+    data: {
+      gameId,
+      platformId,
+      owned: true,
+      played: false,
     },
   })
 }
@@ -2222,6 +2322,158 @@ async function importEpicInstalledGames(
   return stats
 }
 
+async function importLocalLauncherGames({
+  games,
+  manufacturer,
+  platformName,
+  provider,
+  sourceCount,
+}: {
+  games: LocalLauncherGame[]
+  manufacturer: string
+  platformName: string
+  provider: ExternalProvider
+  sourceCount: number
+}): Promise<LocalLauncherImportStats> {
+  const stats: LocalLauncherImportStats = {
+    scannedSources: sourceCount,
+    detectedGames: games.length,
+    importedGames: 0,
+    linkedGames: 0,
+    updatedGames: 0,
+    ignoredLinks: 0,
+  }
+
+  if (games.length === 0) {
+    return stats
+  }
+
+  const ignoredLinks = await readIgnoredExternalGameLinkKeys(provider)
+  const platform = await ensureLocalLauncherPlatform(
+    platformName,
+    manufacturer,
+  )
+  const localGames = await prisma.game.findMany({
+    where: {
+      archived: false,
+    },
+    select: {
+      id: true,
+      title: true,
+    },
+  })
+  const gamesByTitle = new Map(
+    localGames.map((game) => [normalizeTitle(game.title), game]),
+  )
+  const uniqueGames = Array.from(
+    new Map(games.map((game) => [game.externalId, game])).values(),
+  ).sort((left, right) =>
+    left.title.localeCompare(right.title, 'fr-FR', {
+      numeric: true,
+      sensitivity: 'base',
+    }),
+  )
+
+  for (const sourceGame of uniqueGames) {
+    const existingLink = await prisma.externalGame.findUnique({
+      where: {
+        provider_externalId: {
+          provider,
+          externalId: sourceGame.externalId,
+        },
+      },
+    })
+    const matchedGame = existingLink
+      ? await prisma.game.findUnique({
+          where: {
+            id: existingLink.gameId,
+          },
+          select: {
+            id: true,
+            title: true,
+          },
+        })
+      : (gamesByTitle.get(normalizeTitle(sourceGame.title)) ?? null)
+
+    if (
+      !existingLink &&
+      matchedGame &&
+      hasIgnoredExternalGameLink(ignoredLinks, {
+        gameId: matchedGame.id,
+        provider,
+        externalId: sourceGame.externalId,
+      })
+    ) {
+      stats.ignoredLinks += 1
+      continue
+    }
+
+    const localGame =
+      matchedGame ??
+      (await prisma.game.create({
+        data: {
+          title: sourceGame.title,
+          status: 'BACKLOG',
+          platforms: {
+            create: {
+              platform: {
+                connect: {
+                  id: platform.id,
+                },
+              },
+              owned: true,
+              played: false,
+            },
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+        },
+      }))
+
+    if (existingLink) {
+      stats.updatedGames += 1
+    } else if (matchedGame) {
+      stats.linkedGames += 1
+    } else {
+      stats.importedGames += 1
+      gamesByTitle.set(normalizeTitle(localGame.title), localGame)
+    }
+
+    if (matchedGame) {
+      await ensureLocalLauncherPlatformForGame(localGame.id, platform.id)
+    }
+
+    await prisma.externalGame.upsert({
+      where: {
+        provider_externalId: {
+          provider,
+          externalId: sourceGame.externalId,
+        },
+      },
+      update: {
+        gameId: localGame.id,
+        playSessionId: null,
+        sourceTitle: sourceGame.title,
+        lastPlaytimeMinutes: 0,
+        lastSyncedAt: new Date(),
+      },
+      create: {
+        gameId: localGame.id,
+        provider,
+        externalId: sourceGame.externalId,
+        sourceTitle: sourceGame.title,
+        sourceCoverUrl: null,
+        lastPlaytimeMinutes: 0,
+        lastSyncedAt: new Date(),
+      },
+    })
+  }
+
+  return stats
+}
+
 async function importGogInstalledGames(
   games: GogInstalledGame[],
   sourceCount: number,
@@ -2978,8 +3230,13 @@ class SettingsService {
     const providers: ExternalProvider[] = []
     const hasAccount = (provider: ExternalProvider) =>
       accounts.some((account) => account.provider === provider)
-    const hasLocalPlatform = (provider: ExternalProvider) =>
-      localPlatforms.some((platform) => platform.provider === provider && platform.detected)
+    const hasLocalGames = (provider: ExternalProvider) =>
+      localPlatforms.some(
+        (platform) =>
+          platform.provider === provider &&
+          platform.detected &&
+          platform.manifestCount > 0,
+      )
 
     if (hasAccount(steamProvider)) {
       providers.push(steamProvider)
@@ -2996,12 +3253,24 @@ class SettingsService {
       providers.push(igdbProvider)
     }
 
-    if (hasAccount(epicProvider) || hasLocalPlatform(epicProvider)) {
+    if (hasAccount(epicProvider) || hasLocalGames(epicProvider)) {
       providers.push(epicProvider)
     }
 
-    if (hasAccount(gogProvider) || hasLocalPlatform(gogProvider)) {
+    if (hasAccount(gogProvider) || hasLocalGames(gogProvider)) {
       providers.push(gogProvider)
+    }
+
+    if (hasAccount(eaAppProvider) || hasLocalGames(eaAppProvider)) {
+      providers.push(eaAppProvider)
+    }
+
+    if (hasAccount(ubisoftProvider) || hasLocalGames(ubisoftProvider)) {
+      providers.push(ubisoftProvider)
+    }
+
+    if (hasAccount(battleNetProvider) || hasLocalGames(battleNetProvider)) {
+      providers.push(battleNetProvider)
     }
 
     return sortConfiguredSyncProviders(providers)
@@ -3364,6 +3633,89 @@ class SettingsService {
     }
   }
 
+  private async syncLocalLauncherProvider({
+    label,
+    manufacturer,
+    platformName,
+    provider,
+    readLibrary,
+  }: {
+    label: string
+    manufacturer: string
+    platformName: string
+    provider: ExternalProvider
+    readLibrary: () => Promise<LocalLauncherLibraryResult>
+  }): Promise<SettingsActionResult> {
+    await recordProviderSync(
+      provider,
+      'SYNCING',
+      `Synchronisation ${label} locale en cours.`,
+    )
+
+    try {
+      const localLibrary = await readLibrary()
+      const stats = await importLocalLauncherGames({
+        games: localLibrary.games,
+        manufacturer,
+        platformName,
+        provider,
+        sourceCount: localLibrary.sourceCount,
+      })
+      const syncedAt = new Date()
+      const message = createLocalLauncherSyncMessage(label, stats)
+
+      await recordProviderSync(provider, 'SYNCED', message, syncedAt)
+
+      return {
+        canceled: false,
+        path:
+          localLibrary.libraryPaths[0] ??
+          localLibrary.rootPaths[0] ??
+          null,
+        message,
+        createdAt: syncedAt.toISOString(),
+      }
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error
+          ? caughtError.message
+          : `Erreur ${label} inconnue.`
+
+      await recordProviderSync(provider, 'ERROR', message)
+      throw caughtError
+    }
+  }
+
+  private async syncEaAppProvider() {
+    return this.syncLocalLauncherProvider({
+      label: 'EA App',
+      manufacturer: 'Electronic Arts',
+      platformName: eaAppPlatformName,
+      provider: eaAppProvider,
+      readLibrary: readEaAppLocalLibrary,
+    })
+  }
+
+  private async syncUbisoftProvider() {
+    return this.syncLocalLauncherProvider({
+      label: 'Ubisoft Connect',
+      manufacturer: 'Ubisoft',
+      platformName: ubisoftPlatformName,
+      provider: ubisoftProvider,
+      readLibrary: readUbisoftConnectLocalLibrary,
+    })
+  }
+
+  private async syncBattleNetProvider() {
+    return this.syncLocalLauncherProvider({
+      label: 'Battle.net',
+      manufacturer: 'Blizzard Entertainment',
+      platformName: battleNetPlatformName,
+      provider: battleNetProvider,
+      readLibrary: readBattleNetLocalLibrary,
+    })
+  }
+
   private async syncIgdbProvider(): Promise<SettingsActionResult> {
     const account = await prisma.externalAccount.findFirst({
       where: {
@@ -3648,8 +4000,20 @@ class SettingsService {
       return this.syncGogProvider()
     }
 
+    if (input.provider === eaAppProvider) {
+      return this.syncEaAppProvider()
+    }
+
+    if (input.provider === ubisoftProvider) {
+      return this.syncUbisoftProvider()
+    }
+
+    if (input.provider === battleNetProvider) {
+      return this.syncBattleNetProvider()
+    }
+
     throw new Error(
-      'Seules les synchronisations Steam, Epic locale, GOG locale, RAWG et IGDB sont disponibles pour le moment.',
+      'Cette source ne peut pas encore être synchronisée automatiquement.',
     )
   }
 

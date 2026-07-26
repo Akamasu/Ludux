@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { dirname, join, normalize } from 'node:path'
+import { basename, dirname, join, normalize } from 'node:path'
 import { promisify } from 'node:util'
 import type { ExternalProvider, LocalPlatformDetection } from '../types/settings'
 import { readSteamLocalLibrary } from './steam'
@@ -75,6 +75,27 @@ export interface UbisoftLocalInstall {
   registryPath: string
 }
 
+export interface LocalLauncherGame {
+  externalId: string
+  title: string
+  installPath: string
+  manifestPath: string
+}
+
+export interface LocalLauncherLibraryResult {
+  games: LocalLauncherGame[]
+  sourceCount: number
+  rootPaths: string[]
+  libraryPaths: string[]
+  configPaths: string[]
+}
+
+export interface EaLocalInstall {
+  title: string
+  installPath: string
+  registryPath: string
+}
+
 export interface BattleNetLocalConfig {
   clientPath: string | null
   defaultInstallPath: string | null
@@ -91,6 +112,47 @@ const epicIgnoredCacheContentPattern =
   /\b(dlc|add[- ]?on|texture pack|map pack|expansion map|dev kit|modkit|public testing)\b|beta$/i
 const epicIgnoredCacheUrlPattern =
   /[\\/_-](dlc|addon|add-on|expansion|mappack|texturepack)[\\/_-]/i
+const battleNetGameMarkers = ['.build.info', '.build.db']
+const battleNetProductCatalog: Record<
+  string,
+  {
+    title: string
+    directoryNames: string[]
+  }
+> = {
+  d3: {
+    title: 'Diablo III',
+    directoryNames: ['Diablo III'],
+  },
+  fen: {
+    title: 'Diablo IV',
+    directoryNames: ['Diablo IV'],
+  },
+  hero: {
+    title: 'Heroes of the Storm',
+    directoryNames: ['Heroes of the Storm'],
+  },
+  hs: {
+    title: 'Hearthstone',
+    directoryNames: ['Hearthstone'],
+  },
+  hs_beta: {
+    title: 'Hearthstone',
+    directoryNames: ['Hearthstone'],
+  },
+  pro: {
+    title: 'Overwatch 2',
+    directoryNames: ['Overwatch', 'Overwatch 2'],
+  },
+  s2: {
+    title: 'StarCraft II',
+    directoryNames: ['StarCraft II'],
+  },
+  wow: {
+    title: 'World of Warcraft',
+    directoryNames: ['World of Warcraft'],
+  },
+}
 const epicLocalGameSourcePriority: Record<EpicLocalGameSource, number> = {
   'managed-app': 4,
   'launcher-installation': 3,
@@ -193,6 +255,40 @@ function readJsonObject(value: string) {
 
 function readOptionalText(value: unknown) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
+}
+
+function normalizeLocalGameTitle(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[™®©]/g, '')
+    .toLocaleLowerCase('en-US')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+function createLocalExternalId(prefix: string, title: string) {
+  return `${prefix}:${normalizeLocalGameTitle(title).replace(/\s+/g, '-')}`
+}
+
+function dedupeLocalLauncherGames(games: LocalLauncherGame[]) {
+  const gamesByPath = new Map<string, LocalLauncherGame>()
+
+  for (const game of games) {
+    const pathKey = normalize(game.installPath).toLocaleLowerCase('en-US')
+    const existingGame = gamesByPath.get(pathKey)
+
+    if (!existingGame || existingGame.externalId.startsWith('local:')) {
+      gamesByPath.set(pathKey, game)
+    }
+  }
+
+  return Array.from(gamesByPath.values()).sort((left, right) =>
+    left.title.localeCompare(right.title, 'fr-FR', {
+      numeric: true,
+      sensitivity: 'base',
+    }),
+  )
 }
 
 function readObject(value: unknown) {
@@ -1892,19 +1988,253 @@ export function createEaAppCandidatePaths() {
   ])
 }
 
-export async function detectEaAppLocalPlatform(): Promise<LocalPlatformDetection> {
+export function createEaAppCandidateLibraryPaths() {
+  const programFiles = resolveEnvironmentPath(process.env['ProgramFiles'])
+  const programFilesX86 = resolveEnvironmentPath(process.env['ProgramFiles(x86)'])
+
+  return uniqueTextValues([
+    ...splitConfiguredPaths(process.env['LUDUX_EA_LIBRARY_PATHS']),
+    programFiles ? join(programFiles, 'EA Games') : null,
+    programFilesX86 ? join(programFilesX86, 'EA Games') : null,
+    'C:\\EA Games',
+    ...createWindowsDriveLibraryCandidates(['EA Games']),
+  ])
+}
+
+function createEaRegistryPaths() {
+  const configuredPaths = process.env['LUDUX_EA_REGISTRY_PATHS']
+
+  if (configuredPaths !== undefined) {
+    return splitConfiguredPaths(configuredPaths)
+  }
+
+  return [
+    'HKLM\\SOFTWARE\\EA Games',
+    'HKLM\\SOFTWARE\\WOW6432Node\\EA Games',
+    'HKLM\\SOFTWARE\\Respawn',
+    'HKLM\\SOFTWARE\\WOW6432Node\\Respawn',
+  ]
+}
+
+export function parseEaInstallRegistry(output: string) {
+  const installs: EaLocalInstall[] = []
+  let registryPath: string | null = null
+  let displayName: string | null = null
+  let installPath: string | null = null
+
+  function appendInstall() {
+    const registryTitle = registryPath?.split('\\').filter(Boolean).pop()
+    const title = displayName ?? registryTitle
+
+    if (registryPath && title && installPath) {
+      installs.push({
+        title,
+        installPath: normalize(installPath.replace(/\//g, '\\')),
+        registryPath,
+      })
+    }
+  }
+
+  for (const line of output.split(/\r?\n/)) {
+    const trimmedLine = line.trim()
+
+    if (/^HKEY_/i.test(trimmedLine)) {
+      appendInstall()
+      registryPath = trimmedLine
+      displayName = null
+      installPath = null
+      continue
+    }
+
+    const valueMatch = line.match(
+      /^\s+(DisplayName|Install Dir|InstallDir)\s+REG_(?:SZ|EXPAND_SZ)\s*(.*)$/i,
+    )
+
+    if (!valueMatch) {
+      continue
+    }
+
+    if (valueMatch[1].toLocaleLowerCase('en-US') === 'displayname') {
+      displayName = readOptionalText(valueMatch[2])
+    } else {
+      installPath = readOptionalText(valueMatch[2])
+    }
+  }
+
+  appendInstall()
+  return installs
+}
+
+async function readEaRegistryInstalls() {
+  if (process.platform !== 'win32') {
+    return {
+      installs: [] as EaLocalInstall[],
+      registryPaths: [] as string[],
+    }
+  }
+
+  const installs: EaLocalInstall[] = []
+  const registryPaths: string[] = []
+
+  for (const registryPath of createEaRegistryPaths()) {
+    try {
+      const { stdout } = await execFileAsync(
+        'reg',
+        ['query', registryPath, '/s'],
+        {
+          encoding: 'utf8',
+          maxBuffer: 2 * 1024 * 1024,
+          timeout: 5_000,
+          windowsHide: true,
+        },
+      )
+      const parsedInstalls = parseEaInstallRegistry(stdout)
+
+      if (parsedInstalls.length > 0) {
+        registryPaths.push(registryPath)
+        installs.push(...parsedInstalls)
+      }
+    } catch {
+      // Missing registry roots are expected when EA App is absent.
+    }
+  }
+
+  return {
+    installs,
+    registryPaths,
+  }
+}
+
+async function readEaInstallDataEntries(installDataPath: string | null) {
+  if (!installDataPath || !(await directoryExists(installDataPath))) {
+    return []
+  }
+
+  const entries: Array<{
+    externalId: string
+    title: string
+    manifestPath: string
+  }> = []
+
+  for (const gameEntry of await readDirectoryIfExists(installDataPath)) {
+    if (!gameEntry.isDirectory()) {
+      continue
+    }
+
+    const gameDataPath = join(installDataPath, gameEntry.name)
+    const baseEntry = (await readDirectoryIfExists(gameDataPath)).find(
+      (entry) => entry.isDirectory() && /^base-(.+)$/i.test(entry.name),
+    )
+    const externalId = baseEntry?.name.match(/^base-(.+)$/i)?.[1]
+
+    if (!baseEntry || !externalId) {
+      continue
+    }
+
+    entries.push({
+      externalId,
+      title: gameEntry.name,
+      manifestPath: join(gameDataPath, baseEntry.name, 'map.eacrc'),
+    })
+  }
+
+  return entries
+}
+
+async function readEaLibraryDirectories(libraryPaths: string[]) {
+  const directories: Array<{
+    title: string
+    installPath: string
+  }> = []
+
+  for (const libraryPath of libraryPaths) {
+    for (const entry of (await readDirectoryIfExists(libraryPath)).slice(0, 500)) {
+      if (entry.isDirectory()) {
+        directories.push({
+          title: entry.name,
+          installPath: join(libraryPath, entry.name),
+        })
+      }
+    }
+  }
+
+  return directories
+}
+
+export async function readEaAppLocalLibrary(): Promise<LocalLauncherLibraryResult> {
   const programData = resolveEnvironmentPath(process.env['PROGRAMDATA'])
   const installDataPath = programData
     ? join(programData, 'EA Desktop', 'InstallData')
     : null
-  const rootPaths = await findExistingDirectories(
-    createEaAppCandidatePaths(),
+  const [rootPaths, libraryPaths, installDataEntries, registryLibrary] =
+    await Promise.all([
+      findExistingDirectories(createEaAppCandidatePaths()),
+      findExistingDirectories(createEaAppCandidateLibraryPaths()),
+      readEaInstallDataEntries(installDataPath),
+      readEaRegistryInstalls(),
+    ])
+  const libraryDirectories = await readEaLibraryDirectories(libraryPaths)
+  const registryInstalls = (
+    await Promise.all(
+      registryLibrary.installs.map(async (install) =>
+        (await directoryExists(install.installPath)) ? install : null,
+      ),
+    )
+  ).filter((install): install is EaLocalInstall => install !== null)
+  const registryByTitle = new Map(
+    registryInstalls.map((install) => [
+      normalizeLocalGameTitle(install.title),
+      install,
+    ]),
   )
-  const gameEntries = installDataPath
-    ? (await readDirectoryIfExists(installDataPath)).filter((entry) =>
-        entry.isDirectory(),
-      )
-    : []
+  const directoryByTitle = new Map(
+    libraryDirectories.map((directory) => [
+      normalizeLocalGameTitle(directory.title),
+      directory,
+    ]),
+  )
+  const games: LocalLauncherGame[] = []
+
+  for (const entry of installDataEntries) {
+    const titleKey = normalizeLocalGameTitle(entry.title)
+    const registryInstall = registryByTitle.get(titleKey)
+    const libraryDirectory = directoryByTitle.get(titleKey)
+    const installPath =
+      registryInstall?.installPath ?? libraryDirectory?.installPath ?? null
+
+    if (!installPath || !(await directoryExists(installPath))) {
+      continue
+    }
+
+    games.push({
+      externalId: entry.externalId,
+      title: registryInstall?.title ?? entry.title,
+      installPath,
+      manifestPath: entry.manifestPath,
+    })
+  }
+
+  const knownPaths = new Set(
+    games.map((game) =>
+      normalize(game.installPath).toLocaleLowerCase('en-US'),
+    ),
+  )
+
+  for (const registryInstall of registryInstalls) {
+    const pathKey = normalize(registryInstall.installPath).toLocaleLowerCase('en-US')
+
+    if (knownPaths.has(pathKey)) {
+      continue
+    }
+
+    games.push({
+      externalId: createLocalExternalId('local', registryInstall.title),
+      title: registryInstall.title,
+      installPath: registryInstall.installPath,
+      manifestPath: registryInstall.registryPath,
+    })
+  }
+
   const configPaths = await findExistingDirectories(
     installDataPath ? [installDataPath] : [],
   )
@@ -1919,17 +2249,34 @@ export async function detectEaAppLocalPlatform(): Promise<LocalPlatformDetection
     }
   }
 
+  return {
+    games: dedupeLocalLauncherGames(games),
+    sourceCount: installDataEntries.length + registryLibrary.installs.length,
+    rootPaths,
+    libraryPaths,
+    configPaths: uniqueTextValues([
+      ...configPaths,
+      ...registryLibrary.registryPaths,
+    ]),
+  }
+}
+
+export async function detectEaAppLocalPlatform(): Promise<LocalPlatformDetection> {
+  const localLibrary = await readEaAppLocalLibrary()
+
   return createDetection({
     provider: 'EA_APP',
     label: 'EA App',
-    rootPaths,
-    configPaths,
-    manifestCount: gameEntries.length,
+    rootPaths: localLibrary.rootPaths,
+    libraryPaths: localLibrary.libraryPaths,
+    configPaths: localLibrary.configPaths,
+    manifestCount: localLibrary.games.length,
     message:
-      gameEntries.length > 0
-        ? `${gameEntries.length} jeu(x) repéré(s) dans les données locales EA.`
-        : rootPaths.length > 0 || configPaths.length > 0
-          ? 'EA App détectée. La lecture de sa bibliothèque sera ajoutée progressivement.'
+      localLibrary.games.length > 0
+        ? `${localLibrary.games.length} jeu(x) EA installé(s) et prêt(s) à importer.`
+        : localLibrary.rootPaths.length > 0 ||
+            localLibrary.configPaths.length > 0
+          ? 'EA App détectée, sans jeu actuellement installé.'
           : 'EA App n’a pas été détectée.',
   })
 }
@@ -2043,26 +2390,61 @@ async function readUbisoftRegistryInstalls() {
   }
 }
 
-export async function detectUbisoftConnectLocalPlatform(): Promise<LocalPlatformDetection> {
+export async function readUbisoftConnectLocalLibrary(): Promise<LocalLauncherLibraryResult> {
   const [rootPaths, registryLibrary] = await Promise.all([
     findExistingDirectories(createUbisoftCandidatePaths()),
     readUbisoftRegistryInstalls(),
   ])
+  const games = (
+    await Promise.all(
+      registryLibrary.installs.map(async (install) => {
+        if (!(await directoryExists(install.installPath))) {
+          return null
+        }
+
+        const title = basename(normalize(install.installPath))
+
+        if (!title) {
+          return null
+        }
+
+        return {
+          externalId: install.externalId,
+          title,
+          installPath: install.installPath,
+          manifestPath: install.registryPath,
+        } satisfies LocalLauncherGame
+      }),
+    )
+  ).filter((game): game is LocalLauncherGame => game !== null)
+
+  return {
+    games: dedupeLocalLauncherGames(games),
+    sourceCount: registryLibrary.installs.length,
+    rootPaths,
+    libraryPaths: uniqueTextValues(
+      games.map((game) => dirname(game.installPath)),
+    ),
+    configPaths: registryLibrary.registryPaths,
+  }
+}
+
+export async function detectUbisoftConnectLocalPlatform(): Promise<LocalPlatformDetection> {
+  const localLibrary = await readUbisoftConnectLocalLibrary()
 
   return createDetection({
     provider: 'UBISOFT',
     label: 'Ubisoft Connect',
-    rootPaths,
-    libraryPaths: registryLibrary.installs.map(
-      (install) => install.installPath,
-    ),
-    configPaths: registryLibrary.registryPaths,
-    manifestCount: registryLibrary.installs.length,
+    rootPaths: localLibrary.rootPaths,
+    libraryPaths: localLibrary.libraryPaths,
+    configPaths: localLibrary.configPaths,
+    manifestCount: localLibrary.games.length,
     message:
-      registryLibrary.installs.length > 0
-        ? `${registryLibrary.installs.length} installation(s) Ubisoft repérée(s).`
-        : rootPaths.length > 0
-          ? 'Ubisoft Connect détecté. La bibliothèque locale sera enrichie progressivement.'
+      localLibrary.games.length > 0
+        ? `${localLibrary.games.length} jeu(x) Ubisoft installé(s) et prêt(s) à importer.`
+        : localLibrary.rootPaths.length > 0 ||
+            localLibrary.configPaths.length > 0
+          ? 'Ubisoft Connect détecté, sans jeu actuellement installé.'
           : 'Ubisoft Connect n’a pas été détecté.',
   })
 }
@@ -2098,7 +2480,110 @@ export function createBattleNetCandidatePaths() {
   ])
 }
 
-export async function detectBattleNetLocalPlatform(): Promise<LocalPlatformDetection> {
+export function createBattleNetCandidateLibraryPaths(
+  defaultInstallPath?: string | null,
+) {
+  return uniqueTextValues([
+    ...splitConfiguredPaths(process.env['LUDUX_BATTLENET_LIBRARY_PATHS']),
+    defaultInstallPath,
+    ...createWindowsDriveLibraryCandidates([
+      'Battle.net Games',
+      'Blizzard Games',
+    ]),
+  ])
+}
+
+async function findBattleNetGameMarker(gamePath: string) {
+  for (const markerName of battleNetGameMarkers) {
+    const markerPath = join(gamePath, markerName)
+
+    if (await fileExists(markerPath)) {
+      return markerPath
+    }
+  }
+
+  return null
+}
+
+function findBattleNetProduct(
+  title: string,
+  productIds: string[],
+) {
+  const normalizedTitle = normalizeLocalGameTitle(title)
+
+  return productIds.find((productId) =>
+    battleNetProductCatalog[productId]?.directoryNames.some(
+      (directoryName) =>
+        normalizeLocalGameTitle(directoryName) === normalizedTitle,
+    ),
+  )
+}
+
+async function readBattleNetGameDirectories(
+  libraryPaths: string[],
+  productIds: string[],
+) {
+  const games: LocalLauncherGame[] = []
+
+  for (const libraryPath of libraryPaths) {
+    const rootMarker = await findBattleNetGameMarker(libraryPath)
+    const candidates = rootMarker
+      ? [
+          {
+            title: basename(normalize(libraryPath)),
+            installPath: libraryPath,
+            manifestPath: rootMarker,
+            productId: null,
+          },
+        ]
+      : await Promise.all(
+          productIds.flatMap((productId) =>
+            (battleNetProductCatalog[productId]?.directoryNames ?? []).map(
+              async (directoryName) => {
+                const installPath = join(libraryPath, directoryName)
+                const manifestPath = await findBattleNetGameMarker(installPath)
+
+                return manifestPath
+                  ? {
+                      title:
+                        battleNetProductCatalog[productId]?.title ??
+                        directoryName,
+                      installPath,
+                      manifestPath,
+                      productId,
+                    }
+                  : null
+              },
+            ),
+          ),
+        )
+
+    for (const candidate of candidates) {
+      if (!candidate) {
+        continue
+      }
+
+      const productId =
+        candidate.productId ??
+        findBattleNetProduct(candidate.title, productIds)
+      const product = productId
+        ? battleNetProductCatalog[productId]
+        : undefined
+
+      games.push({
+        externalId:
+          productId ?? createLocalExternalId('local', candidate.title),
+        title: product?.title ?? candidate.title,
+        installPath: candidate.installPath,
+        manifestPath: candidate.manifestPath,
+      })
+    }
+  }
+
+  return dedupeLocalLauncherGames(games)
+}
+
+export async function readBattleNetLocalLibrary(): Promise<LocalLauncherLibraryResult> {
   const appData = resolveEnvironmentPath(process.env['APPDATA'])
   const localAppData = resolveEnvironmentPath(process.env['LOCALAPPDATA'])
   const configCandidates = uniqueTextValues([
@@ -2128,17 +2613,42 @@ export async function detectBattleNetLocalPlatform(): Promise<LocalPlatformDetec
     ...createBattleNetCandidatePaths(),
     ...(config.clientPath ? [config.clientPath] : []),
   ])
+  const candidateLibraryPaths = await findExistingDirectories(
+    createBattleNetCandidateLibraryPaths(config.defaultInstallPath),
+  )
+  const games = await readBattleNetGameDirectories(
+    candidateLibraryPaths,
+    config.productIds,
+  )
+  const gameLibraryPaths = uniqueTextValues(
+    games.map((game) => dirname(game.installPath)),
+  )
+
+  return {
+    games,
+    sourceCount: config.productIds.length,
+    rootPaths,
+    libraryPaths: gameLibraryPaths,
+    configPaths,
+  }
+}
+
+export async function detectBattleNetLocalPlatform(): Promise<LocalPlatformDetection> {
+  const localLibrary = await readBattleNetLocalLibrary()
+
   return createDetection({
     provider: 'BATTLENET',
     label: 'Battle.net',
-    rootPaths,
-    configPaths,
-    manifestCount: config.productIds.length,
+    rootPaths: localLibrary.rootPaths,
+    libraryPaths: localLibrary.libraryPaths,
+    configPaths: localLibrary.configPaths,
+    manifestCount: localLibrary.games.length,
     message:
-      config.productIds.length > 0
-        ? `${config.productIds.length} produit(s) Battle.net repéré(s) dans la configuration locale.`
-        : rootPaths.length > 0 || configPaths.length > 0
-          ? 'Battle.net détecté. La bibliothèque locale sera enrichie progressivement.'
+      localLibrary.games.length > 0
+        ? `${localLibrary.games.length} jeu(x) Battle.net installé(s) et prêt(s) à importer.`
+        : localLibrary.rootPaths.length > 0 ||
+            localLibrary.configPaths.length > 0
+          ? 'Battle.net détecté, sans jeu actuellement installé.'
           : 'Battle.net n’a pas été détecté.',
   })
 }
