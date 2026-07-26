@@ -10,11 +10,11 @@
 
 Ludux est une application desktop qui rassemble votre bibliothèque de jeux, votre temps de jeu, vos succès, vos DLC, vos souvenirs et vos notes personnelles.
 
-Version courante : `v0.25.0`
+Version courante : `v0.25.1`
 
 ## Installation
 
-1. Téléchargez `Ludux-Setup-0.25.0-x64.exe`.
+1. Téléchargez `Ludux-Setup-0.25.1-x64.exe`.
 2. Lancez l'installateur.
 3. Ouvrez Ludux et laissez l'assistant détecter vos plateformes.
 
@@ -42,7 +42,7 @@ RAWG et IGDB complètent les fiches avec les descriptions, jaquettes, dates, stu
 
 Epic Games importe les jeux détectés localement depuis le launcher, même quand les manifests `.item` ne sont pas présents.
 
-GOG importe les jeux installés détectés localement depuis les fichiers `goggame-*.info`.
+GOG importe la bibliothèque possédée, les temps de jeu et les jeux installés depuis Galaxy, le registre Windows et les fichiers `goggame-*.info`.
 
 Les fiches privilégient les textes français quand les plateformes les fournissent.
 

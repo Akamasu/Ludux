@@ -10,6 +10,7 @@ export default defineConfig({
       rollupOptions: {
         input: {
           'database-migrations': resolve(__dirname, 'src/database/migrations.ts'),
+          'local-platforms': resolve(__dirname, 'src/providers/local-platforms.ts'),
           main: resolve(__dirname, 'src/main/main.ts'),
         },
       },

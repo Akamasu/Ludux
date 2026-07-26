@@ -13,6 +13,7 @@ import { GameCard } from '../components/library/GameCard'
 import { GameListRow } from '../components/library/GameListRow'
 import { Button } from '../components/ui/Button'
 import { cn } from '../../utils/cn'
+import { sortLibraryItemsByTitle } from '../utils/librarySort'
 
 type StatusFilter = 'ALL' | GameStatus
 type PlatformFilter = 'ALL' | string
@@ -58,20 +59,22 @@ export function LibraryPage({
   const filteredGames = useMemo(() => {
     const normalizedQuery = normalizeSearch(query)
 
-    return games.filter((game) => {
-      const matchesQuery =
-        normalizedQuery.length === 0 ||
-        game.title.toLocaleLowerCase().includes(normalizedQuery) ||
-        game.platforms.some((platform) =>
-          platform.toLocaleLowerCase().includes(normalizedQuery),
-        )
+    return sortLibraryItemsByTitle(
+      games.filter((game) => {
+        const matchesQuery =
+          normalizedQuery.length === 0 ||
+          game.title.toLocaleLowerCase().includes(normalizedQuery) ||
+          game.platforms.some((platform) =>
+            platform.toLocaleLowerCase().includes(normalizedQuery),
+          )
 
-      const matchesStatus = statusFilter === 'ALL' || game.status === statusFilter
-      const matchesPlatform =
-        platformFilter === 'ALL' || game.platforms.includes(platformFilter)
+        const matchesStatus = statusFilter === 'ALL' || game.status === statusFilter
+        const matchesPlatform =
+          platformFilter === 'ALL' || game.platforms.includes(platformFilter)
 
-      return matchesQuery && matchesStatus && matchesPlatform
-    })
+        return matchesQuery && matchesStatus && matchesPlatform
+      }),
+    )
   }, [games, platformFilter, query, statusFilter])
 
   async function handleCreateGame(input: CreateGameInput) {

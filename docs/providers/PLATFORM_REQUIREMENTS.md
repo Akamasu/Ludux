@@ -27,6 +27,9 @@ Pour la v1 publique, Ludux devra éviter toute clé API commune dans le client d
 | `LUDUX_EPIC_MANIFEST_PATHS` | Epic | Dossiers de manifests `.item` Epic séparés par `;` si la détection automatique échoue | Optionnel |
 | `LUDUX_EPIC_MANAGED_APP_PATHS` | Epic | Dossiers d'apps gérées Epic séparés par `;` si la détection automatique échoue | Optionnel |
 | `LUDUX_EPIC_WEBCACHE_PATHS` | Epic | Dossiers `webcache*` Epic Launcher séparés par `;` si la détection automatique échoue | Optionnel |
+| `LUDUX_GOG_LIBRARY_PATHS` | GOG | Dossiers de jeux GOG séparés par `;` si la détection automatique échoue | Optionnel |
+| `LUDUX_GOG_GALAXY_DB_PATH` | GOG | Chemin de `galaxy-2.0.db` si Galaxy n'est pas détecté automatiquement | Optionnel |
+| `LUDUX_GOG_REGISTRY_PATHS` | GOG | Racines du registre GOG séparées par `;` pour un diagnostic avancé | Optionnel |
 | `RAWG_API_KEY` | RAWG | Métadonnées publiques de jeux | Actif manuel |
 | `IGDB_CLIENT_ID` | IGDB | Client ID Twitch Developer pour interroger IGDB | Actif manuel |
 | `IGDB_CLIENT_SECRET` | IGDB | Client Secret Twitch Developer pour obtenir un token IGDB | Actif manuel |
@@ -51,7 +54,7 @@ Pour la v1 publique, Ludux devra éviter toute clé API commune dans le client d
 | Xbox | Succès, activité, profil | Accès Microsoft/Xbox Services autorisé | Microsoft Learn Xbox Services | À garder pour plus tard, accès plus contraint |
 | PlayStation | Trophées, profil, activité | Accès PlayStation Partners si accepté | PlayStation Partners | À garder pour plus tard, pas de route publique simple |
 | Nintendo | Catalogue/profil Switch | Accès Nintendo Developer Portal si accepté | Nintendo Developer Portal | À garder pour plus tard, pas de route publique simple |
-| GOG | Jeux installés, future stats Galaxy | Fichiers `goggame-*.info`, base Galaxy si utile, puis accès GOG Galaxy SDK ou route officielle exploitable | GOG Developer Docs | Import local actif, stats Galaxy à étudier |
+| GOG | Bibliothèque possédée, temps de jeu, jeux installés | Base locale Galaxy, registre Windows et fichiers `goggame-*.info` | Données locales GOG Galaxy, GOG Developer Docs | Import local actif avec temps de jeu et jaquettes |
 | Epic | Jeux possédés/installés, future connexion compte | Manifests `.item`, `LauncherInstalled.dat`, apps gérées, cache local du launcher, puis client Epic/EOS OAuth avec consentement | Epic Online Services docs | Import local actif avec fallback cache, OAuth/EOS à étudier pour la connexion publique |
 
 ## Ordre Recommandé

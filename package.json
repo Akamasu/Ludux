@@ -5,13 +5,13 @@
   "author": "Akamasu",
   "license": "UNLICENSED",
   "private": true,
-  "version": "0.25.0",
+  "version": "0.25.1",
   "type": "module",
   "main": "./out/main/main.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "tsc -b && electron-vite build",
-    "check": "npm run typecheck && npm run lint && npm test && npm run smoke:electron-sqlite && npm run smoke:electron-preload && npm run smoke:electron-migrations && npx prisma validate",
+    "check": "npm run typecheck && npm run lint && npm test && npm run smoke:electron-sqlite && npm run smoke:electron-preload && npm run smoke:electron-migrations && npm run smoke:electron-gog && npx prisma validate",
     "lint": "oxlint .",
     "postinstall": "prisma generate && electron-builder install-app-deps",
     "package:dir": "npm run build && electron-builder --dir",
@@ -21,6 +21,7 @@
     "prisma:migrate": "prisma migrate dev",
     "smoke:electron-preload": "npm run build && electron scripts/verify-electron-preload.cjs",
     "smoke:electron-migrations": "electron scripts/verify-electron-migrations.cjs",
+    "smoke:electron-gog": "electron scripts/verify-electron-gog.cjs",
     "smoke:electron-sqlite": "electron scripts/verify-electron-sqlite.cjs",
     "test": "vitest run",
     "typecheck": "tsc -b"

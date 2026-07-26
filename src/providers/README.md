@@ -62,6 +62,14 @@ La v0.24.23 ajoute IGDB comme second provider de métadonnées :
 - enrichissement uniquement des champs manquants dans Ludux ;
 - liens persistants dans `ExternalGame` pour mémoriser les correspondances IGDB.
 
+La v0.25.1 étend la synchronisation locale GOG :
+
+- lecture protégée de la bibliothèque `galaxy-2.0.db` ;
+- détection complémentaire des installations dans le registre Windows ;
+- import des jeux GOG possédés en excluant les DLC de la bibliothèque principale ;
+- récupération des jaquettes, temps de jeu et dernières activités disponibles ;
+- fusion avec les fichiers `goggame-*.info` sans doublons.
+
 Les prochaines intégrations réseau devront rester optionnelles et passer par un adaptateur dédié avant de proposer une importation dans la base locale.
 
 Guides de préparation :

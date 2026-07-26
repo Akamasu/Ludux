@@ -28,8 +28,8 @@ export const EXTERNAL_PROVIDER_DEFINITIONS: ExternalProviderDefinition[] = [
   {
     provider: 'GOG',
     label: 'GOG',
-    description: 'Fichiers locaux GOG et jeux PC installés.',
-    capabilities: ['Bibliothèque locale', 'Jeux installés'],
+    description: 'Bibliothèque Galaxy, temps de jeu et installations locales.',
+    capabilities: ['Bibliothèque possédée', 'Temps de jeu', 'Jeux installés'],
   },
   {
     provider: 'EPIC',

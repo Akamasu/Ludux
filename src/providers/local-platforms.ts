@@ -1,6 +1,8 @@
+import { execFile } from 'node:child_process'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join, normalize } from 'node:path'
+import { promisify } from 'node:util'
 import type { ExternalProvider, LocalPlatformDetection } from '../types/settings'
 import { readSteamLocalLibrary } from './steam'
 
@@ -33,6 +35,10 @@ export interface GogInstalledGame {
   title: string
   installPath: string | null
   manifestPath: string
+  coverUrl: string | null
+  lastPlayedAt: string | null
+  ownedAt: string | null
+  playtimeMinutes: number
 }
 
 export interface GogLocalLibraryResult {
@@ -41,6 +47,8 @@ export interface GogLocalLibraryResult {
   manifestPaths: string[]
   libraryPaths: string[]
   configPaths: string[]
+  galaxyGameCount: number
+  registryGameCount: number
 }
 
 const localPlatformCacheTtlMs = 30_000
@@ -59,6 +67,7 @@ const epicLocalGameSourcePriority: Record<EpicLocalGameSource, number> = {
   manifest: 2,
   'launcher-cache': 1,
 }
+const execFileAsync = promisify(execFile)
 
 let cachedLocalPlatformOverview:
   | {
@@ -971,17 +980,25 @@ function readFolderName(path: string | null | undefined) {
 }
 
 function createGogInstalledGame({
+  coverUrl = null,
   externalId,
   installPath,
+  lastPlayedAt = null,
   manifestPath,
+  ownedAt = null,
+  playtimeMinutes = 0,
   title,
 }: {
+  coverUrl?: string | null
   externalId: string | null
   installPath: string | null
+  lastPlayedAt?: string | null
   manifestPath: string
+  ownedAt?: string | null
+  playtimeMinutes?: number
   title: string | null
 }): GogInstalledGame | null {
-  if (!externalId || !title) {
+  if (!externalId || !/^\d+$/.test(externalId) || !title) {
     return null
   }
 
@@ -990,6 +1007,10 @@ function createGogInstalledGame({
     title,
     installPath,
     manifestPath,
+    coverUrl,
+    lastPlayedAt,
+    ownedAt,
+    playtimeMinutes: Math.max(0, Math.round(playtimeMinutes)),
   }
 }
 
@@ -1019,6 +1040,143 @@ export function parseGogGameInfo(
   })
 }
 
+function parseGogLocalDate(value: unknown) {
+  const text = readOptionalText(value)
+
+  if (!text) {
+    return null
+  }
+
+  const normalizedText = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(text)
+    ? `${text.replace(' ', 'T')}Z`
+    : text
+  const date = new Date(normalizedText)
+
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
+}
+
+function readGogCoverUrl(value: unknown) {
+  const images = typeof value === 'string' ? readJsonObject(value) : null
+
+  return (
+    readOptionalText(images?.['verticalCover']) ??
+    readOptionalText(images?.['horizontalCover']) ??
+    readOptionalText(images?.['background'])
+  )
+}
+
+export interface GogGalaxyLibraryRow {
+  releaseKey: unknown
+  titleJson: unknown
+  imagesJson: unknown
+  installationPath: unknown
+  minutesInGame: unknown
+  lastPlayedDate: unknown
+  purchaseDate: unknown
+  addedDate: unknown
+  isDlc: unknown
+}
+
+export function parseGogGalaxyLibraryRows(
+  rows: GogGalaxyLibraryRow[],
+  databasePath: string,
+) {
+  return rows.flatMap((row) => {
+    if (Number(row.isDlc) === 1) {
+      return []
+    }
+
+    const releaseKey = readOptionalText(row.releaseKey)
+    const externalId = releaseKey?.match(/^gog_(\d+)$/i)?.[1] ?? null
+    const titlePayload =
+      typeof row.titleJson === 'string' ? readJsonObject(row.titleJson) : null
+    const game = createGogInstalledGame({
+      coverUrl: readGogCoverUrl(row.imagesJson),
+      externalId,
+      installPath: readOptionalText(row.installationPath),
+      lastPlayedAt: parseGogLocalDate(row.lastPlayedDate),
+      manifestPath: `${databasePath}#${releaseKey ?? 'gog'}`,
+      ownedAt:
+        parseGogLocalDate(row.purchaseDate) ?? parseGogLocalDate(row.addedDate),
+      playtimeMinutes:
+        typeof row.minutesInGame === 'number' ? row.minutesInGame : 0,
+      title: readOptionalText(titlePayload?.['title']),
+    })
+
+    return game ? [game] : []
+  })
+}
+
+function readGogRegistryValue(
+  values: Map<string, string>,
+  names: string[],
+) {
+  for (const name of names) {
+    const value = values.get(name.toLocaleLowerCase())
+
+    if (value) {
+      return value
+    }
+  }
+
+  return null
+}
+
+export function parseGogRegistryGames(output: string) {
+  const games: GogInstalledGame[] = []
+  let registryPath: string | null = null
+  let values = new Map<string, string>()
+
+  function appendCurrentGame() {
+    if (!registryPath) {
+      return
+    }
+
+    const externalId =
+      readGogRegistryValue(values, ['gameID', 'productID']) ??
+      registryPath.split('\\').filter(Boolean).pop() ??
+      null
+    const game = createGogInstalledGame({
+      externalId,
+      installPath: readGogRegistryValue(values, ['path', 'workingDir']),
+      manifestPath: registryPath,
+      ownedAt: parseGogLocalDate(
+        readGogRegistryValue(values, ['installDate']),
+      ),
+      title: readGogRegistryValue(values, ['gameName', 'startMenu']),
+    })
+
+    if (game) {
+      games.push(game)
+    }
+  }
+
+  for (const line of output.split(/\r?\n/)) {
+    const trimmedLine = line.trim()
+
+    if (/^HKEY_/i.test(trimmedLine)) {
+      appendCurrentGame()
+      registryPath = trimmedLine
+      values = new Map()
+      continue
+    }
+
+    const valueMatch = line.match(
+      /^\s+(.+?)\s+REG_(?:SZ|EXPAND_SZ)\s*(.*)$/i,
+    )
+
+    if (valueMatch?.[1]) {
+      values.set(
+        valueMatch[1].trim().toLocaleLowerCase(),
+        valueMatch[2]?.trim() ?? '',
+      )
+    }
+  }
+
+  appendCurrentGame()
+  return games
+}
+
 export function createGogCandidateLibraryPaths() {
   const programFiles = resolveEnvironmentPath(process.env['ProgramFiles'])
   const programFilesX86 = resolveEnvironmentPath(process.env['ProgramFiles(x86)'])
@@ -1044,6 +1202,151 @@ function createGogCandidateDatabasePaths() {
       ? join(programData, 'GOG.com', 'Galaxy', 'storage', 'galaxy-2.0.db')
       : null,
   ])
+}
+
+export function createGogCandidateRegistryPaths() {
+  const configuredRegistryPaths = process.env['LUDUX_GOG_REGISTRY_PATHS']
+
+  if (configuredRegistryPaths !== undefined) {
+    return splitConfiguredPaths(configuredRegistryPaths)
+  }
+
+  return [
+    'HKLM\\SOFTWARE\\WOW6432Node\\GOG.com\\Games',
+    'HKLM\\SOFTWARE\\GOG.com\\Games',
+    'HKCU\\SOFTWARE\\GOG.com\\Games',
+  ]
+}
+
+async function readGogRegistryLibrary() {
+  if (process.platform !== 'win32') {
+    return {
+      games: [] as GogInstalledGame[],
+      registryPaths: [] as string[],
+    }
+  }
+
+  const games: GogInstalledGame[] = []
+  const registryPaths: string[] = []
+
+  for (const registryPath of createGogCandidateRegistryPaths()) {
+    try {
+      const { stdout } = await execFileAsync(
+        'reg',
+        ['query', registryPath, '/s'],
+        {
+          encoding: 'utf8',
+          maxBuffer: 4 * 1024 * 1024,
+          timeout: 5_000,
+          windowsHide: true,
+        },
+      )
+      const parsedGames = parseGogRegistryGames(stdout)
+
+      if (parsedGames.length > 0) {
+        registryPaths.push(registryPath)
+        games.push(...parsedGames)
+      }
+    } catch {
+      // Missing registry roots are expected when GOG is not installed.
+    }
+  }
+
+  return {
+    games,
+    registryPaths,
+  }
+}
+
+async function readGogGalaxyGames(databasePath: string) {
+  try {
+    const { default: Database } = await import('better-sqlite3')
+    const database = new Database(databasePath, {
+      fileMustExist: true,
+      readonly: true,
+    })
+
+    try {
+      database.pragma('query_only = ON')
+      const requiredTables = new Set([
+        'GamePieces',
+        'GamePieceTypes',
+        'GameTimes',
+        'InstalledBaseProducts',
+        'LastPlayedDates',
+        'LibraryReleases',
+        'ProductPurchaseDates',
+        'ReleaseProperties',
+      ])
+      const availableTables = new Set(
+        (
+          database
+            .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+            .all() as Array<{ name: string }>
+        ).map((row) => row.name),
+      )
+
+      if (
+        Array.from(requiredTables).some(
+          (tableName) => !availableTables.has(tableName),
+        )
+      ) {
+        return []
+      }
+
+      const rows = database
+        .prepare(
+          `SELECT
+             library.releaseKey AS releaseKey,
+             (
+               SELECT titlePiece.value
+               FROM GamePieces titlePiece
+               JOIN GamePieceTypes titleType
+                 ON titleType.id = titlePiece.gamePieceTypeId
+               WHERE titlePiece.releaseKey = library.releaseKey
+                 AND titleType.type = 'title'
+               LIMIT 1
+             ) AS titleJson,
+             (
+               SELECT imagePiece.value
+               FROM GamePieces imagePiece
+               JOIN GamePieceTypes imageType
+                 ON imageType.id = imagePiece.gamePieceTypeId
+               WHERE imagePiece.releaseKey = library.releaseKey
+                 AND imageType.type = 'originalImages'
+               LIMIT 1
+             ) AS imagesJson,
+             installed.installationPath AS installationPath,
+             COALESCE(gameTime.minutesInGame, 0) AS minutesInGame,
+             lastPlayed.lastPlayedDate AS lastPlayedDate,
+             purchase.purchaseDate AS purchaseDate,
+             purchase.addedDate AS addedDate,
+             COALESCE(properties.isDlc, 0) AS isDlc
+           FROM LibraryReleases library
+           LEFT JOIN ReleaseProperties properties
+             ON properties.releaseKey = library.releaseKey
+           LEFT JOIN InstalledBaseProducts installed
+             ON installed.productId = CAST(SUBSTR(library.releaseKey, 5) AS INTEGER)
+           LEFT JOIN GameTimes gameTime
+             ON gameTime.releaseKey = library.releaseKey
+            AND gameTime.userId = library.userId
+           LEFT JOIN LastPlayedDates lastPlayed
+             ON lastPlayed.gameReleaseKey = library.releaseKey
+            AND lastPlayed.userId = library.userId
+           LEFT JOIN ProductPurchaseDates purchase
+             ON purchase.gameReleaseKey = library.releaseKey
+            AND purchase.userId = library.userId
+           WHERE library.releaseKey LIKE 'gog_%'`,
+        )
+        .all() as GogGalaxyLibraryRow[]
+
+      return parseGogGalaxyLibraryRows(rows, databasePath)
+    } finally {
+      database.close()
+    }
+  } catch {
+    return []
+  }
 }
 
 async function findGogGameInfoFiles(candidateRoots: string[]) {
@@ -1086,9 +1389,42 @@ async function findGogGameInfoFiles(candidateRoots: string[]) {
 }
 
 function dedupeGogInstalledGames(games: GogInstalledGame[]) {
-  return Array.from(
-    new Map(games.map((game) => [game.externalId, game])).values(),
-  ).sort((left, right) => left.title.localeCompare(right.title, 'fr-FR'))
+  const gamesByExternalId = new Map<string, GogInstalledGame>()
+
+  for (const game of games) {
+    const existingGame = gamesByExternalId.get(game.externalId)
+
+    if (!existingGame) {
+      gamesByExternalId.set(game.externalId, game)
+      continue
+    }
+
+    const lastPlayedAt =
+      [existingGame.lastPlayedAt, game.lastPlayedAt]
+        .filter((value): value is string => Boolean(value))
+        .sort()
+        .at(-1) ?? null
+
+    gamesByExternalId.set(game.externalId, {
+      ...existingGame,
+      installPath: game.installPath ?? existingGame.installPath,
+      manifestPath: game.manifestPath || existingGame.manifestPath,
+      coverUrl: game.coverUrl ?? existingGame.coverUrl,
+      lastPlayedAt,
+      ownedAt: existingGame.ownedAt ?? game.ownedAt,
+      playtimeMinutes: Math.max(
+        existingGame.playtimeMinutes,
+        game.playtimeMinutes,
+      ),
+    })
+  }
+
+  return Array.from(gamesByExternalId.values()).sort((left, right) =>
+    left.title.localeCompare(right.title, 'fr-FR', {
+      numeric: true,
+      sensitivity: 'base',
+    }),
+  )
 }
 
 export async function readGogLocalLibrary(): Promise<GogLocalLibraryResult> {
@@ -1096,11 +1432,14 @@ export async function readGogLocalLibrary(): Promise<GogLocalLibraryResult> {
   const databasePaths = createGogCandidateDatabasePaths()
   const existingConfigPaths: string[] = []
   const { existingRoots, manifestPaths } = await findGogGameInfoFiles(gameRoots)
-  const games: GogInstalledGame[] = []
+  const registryLibrary = await readGogRegistryLibrary()
+  const galaxyGames: GogInstalledGame[] = []
+  const manifestGames: GogInstalledGame[] = []
 
   for (const databasePath of databasePaths) {
     if (await pathExists(databasePath)) {
       existingConfigPaths.push(databasePath)
+      galaxyGames.push(...(await readGogGalaxyGames(databasePath)))
     }
   }
 
@@ -1113,26 +1452,49 @@ export async function readGogLocalLibrary(): Promise<GogLocalLibraryResult> {
     )
 
     if (game) {
-      games.push(game)
+      manifestGames.push(game)
     }
   }
 
+  const games = dedupeGogInstalledGames([
+    ...galaxyGames,
+    ...registryLibrary.games,
+    ...manifestGames,
+  ])
+
   return {
-    games: dedupeGogInstalledGames(games),
-    manifestCount: manifestPaths.length,
+    games,
+    manifestCount:
+      galaxyGames.length + registryLibrary.games.length + manifestPaths.length,
     manifestPaths,
     libraryPaths: existingRoots,
-    configPaths: existingConfigPaths,
+    configPaths: uniqueTextValues([
+      ...existingConfigPaths,
+      ...registryLibrary.registryPaths,
+    ]),
+    galaxyGameCount: galaxyGames.length,
+    registryGameCount: registryLibrary.games.length,
   }
 }
 
 export async function detectGogLocalPlatform(): Promise<LocalPlatformDetection> {
   const localLibrary = await readGogLocalLibrary()
+  const detectedSources = [
+    localLibrary.galaxyGameCount > 0
+      ? `${localLibrary.galaxyGameCount} dans Galaxy`
+      : null,
+    localLibrary.registryGameCount > 0
+      ? `${localLibrary.registryGameCount} dans le registre`
+      : null,
+    localLibrary.manifestPaths.length > 0
+      ? `${localLibrary.manifestPaths.length} manifeste(s)`
+      : null,
+  ].filter((value): value is string => Boolean(value))
 
   return createDetection({
     provider: 'GOG',
     label: 'GOG',
-    detected: localLibrary.manifestCount > 0,
+    detected: localLibrary.games.length > 0,
     rootPaths: localLibrary.games.flatMap((game) =>
       game.installPath ? [game.installPath] : [],
     ),
@@ -1140,8 +1502,8 @@ export async function detectGogLocalPlatform(): Promise<LocalPlatformDetection> 
     configPaths: localLibrary.configPaths,
     manifestCount: localLibrary.manifestCount,
     message:
-      localLibrary.manifestCount > 0
-        ? `${localLibrary.games.length} jeu(x) GOG détecté(s) depuis les fichiers locaux.`
+      localLibrary.games.length > 0
+        ? `${localLibrary.games.length} jeu(x) GOG détecté(s) : ${detectedSources.join(', ')}.`
         : localLibrary.configPaths.length > 0
           ? 'Base GOG Galaxy visible, mais aucun jeu local exploitable.'
           : 'Aucune installation GOG détectée.',

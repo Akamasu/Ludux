@@ -30,6 +30,16 @@ Le projet suit des versions de développement simples :
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 - `v0.25.x` : stockage Windows, migrations sécurisées et installateur public.
 
+## v0.25.1 - 2026-07-26
+
+- La bibliothèque classe maintenant les jeux de `A` à `Z` avec un tri français naturel et stable.
+- GOG lit la bibliothèque possédée depuis la base locale Galaxy en mode protégé.
+- Détection complémentaire des installations GOG dans le registre Windows et les fichiers `goggame-*.info`.
+- Import des jaquettes, temps de jeu et dernières activités GOG disponibles sans inclure les DLC comme jeux séparés.
+- Fusion des différentes sources GOG et des jeux Ludux existants pour limiter les doublons.
+- Ajout de tests unitaires et d'un test Electron natif pour la lecture de `galaxy-2.0.db`.
+- Les paramètres parlent désormais de sources locales afin de refléter les fichiers, bases et registres détectés.
+
 ## v0.25.0 - 2026-07-26
 
 - Ajout d'un installateur Windows x64 avec l'identité, le logo et les raccourcis de Ludux.

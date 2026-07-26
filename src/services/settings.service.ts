@@ -86,6 +86,7 @@ const epicProvider: ExternalProvider = 'EPIC'
 const epicPlatformName = 'Epic Games'
 const gogProvider: ExternalProvider = 'GOG'
 const gogPlatformName = 'GOG'
+const gogTotalSessionNote = 'Temps total GOG Galaxy synchronisé.'
 const rawgProvider: ExternalProvider = 'RAWG'
 const rawgExternalId = 'catalogue'
 const igdbProvider: ExternalProvider = 'IGDB'
@@ -149,11 +150,13 @@ interface EpicImportStats {
 }
 
 interface GogImportStats {
-  scannedManifests: number
+  scannedSources: number
   importedGames: number
   linkedGames: number
   updatedGames: number
   ignoredLinks: number
+  coversFound: number
+  syncedSessions: number
 }
 
 interface LocalGameMetadata {
@@ -545,17 +548,23 @@ function createEpicSyncMessage(stats: EpicImportStats) {
 }
 
 function createGogSyncMessage(stats: GogImportStats) {
-  if (stats.scannedManifests === 0) {
-    return 'Aucun fichier GOG local exploitable détecté.'
+  if (stats.scannedSources === 0) {
+    return 'Aucune donnée GOG locale exploitable détectée.'
   }
 
   return [
-    `${stats.scannedManifests} fichier(s) GOG analysé(s)`,
+    `${stats.scannedSources} entrée(s) GOG locale(s) analysée(s)`,
     `${stats.importedGames} ajouté(s)`,
     `${stats.linkedGames} relié(s)`,
     `${stats.updatedGames} déjà connu(s)`,
     stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
-  ].join(' / ')
+    stats.coversFound > 0 ? `${stats.coversFound} jaquette(s)` : null,
+    stats.syncedSessions > 0
+      ? `${stats.syncedSessions} temps de jeu synchronisé(s)`
+      : null,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(' / ')
 }
 
 function parseRawgReleaseDate(value: string | null) {
@@ -974,7 +983,11 @@ async function ensureGogPlatform() {
   })
 }
 
-async function ensureGogPlatformForGame(gameId: string, platformId: string) {
+async function ensureGogPlatformForGame(
+  gameId: string,
+  platformId: string,
+  played: boolean,
+) {
   const existingPlatform = await prisma.gamePlatform.findFirst({
     where: {
       gameId,
@@ -983,10 +996,24 @@ async function ensureGogPlatformForGame(gameId: string, platformId: string) {
     },
     select: {
       id: true,
+      owned: true,
+      played: true,
     },
   })
 
   if (existingPlatform) {
+    if (!existingPlatform.owned || (played && !existingPlatform.played)) {
+      await prisma.gamePlatform.update({
+        where: {
+          id: existingPlatform.id,
+        },
+        data: {
+          owned: true,
+          played: existingPlatform.played || played,
+        },
+      })
+    }
+
     return
   }
 
@@ -995,7 +1022,7 @@ async function ensureGogPlatformForGame(gameId: string, platformId: string) {
       gameId,
       platformId,
       owned: true,
-      played: false,
+      played,
     },
   })
 }
@@ -1192,6 +1219,73 @@ async function upsertSteamPlaySession({
     start: new Date(lastPlayedAt),
     durationMinutes: steamGame.playtimeForeverMinutes,
     note: steamTotalSessionNote,
+    platformId,
+  }
+
+  if (playSessionId) {
+    const result = await prisma.playSession.updateMany({
+      where: {
+        id: playSessionId,
+        gameId,
+      },
+      data: sessionData,
+    })
+
+    if (result.count > 0) {
+      return playSessionId
+    }
+  }
+
+  const session = await prisma.playSession.create({
+    data: {
+      ...sessionData,
+      gameId,
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  return session.id
+}
+
+async function upsertGogPlaySession({
+  gameId,
+  gogGame,
+  platformId,
+  playSessionId,
+}: {
+  gameId: string
+  gogGame: GogInstalledGame
+  platformId: string
+  playSessionId: string | null
+}) {
+  const lastPlayedAt = gogGame.lastPlayedAt
+    ? new Date(gogGame.lastPlayedAt)
+    : null
+  const hasDatedPlaytime =
+    gogGame.playtimeMinutes > 0 &&
+    lastPlayedAt !== null &&
+    !Number.isNaN(lastPlayedAt.getTime())
+
+  if (!hasDatedPlaytime || !lastPlayedAt) {
+    if (playSessionId) {
+      await prisma.playSession.deleteMany({
+        where: {
+          id: playSessionId,
+          gameId,
+          note: gogTotalSessionNote,
+        },
+      })
+    }
+
+    return null
+  }
+
+  const sessionData = {
+    start: lastPlayedAt,
+    durationMinutes: gogGame.playtimeMinutes,
+    note: gogTotalSessionNote,
     platformId,
   }
 
@@ -1918,14 +2012,16 @@ async function importEpicInstalledGames(
 
 async function importGogInstalledGames(
   games: GogInstalledGame[],
-  manifestCount: number,
+  sourceCount: number,
 ): Promise<GogImportStats> {
   const stats: GogImportStats = {
-    scannedManifests: manifestCount,
+    scannedSources: sourceCount,
     importedGames: 0,
     linkedGames: 0,
     updatedGames: 0,
     ignoredLinks: 0,
+    coversFound: games.filter((game) => game.coverUrl).length,
+    syncedSessions: 0,
   }
   const ignoredLinks = await readIgnoredExternalGameLinkKeys(gogProvider)
   const gogPlatform = await ensureGogPlatform()
@@ -1934,6 +2030,7 @@ async function importGogInstalledGames(
       archived: false,
     },
     select: {
+      coverUrl: true,
       id: true,
       title: true,
     },
@@ -1961,6 +2058,7 @@ async function importGogInstalledGames(
             id: existingLink.gameId,
           },
           select: {
+            coverUrl: true,
             id: true,
             title: true,
           },
@@ -1984,6 +2082,7 @@ async function importGogInstalledGames(
       matchedGame ??
       (await prisma.game.create({
         data: {
+          coverUrl: gogGame.coverUrl,
           title: gogGame.title,
           status: 'BACKLOG',
           platforms: {
@@ -1994,11 +2093,12 @@ async function importGogInstalledGames(
                 },
               },
               owned: true,
-              played: false,
+              played: gogGame.playtimeMinutes > 0,
             },
           },
         },
         select: {
+          coverUrl: true,
           id: true,
           title: true,
         },
@@ -2014,7 +2114,33 @@ async function importGogInstalledGames(
     }
 
     if (matchedGame) {
-      await ensureGogPlatformForGame(localGame.id, gogPlatform.id)
+      await ensureGogPlatformForGame(
+        localGame.id,
+        gogPlatform.id,
+        gogGame.playtimeMinutes > 0,
+      )
+    }
+
+    if (gogGame.coverUrl && !localGame.coverUrl) {
+      await prisma.game.update({
+        where: {
+          id: localGame.id,
+        },
+        data: {
+          coverUrl: gogGame.coverUrl,
+        },
+      })
+    }
+
+    const playSessionId = await upsertGogPlaySession({
+      gameId: localGame.id,
+      gogGame,
+      platformId: gogPlatform.id,
+      playSessionId: existingLink?.playSessionId ?? null,
+    })
+
+    if (playSessionId) {
+      stats.syncedSessions += 1
     }
 
     await prisma.externalGame.upsert({
@@ -2026,19 +2152,20 @@ async function importGogInstalledGames(
       },
       update: {
         gameId: localGame.id,
-        playSessionId: null,
+        playSessionId,
         sourceTitle: gogGame.title,
-        sourceCoverUrl: null,
-        lastPlaytimeMinutes: 0,
+        sourceCoverUrl: gogGame.coverUrl,
+        lastPlaytimeMinutes: gogGame.playtimeMinutes,
         lastSyncedAt: new Date(),
       },
       create: {
         gameId: localGame.id,
+        playSessionId,
         provider: gogProvider,
         externalId,
         sourceTitle: gogGame.title,
-        sourceCoverUrl: null,
-        lastPlaytimeMinutes: 0,
+        sourceCoverUrl: gogGame.coverUrl,
+        lastPlaytimeMinutes: gogGame.playtimeMinutes,
         lastSyncedAt: new Date(),
       },
     })

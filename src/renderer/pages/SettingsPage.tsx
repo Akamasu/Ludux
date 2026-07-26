@@ -152,7 +152,7 @@ function LocalPlatformCard({ platform }: { platform: LocalPlatformDetection }) {
 
       <div className="mt-4 grid gap-3 text-xs text-zinc-400">
         <div className="grid grid-cols-[110px_1fr] gap-3">
-          <span className="text-zinc-600">Fichiers</span>
+          <span className="text-zinc-600">Sources locales</span>
           <span>{platform.manifestCount}</span>
         </div>
         <div className="grid grid-cols-[110px_1fr] gap-3">

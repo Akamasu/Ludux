@@ -11,7 +11,9 @@ import {
   parseEpicLauncherInstalledDatabase,
   parseEpicManagedApp,
   parseEpicManifest,
+  parseGogGalaxyLibraryRows,
   parseGogGameInfo,
+  parseGogRegistryGames,
   readEpicLocalLibrary,
   readGogLocalLibrary,
 } from '../../src/providers/local-platforms'
@@ -24,6 +26,7 @@ const originalEpicManagedAppPaths = process.env['LUDUX_EPIC_MANAGED_APP_PATHS']
 const originalEpicWebcachePaths = process.env['LUDUX_EPIC_WEBCACHE_PATHS']
 const originalGogDbPath = process.env['LUDUX_GOG_GALAXY_DB_PATH']
 const originalGogLibraryPaths = process.env['LUDUX_GOG_LIBRARY_PATHS']
+const originalGogRegistryPaths = process.env['LUDUX_GOG_REGISTRY_PATHS']
 const tempRoots: string[] = []
 
 function restoreEnv(name: string, value: string | undefined) {
@@ -73,6 +76,7 @@ afterEach(async () => {
   restoreEnv('LUDUX_EPIC_WEBCACHE_PATHS', originalEpicWebcachePaths)
   restoreEnv('LUDUX_GOG_GALAXY_DB_PATH', originalGogDbPath)
   restoreEnv('LUDUX_GOG_LIBRARY_PATHS', originalGogLibraryPaths)
+  restoreEnv('LUDUX_GOG_REGISTRY_PATHS', originalGogRegistryPaths)
 
   await Promise.all(
     tempRoots.splice(0).map((root) =>
@@ -340,11 +344,91 @@ describe('local platform detection', () => {
         'D:\\GOG Games\\The Witcher 3',
       ),
     ).toEqual({
+      coverUrl: null,
       externalId: '292030',
       installPath: 'D:\\GOG Games\\The Witcher 3',
+      lastPlayedAt: null,
       manifestPath: 'D:\\GOG Games\\The Witcher 3\\goggame-292030.info',
+      ownedAt: null,
+      playtimeMinutes: 0,
       title: 'The Witcher 3: Wild Hunt',
     })
+  })
+
+  it('parses installed GOG games from the Windows registry', () => {
+    const registryOutput = String.raw`
+HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\GOG.com\Games\1202885143
+    gameName    REG_SZ    Tomb Raider: Anniversary
+    gameID    REG_SZ    1202885143
+    path    REG_SZ    E:\Games\Tomb Raider Anniversary
+    INSTALLDATE    REG_SZ    2026-07-23 14:22:25
+
+HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\GOG.com\Games\invalid
+    gameID    REG_SZ    invalid
+    path    REG_SZ    E:\Games\Unknown
+`
+
+    expect(parseGogRegistryGames(registryOutput)).toEqual([
+      {
+        coverUrl: null,
+        externalId: '1202885143',
+        installPath: 'E:\\Games\\Tomb Raider Anniversary',
+        lastPlayedAt: null,
+        manifestPath:
+          'HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\GOG.com\\Games\\1202885143',
+        ownedAt: '2026-07-23T14:22:25.000Z',
+        playtimeMinutes: 0,
+        title: 'Tomb Raider: Anniversary',
+      },
+    ])
+  })
+
+  it('parses owned GOG Galaxy games and ignores DLC entries', () => {
+    expect(
+      parseGogGalaxyLibraryRows(
+        [
+          {
+            releaseKey: 'gog_1423049311',
+            titleJson: JSON.stringify({ title: 'Cyberpunk 2077' }),
+            imagesJson: JSON.stringify({
+              verticalCover: 'https://images.gog.com/cyberpunk.webp',
+            }),
+            installationPath: 'C:\\GOG Games\\Cyberpunk 2077',
+            minutesInGame: 125,
+            lastPlayedDate: '2026-07-22 21:15:00',
+            purchaseDate: null,
+            addedDate: '2024-12-08 12:16:56',
+            isDlc: 0,
+          },
+          {
+            releaseKey: 'gog_1256837418',
+            titleJson: JSON.stringify({
+              title: 'Cyberpunk 2077: Phantom Liberty',
+            }),
+            imagesJson: null,
+            installationPath: null,
+            minutesInGame: 0,
+            lastPlayedDate: null,
+            purchaseDate: null,
+            addedDate: null,
+            isDlc: 1,
+          },
+        ],
+        'C:\\ProgramData\\GOG.com\\Galaxy\\storage\\galaxy-2.0.db',
+      ),
+    ).toEqual([
+      {
+        coverUrl: 'https://images.gog.com/cyberpunk.webp',
+        externalId: '1423049311',
+        installPath: 'C:\\GOG Games\\Cyberpunk 2077',
+        lastPlayedAt: '2026-07-22T21:15:00.000Z',
+        manifestPath:
+          'C:\\ProgramData\\GOG.com\\Galaxy\\storage\\galaxy-2.0.db#gog_1423049311',
+        ownedAt: '2024-12-08T12:16:56.000Z',
+        playtimeMinutes: 125,
+        title: 'Cyberpunk 2077',
+      },
+    ])
   })
 
   it('detects GOG Galaxy data and game info files', async () => {
@@ -366,6 +450,7 @@ describe('local platform detection', () => {
     process.env['PROGRAMDATA'] = root
     process.env['LUDUX_GOG_LIBRARY_PATHS'] = gogLibrary
     process.env['LUDUX_GOG_GALAXY_DB_PATH'] = databasePath
+    process.env['LUDUX_GOG_REGISTRY_PATHS'] = ''
 
     const detection = await detectGogLocalPlatform()
 
