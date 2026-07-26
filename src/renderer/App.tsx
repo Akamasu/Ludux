@@ -1,7 +1,6 @@
 import {
   lazy,
   Suspense,
-  useEffect,
   useState,
   type ReactNode,
 } from 'react'
@@ -12,6 +11,7 @@ import { useLifeBook } from './hooks/useLifeBook'
 import { useLibraryOverview } from './hooks/useLibraryOverview'
 import { useLibraryStatistics } from './hooks/useLibraryStatistics'
 import { useSettings } from './hooks/useSettings'
+import { FirstRunPage } from './pages/FirstRunPage'
 import { HomePage } from './pages/HomePage'
 import type { AppView } from './types/navigation'
 
@@ -104,9 +104,76 @@ export default function App() {
   const [isSetupAssistantPending, setIsSetupAssistantPending] = useState(
     readSetupAssistantPending,
   )
-  const [activeView, setActiveView] = useState<AppView>(() =>
-    isSetupAssistantPending ? 'settings' : launchView,
+  const [entryView, setEntryView] = useState<AppView>(launchView)
+  const setupSettingsState = useSettings(isSetupAssistantPending)
+
+  function changeLaunchView(view: AppView) {
+    setLaunchViewState(view)
+
+    try {
+      window.localStorage.setItem(LAUNCH_VIEW_STORAGE_KEY, view)
+    } catch {
+      // The in-memory state is still useful if localStorage is unavailable.
+    }
+  }
+
+  function completeSetupAssistant(destination: AppView) {
+    setEntryView(destination)
+    setIsSetupAssistantPending(false)
+
+    try {
+      window.localStorage.setItem(SETUP_ASSISTANT_STORAGE_KEY, 'true')
+    } catch {
+      // The assistant can still be dismissed for the current session.
+    }
+  }
+
+  function reopenSetupAssistant() {
+    setIsSetupAssistantPending(true)
+
+    try {
+      window.localStorage.removeItem(SETUP_ASSISTANT_STORAGE_KEY)
+    } catch {
+      // The assistant still opens for the current session.
+    }
+  }
+
+  if (isSetupAssistantPending) {
+    return (
+      <FirstRunPage
+        overview={setupSettingsState.overview}
+        isLoading={setupSettingsState.isLoading}
+        isBusy={setupSettingsState.isBusy}
+        error={setupSettingsState.error}
+        onContinue={() => completeSetupAssistant(launchView)}
+        onOpenConnections={() => completeSetupAssistant('settings')}
+        onRefresh={setupSettingsState.refresh}
+      />
+    )
+  }
+
+  return (
+    <MainApplication
+      launchView={launchView}
+      initialView={entryView}
+      onChangeLaunchView={changeLaunchView}
+      onOpenSetupAssistant={reopenSetupAssistant}
+    />
   )
+}
+
+function MainApplication({
+  initialView,
+  launchView,
+  onChangeLaunchView,
+  onOpenSetupAssistant,
+}: {
+  initialView: AppView
+  launchView: AppView
+  onChangeLaunchView: (view: AppView) => void
+  onOpenSetupAssistant: () => void
+}) {
+  const [activeView, setActiveView] = useState<AppView>(initialView)
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
   const libraryState = useLibraryOverview()
   const chroniclesState = useChronicles(
@@ -135,11 +202,6 @@ export default function App() {
   )
 
   function navigate(view: AppView) {
-    if (isSetupAssistantPending && view !== 'settings') {
-      completeSetupAssistant(view)
-      return
-    }
-
     setSelectedGameId(null)
     setActiveView(view)
   }
@@ -168,34 +230,6 @@ export default function App() {
     await settingsState.syncAllProviders()
     await refreshLibrary()
   }
-
-  function changeLaunchView(view: AppView) {
-    setLaunchViewState(view)
-
-    try {
-      window.localStorage.setItem(LAUNCH_VIEW_STORAGE_KEY, view)
-    } catch {
-      // The in-memory state is still useful if localStorage is unavailable.
-    }
-  }
-
-  function completeSetupAssistant(destination: AppView = launchView) {
-    setIsSetupAssistantPending(false)
-    setSelectedGameId(null)
-    setActiveView(destination)
-
-    try {
-      window.localStorage.setItem(SETUP_ASSISTANT_STORAGE_KEY, 'true')
-    } catch {
-      // The assistant can still be dismissed for the current session.
-    }
-  }
-
-  useEffect(() => {
-    if (isSetupAssistantPending && activeView !== 'settings') {
-      setActiveView('settings')
-    }
-  }, [activeView, isSetupAssistantPending])
 
   let content: ReactNode = null
 
@@ -289,15 +323,14 @@ export default function App() {
         error={settingsState.error ?? libraryState.error}
         actionResult={settingsState.actionResult}
         archivedGames={libraryState.archivedGames}
-        isInitialSetup={isSetupAssistantPending}
         launchView={launchView}
-        onChangeLaunchView={changeLaunchView}
+        onChangeLaunchView={onChangeLaunchView}
         onClearGameCache={settingsState.clearGameCache}
         onCreateBackup={settingsState.createBackup}
         onDeleteProviderConnection={settingsState.deleteProviderConnection}
         onDeleteGame={libraryState.deleteGame}
         onExportLibrary={settingsState.exportLibrary}
-        onFinishInitialSetup={() => completeSetupAssistant()}
+        onOpenSetupAssistant={onOpenSetupAssistant}
         onOpenDataFolder={settingsState.openDataFolder}
         onRefresh={refreshSettingsView}
         onRestoreGame={libraryState.restoreGame}

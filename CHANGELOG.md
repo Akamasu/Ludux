@@ -29,6 +29,19 @@ Le projet suit des versions de développement simples :
 - `v0.23.x` : enrichissement des métadonnées via RAWG.
 - `v0.24.x` : expérience immersive, navigation animée et habillage bibliothèque.
 - `v0.25.x` : stockage Windows, migrations sécurisées et installateur public.
+- `v0.26.x` : première ouverture guidée et interface simplifiée pour les joueurs.
+
+## v0.26.0 - 2026-07-26
+
+- Ajout d'un écran de première ouverture séparé de l'interface principale.
+- Détection automatique de Steam, Epic Games et GOG avec chemins consultables à la demande.
+- Résumé simple des connexions Steam, Epic Games, GOG, RAWG et IGDB avec les états `Prêt` ou `À configurer`.
+- Accès direct aux connexions ou à l'application après la détection.
+- Possibilité de relancer l'écran de détection depuis les préférences.
+- Simplification des paramètres autour des connexions, de la page d'ouverture et des sauvegardes.
+- Regroupement du cache, des chemins locaux et de l'historique de synchronisation dans des outils avancés repliés.
+- Suppression des plateformes non prises en charge et des champs inutiles dans la vue normale.
+- Epic Games et GOG utilisent désormais une action locale simple sans faux formulaire de compte.
 
 ## v0.25.1 - 2026-07-26
 

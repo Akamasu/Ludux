@@ -1,24 +1,24 @@
 import {
   Activity,
   AlertTriangle,
-  ArrowRight,
   Archive,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Cloud,
   Database,
   Download,
-  ExternalLink,
   FolderOpen,
   HardDrive,
   Link2,
   RefreshCw,
   RotateCcw,
-  Settings,
+  SlidersHorizontal,
   ShieldCheck,
   Trash2,
+  Wrench,
 } from 'lucide-react'
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import type { GameListItem } from '../../types/game'
 import type {
   DeleteProviderConnectionInput,
@@ -40,7 +40,6 @@ interface SettingsPageProps {
   error: string | null
   actionResult: SettingsActionResult | null
   archivedGames: GameListItem[]
-  isInitialSetup: boolean
   launchView: AppView
   onChangeLaunchView: (view: AppView) => void
   onClearGameCache: () => Promise<void>
@@ -48,7 +47,7 @@ interface SettingsPageProps {
   onDeleteGame: (gameId: string) => Promise<void>
   onDeleteProviderConnection: (input: DeleteProviderConnectionInput) => Promise<void>
   onExportLibrary: () => Promise<void>
-  onFinishInitialSetup: () => void
+  onOpenSetupAssistant: () => void
   onOpenDataFolder: () => Promise<void>
   onRefresh: () => Promise<void>
   onRestoreGame: (gameId: string) => Promise<void>
@@ -295,9 +294,19 @@ function CacheStoragePanel({
   )
 }
 
-function providerStatusLabel(connection: ProviderConnection) {
+function providerStatusLabel(
+  connection: ProviderConnection,
+  overview: SettingsOverview,
+) {
+  if (
+    isLocalLibraryProvider(connection) &&
+    localPlatformForProvider(overview, connection)?.detected
+  ) {
+    return connection.sync?.status === 'SYNCED' ? 'Synchronisé' : 'Détecté'
+  }
+
   if (!connection.configured) {
-    return 'Non configuré'
+    return 'À configurer'
   }
 
   if (connection.sync?.status === 'SYNCED') {
@@ -409,15 +418,15 @@ function providerExternalIdPlaceholder(provider: ProviderConnection) {
 
 function providerTokenLabel(provider: ProviderConnection) {
   if (provider.provider === 'STEAM') {
-    return 'Clé API Steam ou variable .env'
+    return 'Clé API Steam'
   }
 
   if (provider.provider === 'RAWG') {
-    return 'Clé API RAWG ou variable .env'
+    return 'Clé API RAWG'
   }
 
   if (provider.provider === 'IGDB') {
-    return 'Client Secret IGDB ou variable .env'
+    return 'Client Secret IGDB'
   }
 
   return 'Indice token'
@@ -480,177 +489,22 @@ function providerTokenPlaceholder(provider: ProviderConnection) {
   if (provider.provider === 'STEAM') {
     return provider.account?.hasToken
       ? 'Laisser vide pour conserver la clé existante'
-      : 'Optionnel : manifests locaux ou STEAM_WEB_API_KEY'
+      : 'Optionnel pour la bibliothèque locale'
   }
 
   if (provider.provider === 'RAWG') {
     return provider.account?.hasToken
       ? 'Laisser vide pour conserver la clé existante'
-      : 'Optionnel si RAWG_API_KEY est défini'
+      : 'Clé fournie par RAWG'
   }
 
   if (provider.provider === 'IGDB') {
     return provider.account?.hasToken
       ? 'Laisser vide pour conserver le secret existant'
-      : 'Optionnel si IGDB_CLIENT_SECRET est défini'
+      : 'Secret fourni par Twitch'
   }
 
   return 'Optionnel'
-}
-
-function SetupStepCard({
-  description,
-  icon,
-  ready,
-  title,
-}: {
-  description: string
-  icon: ReactNode
-  ready: boolean
-  title: string
-}) {
-  return (
-    <article className="rounded-lg border border-white/10 bg-[#121620] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-semibold text-white">{title}</p>
-          <p className="mt-1 text-sm leading-5 text-zinc-500">{description}</p>
-        </div>
-        <div
-          className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${
-            ready
-              ? 'bg-[#7C5CFF]/10 text-[#D8D0FF]'
-              : 'bg-white/5 text-zinc-500'
-          }`}
-        >
-          {icon}
-        </div>
-      </div>
-      <span
-        className={`mt-4 inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs ${syncStatusClassName(
-          ready ? 'SYNCED' : null,
-        )}`}
-      >
-        {ready ? (
-          <CheckCircle2 size={14} aria-hidden="true" />
-        ) : (
-          <Clock3 size={14} aria-hidden="true" />
-        )}
-        {ready ? 'Connecté' : 'À configurer'}
-      </span>
-    </article>
-  )
-}
-
-function SetupAssistantPanel({
-  isInitialSetup,
-  isBusy,
-  onFinishInitialSetup,
-  onRefresh,
-  onSyncAllProviders,
-  overview,
-}: {
-  isInitialSetup: boolean
-  isBusy: boolean
-  onFinishInitialSetup: () => void
-  onRefresh: () => Promise<void>
-  onSyncAllProviders: () => Promise<void>
-  overview: SettingsOverview
-}) {
-  const localDetectedCount = overview.localPlatformOverview.detectedCount
-  const localPlatformCount = overview.localPlatformOverview.platforms.length
-  const readyProviders = overview.providerOverview.providers.filter((provider) =>
-    canSyncProvider(provider, overview),
-  )
-  const readyProviderLabels = providerQueueOrder
-    .map((providerId) =>
-      readyProviders.find((provider) => provider.provider === providerId),
-    )
-    .filter((provider): provider is ProviderConnection => provider !== undefined)
-    .map((provider) => provider.label)
-  const hasReadySync = readyProviders.length > 0
-  const setupSteps = [
-    localDetectedCount > 0,
-    overview.providerOverview.configuredCount > 0,
-    hasReadySync,
-  ]
-  const completedSteps = setupSteps.filter(Boolean).length
-
-  return (
-    <section className="rounded-lg border border-[#7C5CFF]/20 bg-[#181B23] p-5">
-      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <p className="text-sm font-medium text-[#A797FF]">Configuration rapide</p>
-          <h2 className="mt-2 text-2xl font-semibold text-white">
-            {completedSteps}/3 étapes prêtes
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-            Ludux repère les plateformes locales, garde les connexions utiles et peut lancer
-            la synchronisation dès qu'une source est prête.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            onClick={onSyncAllProviders}
-            disabled={isBusy || !hasReadySync}
-          >
-            <RefreshCw
-              size={17}
-              aria-hidden="true"
-              className={isBusy ? 'animate-spin' : undefined}
-            />
-            {isBusy ? 'Synchronisation...' : 'Synchroniser'}
-          </Button>
-          <Button type="button" variant="secondary" onClick={onRefresh} disabled={isBusy}>
-            <HardDrive size={17} aria-hidden="true" />
-            Rechercher
-          </Button>
-          {isInitialSetup ? (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onFinishInitialSetup}
-              disabled={isBusy}
-            >
-              Entrer dans Ludux
-              <ArrowRight size={17} aria-hidden="true" />
-            </Button>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="grid gap-3 lg:grid-cols-3">
-        <SetupStepCard
-          ready={localDetectedCount > 0}
-          title="Plateformes PC"
-          description={
-            localPlatformCount > 0
-              ? `${localDetectedCount}/${localPlatformCount} détectée(s)`
-              : 'Diagnostic local indisponible'
-          }
-          icon={<HardDrive size={18} aria-hidden="true" />}
-        />
-        <SetupStepCard
-          ready={overview.providerOverview.configuredCount > 0}
-          title="Connexions"
-          description={`${overview.providerOverview.configuredCount} service(s) enregistré(s)`}
-          icon={<ShieldCheck size={18} aria-hidden="true" />}
-        />
-        <SetupStepCard
-          ready={hasReadySync}
-          title="Synchronisation"
-          description={
-            readyProviderLabels.length > 0
-              ? readyProviderLabels.join(', ')
-              : 'Aucune source prête'
-          }
-          icon={<Cloud size={18} aria-hidden="true" />}
-        />
-      </div>
-    </section>
-  )
 }
 
 function SyncActivityPanel({ overview }: { overview: SettingsOverview }) {
@@ -760,8 +614,6 @@ function SyncActivityPanel({ overview }: { overview: SettingsOverview }) {
 }
 
 function ProvidersPanel({
-  actionResult,
-  error,
   isBusy,
   overview,
   onDeleteProviderConnection,
@@ -769,8 +621,6 @@ function ProvidersPanel({
   onSyncProvider,
   onUpsertProviderConnection,
 }: {
-  actionResult: SettingsActionResult | null
-  error: string | null
   isBusy: boolean
   overview: SettingsOverview
   onDeleteProviderConnection: (input: DeleteProviderConnectionInput) => Promise<void>
@@ -778,7 +628,13 @@ function ProvidersPanel({
   onSyncProvider: (input: SyncProviderInput) => Promise<void>
   onUpsertProviderConnection: (input: UpsertProviderConnectionInput) => Promise<void>
 }) {
-  const providers = overview.providerOverview.providers
+  const providers = providerQueueOrder
+    .map((providerId) =>
+      overview.providerOverview.providers.find(
+        (provider) => provider.provider === providerId,
+      ),
+    )
+    .filter((provider): provider is ProviderConnection => provider !== undefined)
   const [selectedProviderId, setSelectedProviderId] = useState(
     providers[0]?.provider ?? 'STEAM',
   )
@@ -890,33 +746,11 @@ function ProvidersPanel({
         </div>
       </div>
 
-      <div className="mb-5 grid gap-3 md:grid-cols-3">
-        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
-          <p className="text-xs text-zinc-500">Services</p>
-          <p className="mt-1 text-xl font-semibold text-white">
-            {overview.providerOverview.totalProviders}
-          </p>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
-          <p className="text-xs text-zinc-500">Configurés</p>
-          <p className="mt-1 text-xl font-semibold text-white">
-            {overview.providerOverview.configuredCount}
-          </p>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-[#121620] p-3">
-          <p className="text-xs text-zinc-500">Dernier état</p>
-          <p className="mt-1 truncate text-xl font-semibold text-white">
-            {overview.providerOverview.lastSyncAt
-              ? formatDate(overview.providerOverview.lastSyncAt)
-              : 'Aucun'}
-          </p>
-        </div>
-      </div>
-
       <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
         <div className="grid gap-2 sm:grid-cols-2">
           {providers.map((provider) => {
             const isSelected = provider.provider === selectedProvider?.provider
+            const isReady = canSyncProvider(provider, overview)
 
             return (
               <button
@@ -933,12 +767,12 @@ function ProvidersPanel({
                   <span className="font-medium text-white">{provider.label}</span>
                   <span
                     className={`rounded-lg px-2 py-1 text-xs ${
-                      provider.configured
+                      provider.configured || isReady
                         ? 'bg-[#4F7CFF]/10 text-[#C9D6FF]'
                         : 'bg-white/7 text-zinc-500'
                     }`}
                   >
-                    {providerStatusLabel(provider)}
+                    {providerStatusLabel(provider, overview)}
                   </span>
                 </span>
                 <span className="mt-2 line-clamp-2 block text-sm leading-5 text-zinc-500">
@@ -949,7 +783,55 @@ function ProvidersPanel({
           })}
         </div>
 
-        {selectedProvider ? (
+        {selectedProvider && isLocalLibraryProvider(selectedProvider) ? (
+          <div className="border-t border-white/10 pt-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-base font-semibold text-white">
+                  {selectedProvider.label}
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-zinc-500">
+                  {selectedProvider.description}
+                </p>
+              </div>
+              <ShieldCheck className="text-[#A797FF]" size={20} aria-hidden="true" />
+            </div>
+
+            <div
+              className={`mt-5 rounded-lg border px-4 py-4 text-sm ${
+                selectedLocalPlatform?.detected
+                  ? 'border-emerald-400/25 bg-emerald-400/10 text-emerald-100'
+                  : 'border-white/10 bg-[#0F1117] text-zinc-400'
+              }`}
+            >
+              <p className="font-medium">
+                {selectedLocalPlatform?.detected
+                  ? `${selectedProvider.label} est prêt`
+                  : `${selectedProvider.label} n'a pas été trouvé`}
+              </p>
+              <p className="mt-1 leading-6 opacity-80">
+                {selectedLocalPlatform?.detected
+                  ? 'Ludux utilisera directement les fichiers présents sur cet ordinateur.'
+                  : 'Ouvrez la plateforme une première fois, puis relancez la détection.'}
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleSyncProvider}
+              disabled={isBusy || !selectedProviderCanSync}
+              className="mt-5"
+            >
+              <RefreshCw
+                size={17}
+                aria-hidden="true"
+                className={isBusy ? 'animate-spin' : undefined}
+              />
+              {isBusy ? 'Synchronisation...' : `Synchroniser ${selectedProvider.label}`}
+            </Button>
+          </div>
+        ) : selectedProvider ? (
           <form className="border-t border-white/10 pt-4" onSubmit={handleSubmit}>
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -961,69 +843,49 @@ function ProvidersPanel({
               <ShieldCheck className="text-[#A797FF]" size={20} aria-hidden="true" />
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {selectedProvider.capabilities.map((capability) => (
-                <span
-                  key={capability}
-                  className="rounded-lg bg-[#0F1117] px-2.5 py-1 text-xs text-zinc-300"
-                >
-                  {capability}
-                </span>
-              ))}
-            </div>
-
-            {isLocalLibraryProvider(selectedProvider) ? (
-              <div className="mt-4 rounded-lg border border-[#7C5CFF]/20 bg-[#7C5CFF]/10 px-4 py-3 text-sm text-[#D8D0FF]">
-                {selectedLocalPlatform?.detected
-                  ? `${selectedProvider.label} détecté localement. Ludux peut importer les jeux installés sans clé API.`
-                  : `${selectedProvider.label} local n'est pas détecté pour le moment.`}
-              </div>
-            ) : null}
-
             <div className="mt-5 grid gap-3">
-              <label>
-                <span className="mb-2 block text-xs font-medium text-zinc-500">
-                  {providerExternalIdLabel(selectedProvider)}
-                </span>
-                <input
-                  value={externalId}
-                  onChange={(event) => {
-                    setExternalId(event.target.value)
-                    setFormError(null)
-                  }}
-                  inputMode={isSteamProvider ? 'numeric' : 'text'}
-                  placeholder={providerExternalIdPlaceholder(selectedProvider)}
-                  className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
-                />
-                {isSteamProvider ? (
-                  <span className="mt-2 block text-xs text-zinc-600">
-                    SteamID64 attendu : 17 chiffres.
-                  </span>
-                ) : null}
-                {isRawgProvider ? (
-                  <span className="mt-2 block text-xs text-zinc-600">
-                    Catalogue RAWG public pour enrichir les fiches locales.
-                  </span>
-                ) : null}
-                {isIgdbProvider ? (
-                  <span className="mt-2 block text-xs text-zinc-600">
-                    Client ID de l'application Twitch utilisée par IGDB.
-                  </span>
-                ) : null}
-              </label>
-
-              <div className="grid gap-3 md:grid-cols-2">
+              {!isRawgProvider ? (
                 <label>
                   <span className="mb-2 block text-xs font-medium text-zinc-500">
-                    Nom affiché
+                    {providerExternalIdLabel(selectedProvider)}
                   </span>
                   <input
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
-                    placeholder="Compte principal"
+                    value={externalId}
+                    onChange={(event) => {
+                      setExternalId(event.target.value)
+                      setFormError(null)
+                    }}
+                    inputMode={isSteamProvider ? 'numeric' : 'text'}
+                    placeholder={providerExternalIdPlaceholder(selectedProvider)}
                     className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
                   />
+                  {isSteamProvider ? (
+                    <span className="mt-2 block text-xs text-zinc-600">
+                      SteamID64 attendu : 17 chiffres.
+                    </span>
+                  ) : null}
+                  {isIgdbProvider ? (
+                    <span className="mt-2 block text-xs text-zinc-600">
+                      Identifiant de l'application Twitch utilisée par IGDB.
+                    </span>
+                  ) : null}
                 </label>
+              ) : null}
+
+              <div className={`grid gap-3 ${isSteamProvider ? 'md:grid-cols-2' : ''}`}>
+                {isSteamProvider ? (
+                  <label>
+                    <span className="mb-2 block text-xs font-medium text-zinc-500">
+                      Nom affiché
+                    </span>
+                    <input
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
+                      placeholder="Compte principal"
+                      className="h-11 w-full rounded-lg border border-white/10 bg-[#0F1117] px-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-[#7C5CFF]"
+                    />
+                  </label>
+                ) : null}
                 <label>
                   <span className="mb-2 block text-xs font-medium text-zinc-500">
                     {providerTokenLabel(selectedProvider)}
@@ -1087,16 +949,14 @@ function ProvidersPanel({
             </div>
 
             <div aria-live="polite" className="mt-4">
-              {formError || error ? (
+              {formError ? (
                 <div className="rounded-lg border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
-                  {formError ?? error}
+                  {formError}
                 </div>
-              ) : actionResult ? (
-                <ResultMessage result={actionResult} />
               ) : null}
             </div>
 
-            {selectedProvider.account ? (
+            {selectedProvider.account && !isRawgProvider ? (
               <div className="mt-5 rounded-lg border border-white/10 bg-[#0F1117] p-3 text-sm text-zinc-400">
                 <p className="font-medium text-white">
                   {selectedProvider.account.username ?? selectedProvider.account.externalId}
@@ -1107,11 +967,6 @@ function ProvidersPanel({
                 <p className="mt-2 text-xs text-zinc-600">
                   Mis à jour le {formatDate(selectedProvider.account.updatedAt)}
                 </p>
-                {selectedProvider.sync?.message ? (
-                  <p className="mt-2 text-xs text-[#C9D6FF]">
-                    {selectedProvider.sync.message}
-                  </p>
-                ) : null}
               </div>
             ) : null}
           </form>
@@ -1208,7 +1063,6 @@ export function SettingsPage({
   archivedGames,
   error,
   isBusy,
-  isInitialSetup,
   isLoading,
   launchView,
   onChangeLaunchView,
@@ -1217,8 +1071,8 @@ export function SettingsPage({
   onDeleteGame,
   onDeleteProviderConnection,
   onExportLibrary,
-  onFinishInitialSetup,
   onOpenDataFolder,
+  onOpenSetupAssistant,
   onRefresh,
   onRestoreGame,
   onSyncAllProviders,
@@ -1226,24 +1080,37 @@ export function SettingsPage({
   onUpsertProviderConnection,
   overview,
 }: SettingsPageProps) {
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
+
   return (
     <div className="flex flex-1 flex-col gap-7">
       <header className="flex flex-col items-start justify-between gap-4 border-b border-white/10 pb-7 sm:flex-row">
         <div>
-          <p className="text-sm font-medium text-[#A797FF]">Paramètres</p>
-          <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
-            {isInitialSetup ? 'Bienvenue dans Ludux' : 'Contrôle local des données'}
-          </h1>
+          <p className="text-sm font-medium text-[#A797FF]">Ludux</p>
+          <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">Paramètres</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-            {isInitialSetup
-              ? 'Ludux recherche les plateformes présentes sur cette machine. Vous pourrez compléter les connexions utiles, puis laisser la synchronisation travailler.'
-              : 'Sauvegardez la base locale, exportez un instantané JSON et gardez les chemins essentiels sous les yeux.'}
+            Gérez vos connexions, la synchronisation et vos préférences.
           </p>
         </div>
-        <Button className="w-full sm:w-auto" type="button" variant="secondary" onClick={onRefresh} disabled={isBusy}>
-          <RefreshCw size={17} aria-hidden="true" />
-          Actualiser
-        </Button>
+        <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
+          <span className="text-sm text-zinc-500">
+            {isLoading ? 'Ludux' : `Ludux ${formatAppVersion(overview.appVersion)}`}
+          </span>
+          <button
+            type="button"
+            title="Actualiser"
+            aria-label="Actualiser les paramètres"
+            onClick={() => void onRefresh()}
+            disabled={isBusy}
+            className="grid h-11 w-11 place-items-center rounded-lg border border-white/10 bg-white/5 text-zinc-300 transition hover:border-[#7C5CFF]/40 hover:bg-[#7C5CFF]/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <RefreshCw
+              size={17}
+              aria-hidden="true"
+              className={isLoading ? 'animate-spin' : undefined}
+            />
+          </button>
+        </div>
       </header>
 
       {error ? (
@@ -1254,104 +1121,25 @@ export function SettingsPage({
 
       {actionResult ? <ResultMessage result={actionResult} /> : null}
 
-      <SetupAssistantPanel
-        isInitialSetup={isInitialSetup}
-        isBusy={isBusy}
+      <ProvidersPanel
         overview={overview}
-        onFinishInitialSetup={onFinishInitialSetup}
-        onRefresh={onRefresh}
+        isBusy={isBusy}
+        onDeleteProviderConnection={onDeleteProviderConnection}
         onSyncAllProviders={onSyncAllProviders}
+        onSyncProvider={onSyncProvider}
+        onUpsertProviderConnection={onUpsertProviderConnection}
       />
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">
-          <div className="mb-5 flex items-center justify-between gap-4">
-            <p className="text-sm text-zinc-500">Version</p>
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-[#7C5CFF] text-white">
-              <Settings size={18} aria-hidden="true" />
-            </div>
-          </div>
-          <p className="text-2xl font-semibold text-white">
-            {isLoading ? '...' : formatAppVersion(overview.appVersion)}
-          </p>
-        </article>
-        <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">
-          <div className="mb-5 flex items-center justify-between gap-4">
-            <p className="text-sm text-zinc-500">Base locale</p>
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-[#4F7CFF] text-white">
-              <Database size={18} aria-hidden="true" />
-            </div>
-          </div>
-          <p className="text-2xl font-semibold text-white">
-            {isLoading ? '...' : formatBytes(overview.databaseSizeBytes)}
-          </p>
-        </article>
-        <article className="rounded-lg border border-white/10 bg-[#181B23] p-4">
-          <div className="mb-5 flex items-center justify-between gap-4">
-            <p className="text-sm text-zinc-500">Dernière sauvegarde</p>
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-[#A33D69] text-white">
-              <Archive size={18} aria-hidden="true" />
-            </div>
-          </div>
-          <p className="truncate text-2xl font-semibold text-white">
-            {overview.lastBackupAt ? formatDate(overview.lastBackupAt) : 'Aucune'}
-          </p>
-        </article>
-      </section>
-
-      <CacheStoragePanel
-        isBusy={isBusy}
-        overview={overview}
-        onClearGameCache={onClearGameCache}
-      />
-
-      <section className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
-        <article className="rounded-lg border border-white/10 bg-[#181B23] p-5">
-          <div className="mb-5 flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-white">Actions locales</h2>
-              <p className="mt-1 text-sm text-zinc-500">
-                Exports lisibles et copie directe de la base SQLite.
-              </p>
-            </div>
-            <HardDrive className="text-[#A797FF]" size={20} aria-hidden="true" />
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-3">
-            <Button type="button" onClick={onCreateBackup} disabled={isBusy}>
-              <Archive size={17} aria-hidden="true" />
-              Sauvegarder
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onExportLibrary}
-              disabled={isBusy}
-            >
-              <Download size={17} aria-hidden="true" />
-              Exporter JSON
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onOpenDataFolder}
-              disabled={isBusy}
-            >
-              <FolderOpen size={17} aria-hidden="true" />
-              Dossier local
-            </Button>
-          </div>
-        </article>
-
+      <section className="grid gap-4 xl:grid-cols-2">
         <article className="rounded-lg border border-white/10 bg-[#181B23] p-5">
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-white">Préférences</h2>
               <p className="mt-1 text-sm text-zinc-500">
-                Réglages enregistrés sur cette machine.
+                Choisissez votre page de départ.
               </p>
             </div>
-            <ExternalLink className="text-[#8CA7FF]" size={20} aria-hidden="true" />
+            <SlidersHorizontal className="text-[#8CA7FF]" size={20} aria-hidden="true" />
           </div>
 
           <label>
@@ -1368,47 +1156,148 @@ export function SettingsPage({
               ))}
             </select>
           </label>
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onOpenSetupAssistant}
+            disabled={isBusy}
+            className="mt-4 w-full"
+          >
+            <HardDrive size={17} aria-hidden="true" />
+            Revoir la détection des plateformes
+          </Button>
+        </article>
+
+        <article className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Sauvegarde</h2>
+              <p className="mt-1 text-sm text-zinc-500">
+                Protégez votre bibliothèque et vos souvenirs.
+              </p>
+            </div>
+            <Archive className="text-[#A797FF]" size={20} aria-hidden="true" />
+          </div>
+
+          <p className="mb-4 text-sm text-zinc-400">
+            Dernière sauvegarde :{' '}
+            <span className="font-medium text-white">
+              {overview.lastBackupAt ? formatDate(overview.lastBackupAt) : 'aucune'}
+            </span>
+          </p>
+          <Button
+            type="button"
+            onClick={onCreateBackup}
+            disabled={isBusy}
+            className="w-full"
+          >
+            <Archive size={17} aria-hidden="true" />
+            Créer une sauvegarde
+          </Button>
         </article>
       </section>
 
-      <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
-        <div className="mb-3 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-white">Emplacements</h2>
-            <p className="mt-1 text-sm text-zinc-500">
-              Chemins utilisés par Ludux pour les données locales.
-            </p>
+      {archivedGames.length > 0 ? (
+        <ArchivedGamesPanel
+          archivedGames={archivedGames}
+          isBusy={isBusy}
+          onDeleteGame={onDeleteGame}
+          onRestoreGame={onRestoreGame}
+        />
+      ) : null}
+
+      <section>
+        <button
+          type="button"
+          aria-expanded={isAdvancedOpen}
+          onClick={() => setIsAdvancedOpen((current) => !current)}
+          className="flex w-full items-center justify-between gap-4 rounded-lg border border-white/10 bg-[#181B23] p-5 text-left transition hover:border-white/20"
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/5 text-zinc-400">
+              <Wrench size={18} aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-semibold text-white">Outils avancés</span>
+              <span className="mt-1 block text-sm text-zinc-500">
+                Maintenance, chemins et diagnostic
+              </span>
+            </span>
+          </span>
+          <ChevronDown
+            size={18}
+            aria-hidden="true"
+            className={`shrink-0 text-zinc-500 transition-transform ${
+              isAdvancedOpen ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+
+        {isAdvancedOpen ? (
+          <div className="view-transition mt-4 grid gap-4">
+            <CacheStoragePanel
+              isBusy={isBusy}
+              overview={overview}
+              onClearGameCache={onClearGameCache}
+            />
+
+            <section className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+              <article className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Données locales</h2>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      Export et accès aux fichiers Ludux.
+                    </p>
+                  </div>
+                  <FolderOpen className="text-[#A797FF]" size={20} aria-hidden="true" />
+                </div>
+                <div className="grid gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={onExportLibrary}
+                    disabled={isBusy}
+                  >
+                    <Download size={17} aria-hidden="true" />
+                    Exporter en JSON
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={onOpenDataFolder}
+                    disabled={isBusy}
+                  >
+                    <FolderOpen size={17} aria-hidden="true" />
+                    Ouvrir le dossier local
+                  </Button>
+                </div>
+              </article>
+
+              <article className="rounded-lg border border-white/10 bg-[#181B23] p-5">
+                <div className="mb-3 flex items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Emplacements Ludux</h2>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      Fichiers utilisés sur cet ordinateur.
+                    </p>
+                  </div>
+                  <Database className="text-[#A797FF]" size={20} aria-hidden="true" />
+                </div>
+                <dl>
+                  <DetailRow label="Base locale" value={overview.databasePath ?? 'Non disponible'} />
+                  <DetailRow label="Exports" value={overview.exportDirectory} />
+                  <DetailRow label="Sauvegardes" value={overview.backupDirectory} />
+                </dl>
+              </article>
+            </section>
+
+            <LocalPlatformsPanel overview={overview} />
+            <SyncActivityPanel overview={overview} />
           </div>
-          <Database className="text-[#A797FF]" size={20} aria-hidden="true" />
-        </div>
-        <dl>
-          <DetailRow label="Base SQLite" value={overview.databasePath ?? 'Non disponible'} />
-          <DetailRow label="Exports" value={overview.exportDirectory} />
-          <DetailRow label="Sauvegardes" value={overview.backupDirectory} />
-        </dl>
+        ) : null}
       </section>
-
-      <LocalPlatformsPanel overview={overview} />
-
-      <ProvidersPanel
-        actionResult={actionResult}
-        error={error}
-        overview={overview}
-        isBusy={isBusy}
-        onDeleteProviderConnection={onDeleteProviderConnection}
-        onSyncAllProviders={onSyncAllProviders}
-        onSyncProvider={onSyncProvider}
-        onUpsertProviderConnection={onUpsertProviderConnection}
-      />
-
-      <SyncActivityPanel overview={overview} />
-
-      <ArchivedGamesPanel
-        archivedGames={archivedGames}
-        isBusy={isBusy}
-        onDeleteGame={onDeleteGame}
-        onRestoreGame={onRestoreGame}
-      />
     </div>
   )
 }

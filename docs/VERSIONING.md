@@ -54,3 +54,7 @@ Le tag `v0.1.0` correspond au bootstrap initial de Ludux : socle Electron/React,
 - `v0.22.6` : affichage de la vraie version applicative et simplification des paramètres.
 - `v0.23.0` : enrichissement manuel des métadonnées via RAWG.
 - `v0.23.1` : lecture locale des manifests Steam et fusion avec l'API.
+- `v0.24.0` : expérience immersive et navigation inspirée d'une bibliothèque.
+- `v0.25.0` : stockage Windows sécurisé et premier installateur public.
+- `v0.25.1` : tri naturel de la bibliothèque et synchronisation locale GOG.
+- `v0.26.0` : première ouverture séparée et paramètres simplifiés pour les joueurs.
