@@ -23,7 +23,7 @@ Steam est le premier provider actif :
 - validation SteamID64 et erreurs réseau explicites ;
 - fallback local via `libraryfolders.vdf`, `appmanifest_*.acf` et `localconfig.vdf`.
 
-Epic, GOG, EA App, Ubisoft Connect et Battle.net importent leurs jeux locaux avant les enrichissements catalogue. EA App, Ubisoft Connect et Battle.net vérifient le dossier d'installation afin d'ignorer les anciennes traces laissées après une désinstallation.
+Epic, GOG, EA App, Ubisoft Connect et Battle.net importent leurs jeux locaux avant les enrichissements catalogue. EA App, Ubisoft Connect et Battle.net vérifient le dossier d'installation afin d'ignorer les anciennes traces laissées après une désinstallation. Ubisoft Connect lit également son catalogue local de succès et les dates de déblocage associées, sans utiliser le compte connecté.
 
 RAWG et IGDB sont les providers de métadonnées actifs :
 
@@ -55,7 +55,7 @@ Pour une v1 publique, Ludux ne doit pas embarquer une clé Steam commune dans l'
 | Epic | OAuth/EOS selon projet | Pas de route publique simple pour toute la bibliothèque EGS | Import local actif, officiel à préparer |
 | GOG | GOG Galaxy SDK / accès développeur | SDK orienté jeu, pas import universel simple | Import local actif, officiel à préparer |
 | EA App | Compte EA non utilisé | Lecture de la bibliothèque complète non exposée simplement | Import des jeux installés actif |
-| Ubisoft Connect | Compte Ubisoft non utilisé | Lecture de la bibliothèque complète non exposée simplement | Import des jeux installés actif |
+| Ubisoft Connect | Compte Ubisoft non utilisé | Lecture de la bibliothèque complète non exposée simplement | Import des jeux installés et de leurs succès locaux actif |
 | Battle.net | Compte Battle.net non utilisé | Produits locaux identifiés par le client | Import des jeux installés reconnus actif |
 | Xbox | Microsoft/Xbox Services | Accès contraint par programme développeur | Attendre accès officiel |
 | PlayStation | PlayStation Partners | Accès partenaire | Attendre accès officiel |

@@ -1,6 +1,7 @@
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
+import { strToU8, zipSync } from 'fflate'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   createEpicCandidateLibraryPaths,
@@ -26,6 +27,11 @@ import {
   readEpicLocalLibrary,
   readGogLocalLibrary,
 } from '../../src/providers/local-platforms'
+import {
+  parseUbisoftAchievementLocalization,
+  parseUbisoftAchievementSpool,
+  readUbisoftAchievementLibrary,
+} from '../../src/providers/ubisoft'
 
 const originalAppData = process.env['APPDATA']
 const originalProgramData = process.env['PROGRAMDATA']
@@ -40,6 +46,9 @@ const originalGogRegistryPaths = process.env['LUDUX_GOG_REGISTRY_PATHS']
 const originalEaAppPaths = process.env['LUDUX_EA_APP_PATHS']
 const originalEaLibraryPaths = process.env['LUDUX_EA_LIBRARY_PATHS']
 const originalEaRegistryPaths = process.env['LUDUX_EA_REGISTRY_PATHS']
+const originalUbisoftAchievementPaths =
+  process.env['LUDUX_UBISOFT_ACHIEVEMENT_PATHS']
+const originalUbisoftSpoolPaths = process.env['LUDUX_UBISOFT_SPOOL_PATHS']
 const originalBattleNetPaths = process.env['LUDUX_BATTLENET_PATHS']
 const originalBattleNetLibraryPaths =
   process.env['LUDUX_BATTLENET_LIBRARY_PATHS']
@@ -83,6 +92,53 @@ function createEpicCacheRecord(fields: Array<[string, Buffer | string | true]>) 
   return Buffer.concat(fields.map(([field, value]) => createEpicCacheField(field, value)))
 }
 
+function encodeProtobufVarint(value: number) {
+  const bytes: number[] = []
+  let remaining = BigInt(value)
+
+  do {
+    let byte = Number(remaining & 0x7fn)
+    remaining >>= 7n
+
+    if (remaining > 0n) {
+      byte |= 0x80
+    }
+
+    bytes.push(byte)
+  } while (remaining > 0n)
+
+  return Buffer.from(bytes)
+}
+
+function createUbisoftAchievementSpool(
+  achievements: Array<{
+    externalId: number
+    timestamp: number
+  }>,
+) {
+  return Buffer.concat(
+    achievements.map((achievement) => {
+      const achievementKey = Buffer.concat([
+        Buffer.from([0x08]),
+        encodeProtobufVarint(achievement.externalId),
+      ])
+      const entry = Buffer.concat([
+        Buffer.from([0x0a]),
+        encodeProtobufVarint(achievementKey.length),
+        achievementKey,
+        Buffer.from([0x10]),
+        encodeProtobufVarint(achievement.timestamp),
+      ])
+
+      return Buffer.concat([
+        Buffer.from([0x0a]),
+        encodeProtobufVarint(entry.length),
+        entry,
+      ])
+    }),
+  )
+}
+
 afterEach(async () => {
   restoreEnv('APPDATA', originalAppData)
   restoreEnv('PROGRAMDATA', originalProgramData)
@@ -97,6 +153,11 @@ afterEach(async () => {
   restoreEnv('LUDUX_EA_APP_PATHS', originalEaAppPaths)
   restoreEnv('LUDUX_EA_LIBRARY_PATHS', originalEaLibraryPaths)
   restoreEnv('LUDUX_EA_REGISTRY_PATHS', originalEaRegistryPaths)
+  restoreEnv(
+    'LUDUX_UBISOFT_ACHIEVEMENT_PATHS',
+    originalUbisoftAchievementPaths,
+  )
+  restoreEnv('LUDUX_UBISOFT_SPOOL_PATHS', originalUbisoftSpoolPaths)
   restoreEnv('LUDUX_BATTLENET_PATHS', originalBattleNetPaths)
   restoreEnv(
     'LUDUX_BATTLENET_LIBRARY_PATHS',
@@ -495,6 +556,111 @@ HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs\1803
           'HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Ubisoft\\Launcher\\Installs\\1803',
       },
     ])
+  })
+
+  it('parses localized Ubisoft achievements with French accents', () => {
+    expect(
+      parseUbisoftAchievementLocalization(
+        '\uFEFF1\tPremier succès\tÉchappez aux pirates.\r\n' +
+          '2\tCollectionneur\tRécupérez tous les objets.\r\n',
+      ),
+    ).toEqual([
+      {
+        externalId: '1',
+        name: 'Premier succès',
+        description: 'Échappez aux pirates.',
+        iconUrl: null,
+      },
+      {
+        externalId: '2',
+        name: 'Collectionneur',
+        description: 'Récupérez tous les objets.',
+        iconUrl: null,
+      },
+    ])
+  })
+
+  it('reads Ubisoft unlock identifiers and dates from protobuf spools', () => {
+    const spool = createUbisoftAchievementSpool([
+      {
+        externalId: 1,
+        timestamp: 1_704_067_200,
+      },
+      {
+        externalId: 14,
+        timestamp: 1_704_153_600,
+      },
+    ])
+
+    expect(parseUbisoftAchievementSpool(spool)).toEqual([
+      {
+        externalId: '1',
+        unlockDate: '2024-01-01T00:00:00.000Z',
+      },
+      {
+        externalId: '14',
+        unlockDate: '2024-01-02T00:00:00.000Z',
+      },
+    ])
+  })
+
+  it('joins Ubisoft definitions and unlocks without exposing account paths', async () => {
+    const root = await createTempRoot()
+    const achievementDirectory = join(root, 'cache', 'achievements')
+    const spoolDirectory = join(root, 'spool')
+    const accountDirectory = join(spoolDirectory, 'private-account-id')
+    await mkdir(achievementDirectory, {
+      recursive: true,
+    })
+    await mkdir(accountDirectory, {
+      recursive: true,
+    })
+    await writeFile(
+      join(achievementDirectory, '46_catalog'),
+      zipSync({
+        '1.png': new Uint8Array([1, 2, 3]),
+        'en-US_loc.txt': strToU8('1\tFirst Blood\tEscape the pirates.\n'),
+        'fr-FR_loc.txt': strToU8(
+          '1\tPremier sang\tÉchappez aux pirates.\n' +
+            '2\tCollectionneur\tRécupérez tous les objets.\n',
+        ),
+      }),
+    )
+    await writeFile(
+      join(accountDirectory, '46.spool'),
+      createUbisoftAchievementSpool([
+        {
+          externalId: 1,
+          timestamp: 1_704_067_200,
+        },
+      ]),
+    )
+
+    const library = await readUbisoftAchievementLibrary({
+      achievementDirectories: [achievementDirectory],
+      gameIds: ['46'],
+      spoolDirectories: [spoolDirectory],
+    })
+
+    expect(library.get('46')).toEqual([
+      {
+        externalId: '1',
+        name: 'Premier sang',
+        description: 'Échappez aux pirates.',
+        iconUrl: null,
+        unlocked: true,
+        unlockDate: '2024-01-01T00:00:00.000Z',
+      },
+      {
+        externalId: '2',
+        name: 'Collectionneur',
+        description: 'Récupérez tous les objets.',
+        iconUrl: null,
+        unlocked: false,
+        unlockDate: null,
+      },
+    ])
+    expect(JSON.stringify(library.get('46'))).not.toContain('private-account-id')
   })
 
   it('reads Battle.net products without retaining account information', () => {

@@ -5,6 +5,10 @@ import { basename, dirname, join, normalize } from 'node:path'
 import { promisify } from 'node:util'
 import type { ExternalProvider, LocalPlatformDetection } from '../types/settings'
 import { readSteamLocalLibrary } from './steam'
+import {
+  readUbisoftAchievementLibrary,
+  type UbisoftAchievement,
+} from './ubisoft'
 
 type EpicLocalGameSource =
   | 'manifest'
@@ -80,6 +84,7 @@ export interface LocalLauncherGame {
   title: string
   installPath: string
   manifestPath: string
+  achievements?: UbisoftAchievement[]
 }
 
 export interface LocalLauncherLibraryResult {
@@ -2296,6 +2301,36 @@ export function createUbisoftCandidatePaths() {
   ])
 }
 
+function createUbisoftAchievementCandidatePaths(rootPaths: string[]) {
+  const localAppData = resolveEnvironmentPath(process.env['LOCALAPPDATA'])
+
+  return uniqueTextValues([
+    ...splitConfiguredPaths(
+      process.env['LUDUX_UBISOFT_ACHIEVEMENT_PATHS'],
+    ),
+    ...rootPaths.map((rootPath) => join(rootPath, 'cache', 'achievements')),
+    localAppData
+      ? join(
+          localAppData,
+          'Ubisoft Game Launcher',
+          'cache',
+          'achievements',
+        )
+      : null,
+  ])
+}
+
+function createUbisoftSpoolCandidatePaths() {
+  const localAppData = resolveEnvironmentPath(process.env['LOCALAPPDATA'])
+
+  return uniqueTextValues([
+    ...splitConfiguredPaths(process.env['LUDUX_UBISOFT_SPOOL_PATHS']),
+    localAppData
+      ? join(localAppData, 'Ubisoft Game Launcher', 'spool')
+      : null,
+  ])
+}
+
 function createUbisoftRegistryPaths() {
   const configuredPaths = process.env['LUDUX_UBISOFT_REGISTRY_PATHS']
 
@@ -2395,28 +2430,39 @@ export async function readUbisoftConnectLocalLibrary(): Promise<LocalLauncherLib
     findExistingDirectories(createUbisoftCandidatePaths()),
     readUbisoftRegistryInstalls(),
   ])
-  const games = (
+  const [achievementPaths, spoolPaths] = await Promise.all([
+    findExistingDirectories(createUbisoftAchievementCandidatePaths(rootPaths)),
+    findExistingDirectories(createUbisoftSpoolCandidatePaths()),
+  ])
+  const installedGames = (
     await Promise.all(
-      registryLibrary.installs.map(async (install) => {
-        if (!(await directoryExists(install.installPath))) {
-          return null
-        }
-
-        const title = basename(normalize(install.installPath))
-
-        if (!title) {
-          return null
-        }
-
-        return {
-          externalId: install.externalId,
-          title,
-          installPath: install.installPath,
-          manifestPath: install.registryPath,
-        } satisfies LocalLauncherGame
-      }),
+      registryLibrary.installs.map(async (install) =>
+        (await directoryExists(install.installPath)) ? install : null,
+      ),
     )
-  ).filter((game): game is LocalLauncherGame => game !== null)
+  ).filter((install) => install !== null)
+  const achievementsByGameId = await readUbisoftAchievementLibrary({
+    achievementDirectories: achievementPaths,
+    gameIds: installedGames.map((install) => install.externalId),
+    spoolDirectories: spoolPaths,
+  })
+  const games = installedGames
+    .map((install) => {
+      const title = basename(normalize(install.installPath))
+
+      if (!title) {
+        return null
+      }
+
+      return {
+        externalId: install.externalId,
+        title,
+        installPath: install.installPath,
+        manifestPath: install.registryPath,
+        achievements: achievementsByGameId.get(install.externalId),
+      } satisfies LocalLauncherGame
+    })
+    .filter((game) => game !== null)
 
   return {
     games: dedupeLocalLauncherGames(games),
@@ -2425,7 +2471,11 @@ export async function readUbisoftConnectLocalLibrary(): Promise<LocalLauncherLib
     libraryPaths: uniqueTextValues(
       games.map((game) => dirname(game.installPath)),
     ),
-    configPaths: registryLibrary.registryPaths,
+    configPaths: uniqueTextValues([
+      ...registryLibrary.registryPaths,
+      ...achievementPaths,
+      ...spoolPaths,
+    ]),
   }
 }
 

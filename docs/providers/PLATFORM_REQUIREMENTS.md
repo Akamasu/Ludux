@@ -32,6 +32,8 @@ Pour la v1 publique, Ludux devra éviter toute clé API commune dans le client d
 | `LUDUX_EA_REGISTRY_PATHS` | EA App | Racines du registre EA séparées par `;` pour un diagnostic avancé | Optionnel |
 | `LUDUX_UBISOFT_CONNECT_PATHS` | Ubisoft Connect | Dossiers du lanceur Ubisoft séparés par `;` | Optionnel |
 | `LUDUX_UBISOFT_REGISTRY_PATHS` | Ubisoft Connect | Racines du registre Ubisoft séparées par `;` | Optionnel |
+| `LUDUX_UBISOFT_ACHIEVEMENT_PATHS` | Ubisoft Connect | Dossiers du cache de succès séparés par `;` | Optionnel |
+| `LUDUX_UBISOFT_SPOOL_PATHS` | Ubisoft Connect | Dossiers des dates de déblocage séparés par `;` | Optionnel |
 | `LUDUX_BATTLENET_PATHS` | Battle.net | Dossiers du lanceur Battle.net séparés par `;` | Optionnel |
 | `LUDUX_BATTLENET_LIBRARY_PATHS` | Battle.net | Bibliothèques de jeux Battle.net séparées par `;` | Optionnel |
 | `LUDUX_GOG_LIBRARY_PATHS` | GOG | Dossiers de jeux GOG séparés par `;` si la détection automatique échoue | Optionnel |
@@ -64,7 +66,7 @@ Pour la v1 publique, Ludux devra éviter toute clé API commune dans le client d
 | GOG | Bibliothèque possédée, temps de jeu, jeux installés | Base locale Galaxy, registre Windows et fichiers `goggame-*.info` | Données locales GOG Galaxy, GOG Developer Docs | Import local actif avec temps de jeu et jaquettes |
 | Epic | Jeux possédés/installés, future connexion compte | Manifests `.item`, `LauncherInstalled.dat`, apps gérées, cache local du launcher, puis client Epic/EOS OAuth avec consentement | Epic Online Services docs | Import local actif avec fallback cache, OAuth/EOS à étudier pour la connexion publique |
 | EA App | Jeux installés | Données `InstallData`, bibliothèques EA et registre Windows | Fichiers locaux du client EA | Import local actif avec vérification du dossier d'installation |
-| Ubisoft Connect | Jeux installés | Registre du lanceur et dossiers d'installation | Fichiers locaux du client Ubisoft Connect | Import local actif avec vérification du dossier d'installation |
+| Ubisoft Connect | Jeux installés et succès | Registre, dossiers d'installation, cache de succès et dates locales | Fichiers locaux du client Ubisoft Connect | Import local actif avec succès français et dates de déblocage |
 | Battle.net | Jeux installés | Configuration du client et marqueurs `.build.info`/`.build.db` | Fichiers locaux du client Battle.net | Import local actif pour les produits reconnus et encore installés |
 
 ## Ordre Recommandé

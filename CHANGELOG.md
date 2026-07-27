@@ -32,6 +32,17 @@ Le projet suit des versions de développement simples :
 - `v0.26.x` : première ouverture guidée et interface simplifiée pour les joueurs.
 - `v0.27.x` : enrichissement GOG, détection des lanceurs et mises à jour automatiques.
 - `v0.28.x` : import local EA App, Ubisoft Connect et Battle.net.
+- `v0.29.x` : succès Ubisoft Connect locaux et datés.
+
+## v0.29.0 - 2026-07-27
+
+- Synchronisation locale des succès Ubisoft Connect pour les jeux installés.
+- Import des intitulés et descriptions en français avec repli sur l'anglais.
+- Récupération de l'état de déblocage et de la date exacte depuis le cache local Ubisoft.
+- Fusion avec les succès Ludux existants pour éviter les doublons.
+- Lecture limitée aux fichiers utiles, sans compte Ubisoft, clé d'activation, image copiée ni donnée de session.
+- Garde-fous contre les archives trop volumineuses, incomplètes ou renouvelées pendant la synchronisation.
+- Extension de la suite à 100 tests unitaires validés.
 
 ## v0.28.0 - 2026-07-26
 

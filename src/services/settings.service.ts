@@ -180,6 +180,17 @@ interface LocalLauncherImportStats {
   linkedGames: number
   updatedGames: number
   ignoredLinks: number
+  syncedAchievements: number
+  syncedAchievementGames: number
+}
+
+interface SyncedProviderAchievement {
+  externalId: string
+  name: string
+  description: string | null
+  iconUrl: string | null
+  unlocked: boolean
+  unlockDate: string | null
 }
 
 interface LocalGameMetadata {
@@ -610,6 +621,9 @@ function createLocalLauncherSyncMessage(
     `${stats.linkedGames} relié(s)`,
     `${stats.updatedGames} déjà connu(s)`,
     stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
+    stats.syncedAchievements > 0
+      ? `${stats.syncedAchievements} succès sur ${stats.syncedAchievementGames} jeu(x)`
+      : null,
   ]
     .filter((value): value is string => Boolean(value))
     .join(' / ')
@@ -1522,12 +1536,11 @@ async function syncGogDlc(gameId: string, gogGame: GogInstalledGame) {
   return dlcs.length
 }
 
-async function syncGogAchievements(
+async function syncProviderAchievements(
   gameId: string,
-  gogGame: GogInstalledGame,
+  achievements: SyncedProviderAchievement[],
+  provider: ExternalProvider,
 ) {
-  const achievements = gogGame.achievements ?? []
-
   if (achievements.length === 0) {
     return 0
   }
@@ -1541,7 +1554,7 @@ async function syncGogAchievements(
     existingAchievements
       .filter(
         (achievement) =>
-          achievement.provider === gogProvider &&
+          achievement.provider === provider &&
           typeof achievement.externalId === 'string',
       )
       .map((achievement) => [
@@ -1585,7 +1598,7 @@ async function syncGogAchievements(
         iconUrl: achievement.iconUrl,
         unlocked: achievement.unlocked,
         unlockDate,
-        provider: gogProvider,
+        provider,
         externalId: achievement.externalId,
       })
       continue
@@ -1597,7 +1610,7 @@ async function syncGogAchievements(
       existing.iconUrl === achievement.iconUrl &&
       existing.unlocked === achievement.unlocked &&
       datesMatch(existing.unlockDate, unlockDate) &&
-      existing.provider === gogProvider &&
+      existing.provider === provider &&
       existing.externalId === achievement.externalId
     ) {
       continue
@@ -1613,7 +1626,7 @@ async function syncGogAchievements(
         iconUrl: achievement.iconUrl,
         unlocked: achievement.unlocked,
         unlockDate,
-        provider: gogProvider,
+        provider,
         externalId: achievement.externalId,
       },
     })
@@ -1626,6 +1639,17 @@ async function syncGogAchievements(
   }
 
   return achievements.length
+}
+
+async function syncGogAchievements(
+  gameId: string,
+  gogGame: GogInstalledGame,
+) {
+  return syncProviderAchievements(
+    gameId,
+    gogGame.achievements ?? [],
+    gogProvider,
+  )
 }
 
 async function findSteamLinkedGames(games: SteamOwnedGame[]) {
@@ -2342,6 +2366,8 @@ async function importLocalLauncherGames({
     linkedGames: 0,
     updatedGames: 0,
     ignoredLinks: 0,
+    syncedAchievements: 0,
+    syncedAchievementGames: 0,
   }
 
   if (games.length === 0) {
@@ -2469,6 +2495,17 @@ async function importLocalLauncherGames({
         lastSyncedAt: new Date(),
       },
     })
+
+    const syncedAchievements = await syncProviderAchievements(
+      localGame.id,
+      sourceGame.achievements ?? [],
+      provider,
+    )
+    stats.syncedAchievements += syncedAchievements
+
+    if (syncedAchievements > 0) {
+      stats.syncedAchievementGames += 1
+    }
   }
 
   return stats
