@@ -36,6 +36,13 @@ Le projet suit des versions de développement simples :
 - `v0.30.x` : associations de plateformes vérifiables et auto-update stabilisé.
 - `v0.31.x` : bibliothèque en livre et identité typographique fantastique.
 
+## v0.31.2 - 2026-07-28
+
+- Passage de quatre à huit jeux par double page dans la vue livre.
+- Répartition équilibrée de quatre jeux sur chaque page.
+- Réduction du nombre total de doubles pages tout en conservant titres, jaquettes et informations lisibles.
+- Adaptation vérifiée sur grand écran, fenêtre standard et présentation compacte empilée.
+
 ## v0.31.1 - 2026-07-28
 
 - Agrandissement du livre pour occuper toute la largeur utile de la bibliothèque.

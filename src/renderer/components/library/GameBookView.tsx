@@ -7,7 +7,7 @@ import {
 import { formatHours } from '../../utils/formatters'
 import { GameCover } from './GameCover'
 
-const gamesPerPage = 2
+const gamesPerPage = 4
 const gamesPerSpread = gamesPerPage * 2
 
 interface GameBookViewProps {
@@ -32,7 +32,7 @@ function BookGameEntry({
   return (
     <button
       type="button"
-      className="book-page-game group grid min-h-0 w-full grid-cols-[minmax(104px,38%)_minmax(0,1fr)] items-center gap-4 overflow-hidden border-b border-[#6F522B]/20 px-1 py-4 text-left last:border-b-0"
+      className="book-page-game group grid min-h-0 w-full grid-cols-[minmax(84px,34%)_minmax(0,1fr)] items-center gap-3 overflow-hidden border-b border-[#6F522B]/20 px-1 py-2 text-left last:border-b-0"
       onClick={() => onOpenGame(game.id)}
       aria-label={`Ouvrir ${game.title}`}
     >
@@ -50,7 +50,7 @@ function BookGameEntry({
         <span className="font-display block text-[11px] font-semibold uppercase text-[#8A6132]">
           {GAME_STATUS_LABELS[game.status]}
         </span>
-        <span className="font-literary mt-1 line-clamp-2 block break-words text-base font-semibold leading-5 text-[#2E241A] transition group-hover:text-[#6F4421]">
+        <span className="font-literary mt-1 line-clamp-2 block break-words text-sm font-semibold leading-5 text-[#2E241A] transition group-hover:text-[#6F4421]">
           {game.title}
         </span>
         <span className="mt-1.5 block truncate text-xs text-[#776957]">
@@ -83,7 +83,7 @@ function BookPage({
         Ludux
       </p>
 
-      <div className="grid min-h-0 grid-rows-2 py-1">
+      <div className="grid min-h-0 grid-rows-4 py-1">
         {games.map((game) => (
           <BookGameEntry key={game.id} game={game} onOpenGame={onOpenGame} />
         ))}

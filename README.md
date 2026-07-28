@@ -10,18 +10,18 @@
 
 Ludux est une application desktop qui rassemble votre bibliothèque de jeux, votre temps de jeu, vos succès, vos DLC, vos souvenirs et vos notes personnelles.
 
-Version courante : `v0.31.1`
+Version courante : `v0.31.2`
 
 ## Installation
 
-1. Téléchargez `Ludux-Setup-0.31.1-x64.exe` depuis [la dernière version publiée](https://github.com/Akamasu/Ludux/releases/latest).
+1. Téléchargez `Ludux-Setup-0.31.2-x64.exe` depuis [la dernière version publiée](https://github.com/Akamasu/Ludux/releases/latest).
 2. Lancez l'installateur.
 3. À la première ouverture, laissez Ludux détecter les plateformes présentes.
 4. Ajoutez seulement les connexions encore indiquées « À configurer ».
 
 Ludux construit ensuite une mémoire vidéoludique locale : bibliothèque, fiches de jeux, chroniques, musée des jeux terminés, livre de vie et statistiques.
 
-La bibliothèque s'ouvre comme un livre illustré, avec quatre jeux par double page et une animation de feuilletage. Les vues grille et liste restent disponibles depuis la barre de filtres.
+La bibliothèque s'ouvre comme un livre illustré, avec huit jeux par double page et une animation de feuilletage. Les vues grille et liste restent disponibles depuis la barre de filtres.
 
 Les nouvelles versions sont téléchargées automatiquement en arrière-plan puis installées à la fermeture de Ludux.
 
