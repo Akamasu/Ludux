@@ -468,6 +468,31 @@ function shouldUpdateSteamCover(
   )
 }
 
+function isEpicManagedCover(value: string | null | undefined) {
+  if (!value) {
+    return false
+  }
+
+  return (
+    /^ludux-cache:\/\/cover\/epic\//i.test(value) ||
+    /^https?:\/\/[^/]*(?:epicgames|epicgamesusercontent)\.com\//i.test(value)
+  )
+}
+
+function shouldUpdateEpicCover(
+  currentCoverUrl: string | null,
+  previousSourceCoverUrl: string | null | undefined,
+  nextSourceCoverUrl: string | null,
+) {
+  return Boolean(
+    nextSourceCoverUrl &&
+      currentCoverUrl !== nextSourceCoverUrl &&
+      (!currentCoverUrl ||
+        currentCoverUrl === previousSourceCoverUrl ||
+        isEpicManagedCover(currentCoverUrl)),
+  )
+}
+
 function resolveProviderExternalId(input: UpsertProviderConnectionInput) {
   if (input.provider === steamProvider) {
     return normalizeSteamId(input.externalId)
@@ -2305,7 +2330,13 @@ async function importEpicInstalledGames(
       await ensureEpicPlatformForGame(localGame.id, epicPlatform.id)
     }
 
-    if (cachedEpicGame.coverUrl && !localGame.coverUrl) {
+    if (
+      shouldUpdateEpicCover(
+        localGame.coverUrl,
+        existingLink?.sourceCoverUrl,
+        cachedEpicGame.coverUrl,
+      )
+    ) {
       await prisma.game.update({
         where: {
           id: localGame.id,

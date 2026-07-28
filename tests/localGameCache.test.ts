@@ -5,6 +5,7 @@ import {
   normalizeCacheSegment,
   parseLocalGameCacheSnapshot,
   resolveImageExtension,
+  resolveKnownRemoteCoverFallback,
   resolveLocalGameCacheUrl,
   shouldCacheRemoteAsset,
 } from '../src/services/local-game-cache'
@@ -74,5 +75,20 @@ describe('local game cache', () => {
     expect(resolveLocalGameCacheUrl('https://cdn.example.test/cover.jpg')).toBeNull()
     expect(resolveLocalGameCacheUrl(`${localGameCacheProtocol}://cover/steam/../x.jpg`)).toBeNull()
     expect(resolveLocalGameCacheUrl(`${localGameCacheProtocol}://metadata/steam/620.json`)).toBeNull()
+  })
+
+  it('rebuilds Steam cover URLs after a local cache eviction', () => {
+    expect(
+      resolveKnownRemoteCoverFallback(
+        `${localGameCacheProtocol}://cover/steam/570940.jpg`,
+      ),
+    ).toBe(
+      'https://cdn.akamai.steamstatic.com/steam/apps/570940/header.jpg',
+    )
+    expect(
+      resolveKnownRemoteCoverFallback(
+        `${localGameCacheProtocol}://cover/epic/example.jpg`,
+      ),
+    ).toBeNull()
   })
 })

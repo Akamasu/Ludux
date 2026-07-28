@@ -52,6 +52,12 @@ interface CacheFileEntry {
   mtimeMs: number
 }
 
+interface LocalGameCacheCoverRequest {
+  providerSegment: string
+  externalIdSegment: string
+  fileName: string
+}
+
 function readPositiveIntegerEnv(name: string, fallback: number) {
   const value = Number(process.env[name])
 
@@ -179,11 +185,19 @@ export function resolveImageExtension(contentType: string | null, imageUrl: stri
   return '.jpg'
 }
 
-function createCachedCoverUrl(providerSegment: string, fileName: string) {
-  return `${localGameCacheProtocol}://cover/${encodeURIComponent(providerSegment)}/${encodeURIComponent(fileName)}`
+function createCachedCoverUrl(
+  providerSegment: string,
+  fileName: string,
+  modifiedAtMs?: number,
+) {
+  const version = modifiedAtMs ? `?v=${Math.trunc(modifiedAtMs)}` : ''
+
+  return `${localGameCacheProtocol}://cover/${encodeURIComponent(providerSegment)}/${encodeURIComponent(fileName)}${version}`
 }
 
-export function resolveLocalGameCacheUrl(resourceUrl: string) {
+function parseLocalGameCacheCoverRequest(
+  resourceUrl: string,
+): LocalGameCacheCoverRequest | null {
   try {
     const url = new URL(resourceUrl)
 
@@ -206,12 +220,73 @@ export function resolveLocalGameCacheUrl(resourceUrl: string) {
       return null
     }
 
-    const filePath = resolve(coverCacheDirectory, pathParts[0], pathParts[1])
-
-    return isPathInside(filePath, coverCacheDirectory) ? filePath : null
+    return {
+      providerSegment: pathParts[0],
+      externalIdSegment: pathParts[1].slice(0, -extension.length),
+      fileName: pathParts[1],
+    }
   } catch {
     return null
   }
+}
+
+export function resolveLocalGameCacheUrl(resourceUrl: string) {
+  const request = parseLocalGameCacheCoverRequest(resourceUrl)
+
+  if (!request) {
+    return null
+  }
+
+  const filePath = resolve(
+    coverCacheDirectory,
+    request.providerSegment,
+    request.fileName,
+  )
+
+  return isPathInside(filePath, coverCacheDirectory) ? filePath : null
+}
+
+export function resolveKnownRemoteCoverFallback(resourceUrl: string) {
+  const request = parseLocalGameCacheCoverRequest(resourceUrl)
+
+  if (
+    request?.providerSegment === 'steam' &&
+    /^\d+$/.test(request.externalIdSegment)
+  ) {
+    return `https://cdn.akamai.steamstatic.com/steam/apps/${request.externalIdSegment}/header.jpg`
+  }
+
+  return null
+}
+
+export async function resolveLocalGameCacheRemoteCoverUrl(resourceUrl: string) {
+  const request = parseLocalGameCacheCoverRequest(resourceUrl)
+
+  if (!request) {
+    return null
+  }
+
+  const metadataPath = resolve(
+    metadataCacheDirectory,
+    request.providerSegment,
+    `${request.externalIdSegment}.json`,
+  )
+
+  if (isPathInside(metadataPath, metadataCacheDirectory)) {
+    try {
+      const snapshot = parseLocalGameCacheSnapshot(
+        JSON.parse(await readFile(metadataPath, 'utf8')),
+      )
+
+      if (snapshot) {
+        return snapshot.remoteCoverUrl
+      }
+    } catch {
+      // Older cache entries may no longer have their metadata snapshot.
+    }
+  }
+
+  return resolveKnownRemoteCoverFallback(resourceUrl)
 }
 
 async function listCachedCoverCandidates(providerSegment: string, externalIdSegment: string) {
@@ -248,7 +323,7 @@ async function findCachedCover(
       if (fileStats.isFile() && fileStats.size > 0) {
         return {
           path: candidate,
-          url: createCachedCoverUrl(providerSegment, fileName),
+          url: createCachedCoverUrl(providerSegment, fileName, fileStats.mtimeMs),
           fresh: Date.now() - fileStats.mtimeMs < coverRefreshMs,
         }
       }
@@ -258,6 +333,24 @@ async function findCachedCover(
   }
 
   return null
+}
+
+async function readCachedCoverSnapshot(
+  providerSegment: string,
+  externalIdSegment: string,
+) {
+  try {
+    return parseLocalGameCacheSnapshot(
+      JSON.parse(
+        await readFile(
+          join(metadataCacheDirectory, providerSegment, `${externalIdSegment}.json`),
+          'utf8',
+        ),
+      ),
+    )
+  } catch {
+    return null
+  }
 }
 
 async function fetchWithTimeout(
@@ -337,7 +430,10 @@ async function cacheRemoteCover({
   fetchImpl: typeof fetch
   providerSegment: string
 }) {
-  const existingCover = await findCachedCover(providerSegment, externalIdSegment)
+  const [existingCover, existingSnapshot] = await Promise.all([
+    findCachedCover(providerSegment, externalIdSegment),
+    readCachedCoverSnapshot(providerSegment, externalIdSegment),
+  ])
 
   if (!shouldCacheRemoteAsset(coverUrl)) {
     return {
@@ -346,7 +442,10 @@ async function cacheRemoteCover({
     }
   }
 
-  if (existingCover?.fresh) {
+  if (
+    existingCover?.fresh &&
+    existingSnapshot?.remoteCoverUrl === coverUrl
+  ) {
     return {
       coverUrl: existingCover.url,
       cachedCover: true,
@@ -388,10 +487,11 @@ async function cacheRemoteCover({
 
     await mkdir(providerDirectory, { recursive: true })
     await writeFile(filePath, body)
+    const fileStats = await stat(filePath)
     await cleanupLocalGameCacheAfterWrite()
 
     return {
-      coverUrl: createCachedCoverUrl(providerSegment, fileName),
+      coverUrl: createCachedCoverUrl(providerSegment, fileName, fileStats.mtimeMs),
       cachedCover: true,
     }
   } catch (error) {
@@ -479,12 +579,13 @@ async function cleanupLocalGameCacheAfterWrite() {
 
 export async function trimLocalGameCache() {
   const maxCacheBytes = getMaxCacheBytes()
-  const files = (await collectCacheFiles(gameCacheDirectory)).sort(
-    (left, right) => left.mtimeMs - right.mtimeMs,
-  )
+  const files = await collectCacheFiles(gameCacheDirectory)
+  const removableCoverFiles = files
+    .filter((file) => isPathInside(file.path, coverCacheDirectory))
+    .sort((left, right) => left.mtimeMs - right.mtimeMs)
   let totalBytes = files.reduce((total, file) => total + file.size, 0)
 
-  for (const file of files) {
+  for (const file of removableCoverFiles) {
     if (totalBytes <= maxCacheBytes) {
       break
     }

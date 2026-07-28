@@ -35,6 +35,15 @@ Le projet suit des versions de développement simples :
 - `v0.29.x` : succès Ubisoft Connect locaux et datés.
 - `v0.30.x` : associations de plateformes vérifiables et auto-update stabilisé.
 
+## v0.30.1 - 2026-07-28
+
+- Restauration automatique des jaquettes dont le fichier a été retiré du cache local.
+- Conservation des métadonnées légères nécessaires à ce repli sans alourdir le cache.
+- Correction des associations de jaquettes entre les jeux Epic Games voisins.
+- Remplacement des anciennes jaquettes Epic erronées lors de la synchronisation suivante.
+- Cadrage uniforme des jaquettes horizontales et verticales dans la vue grille.
+- Extension de la suite à 104 tests unitaires validés.
+
 ## v0.30.0 - 2026-07-28
 
 - Correction du démarrage Electron avec `electron-updater` dans le bundle ESM.

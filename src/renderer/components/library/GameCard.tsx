@@ -17,7 +17,7 @@ export function GameCard({ game, onOpen }: GameCardProps) {
         onClick={() => onOpen?.(game.id)}
         className="relative z-10 flex h-full w-full flex-col text-left"
       >
-        <div className="relative aspect-video bg-[#121620]">
+        <div className="relative aspect-video shrink-0 overflow-hidden bg-[#121620]">
           <GameCover title={game.title} coverUrl={game.coverUrl} />
           <span className="absolute left-3 top-3 rounded-lg bg-black/70 px-3 py-1 text-xs font-medium text-white">
             {GAME_STATUS_LABELS[game.status]}

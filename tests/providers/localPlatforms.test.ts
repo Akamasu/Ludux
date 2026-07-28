@@ -363,6 +363,44 @@ describe('local platform detection', () => {
     ])
   })
 
+  it('keeps each Epic cover inside its own launcher cache record', () => {
+    const cache = Buffer.concat([
+      createEpicCacheRecord([
+        ['catalogItemId', 'catalog-shadowrun'],
+        ['namespace', 'shadowrun'],
+        ['appName', 'ShadowrunHongKong'],
+        ['title', 'Shadowrun Hong Kong'],
+        ['url', 'https://cdn1.epicgames.com/shadowrun-1200x1600.jpg'],
+        ['path', 'store'],
+        ['path', 'games'],
+        ['owned', true],
+      ]),
+      createEpicCacheRecord([
+        ['catalogItemId', 'catalog-against-all-odds'],
+        ['namespace', 'against-all-odds'],
+        ['appName', 'AgainstAllOdds'],
+        ['title', 'Against All Odds'],
+        ['url', 'https://cdn1.epicgames.com/against-all-odds-1200x1600.jpg'],
+        ['path', 'store'],
+        ['path', 'games'],
+        ['owned', true],
+      ]),
+    ])
+
+    expect(parseEpicLauncherCacheFile(cache, 'webcache')).toEqual([
+      expect.objectContaining({
+        coverUrl: 'https://cdn1.epicgames.com/shadowrun-1200x1600.jpg',
+        externalId: 'catalog-shadowrun',
+        title: 'Shadowrun Hong Kong',
+      }),
+      expect.objectContaining({
+        coverUrl: 'https://cdn1.epicgames.com/against-all-odds-1200x1600.jpg',
+        externalId: 'catalog-against-all-odds',
+        title: 'Against All Odds',
+      }),
+    ])
+  })
+
   it('ignores Epic cache entries that are add-ons instead of games', () => {
     const cache = createEpicCacheRecord([
       ['catalogItemId', 'ark-crystal-isles'],

@@ -45,25 +45,39 @@ protocol.registerSchemesAsPrivileged([
 
 function registerLocalGameCacheProtocol(
   resolveLocalGameCacheUrl: (url: string) => string | null,
+  resolveLocalGameCacheRemoteCoverUrl: (url: string) => Promise<string | null>,
 ) {
   protocol.handle(localGameCacheProtocol, async (request) => {
     const resourcePath = resolveLocalGameCacheUrl(request.url)
 
-    if (!resourcePath) {
-      return new Response('Cache introuvable.', {
-        status: 404,
-      })
+    if (resourcePath) {
+      try {
+        await access(resourcePath)
+        return net.fetch(pathToFileURL(resourcePath).toString())
+      } catch {
+        // The lightweight cache may evict a cover that remains referenced locally.
+      }
     }
 
-    try {
-      await access(resourcePath)
-    } catch {
-      return new Response('Cache introuvable.', {
-        status: 404,
-      })
+    const remoteCoverUrl = await resolveLocalGameCacheRemoteCoverUrl(request.url)
+
+    if (remoteCoverUrl) {
+      try {
+        const response = await fetch(remoteCoverUrl, {
+          signal: AbortSignal.timeout(10_000),
+        })
+
+        if (response.ok) {
+          return response
+        }
+      } catch {
+        // The renderer will display its regular cover placeholder while offline.
+      }
     }
 
-    return net.fetch(pathToFileURL(resourcePath).toString())
+    return new Response('Cache introuvable.', {
+      status: 404,
+    })
   })
 }
 
@@ -144,7 +158,7 @@ async function initializeApplication() {
 
   const [
     { prisma },
-    { resolveLocalGameCacheUrl },
+    { resolveLocalGameCacheRemoteCoverUrl, resolveLocalGameCacheUrl },
     { settingsService },
     { registerLibraryHandlers },
     { registerSettingsHandlers },
@@ -159,7 +173,10 @@ async function initializeApplication() {
   registerLibraryHandlers()
   registerSettingsHandlers()
   registerWindowHandlers()
-  registerLocalGameCacheProtocol(resolveLocalGameCacheUrl)
+  registerLocalGameCacheProtocol(
+    resolveLocalGameCacheUrl,
+    resolveLocalGameCacheRemoteCoverUrl,
+  )
 
   stopAutoSync = () => settingsService.stopAutoSync()
   disconnectDatabase = () => prisma.$disconnect()

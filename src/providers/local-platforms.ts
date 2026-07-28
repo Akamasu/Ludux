@@ -747,6 +747,7 @@ export function parseEpicLauncherCacheFile(
   const games: EpicInstalledGame[] = []
   const ownedMarker = createEpicCacheFieldMarker('owned')
   let cursor = 0
+  let previousRecordEnd = 0
 
   while (cursor < buffer.length) {
     const ownedIndex = buffer.indexOf(ownedMarker, cursor)
@@ -756,19 +757,19 @@ export function parseEpicLauncherCacheFile(
     }
 
     const ownedValueIndex = ownedIndex + ownedMarker.length
+    const recordStart = Math.max(
+      previousRecordEnd,
+      ownedIndex - epicCacheRecordWindowBytes,
+    )
+    const recordEnd = ownedIndex
 
     cursor = ownedValueIndex + 1
+    previousRecordEnd = cursor
 
     if (buffer[ownedValueIndex] !== 0x54) {
       continue
     }
 
-    const nextOwnedIndex = buffer.indexOf(ownedMarker, ownedValueIndex + 1)
-    const recordStart = Math.max(0, ownedIndex - 4_000)
-    const recordEnd =
-      nextOwnedIndex > ownedIndex
-        ? Math.min(buffer.length, nextOwnedIndex)
-        : Math.min(buffer.length, ownedIndex + epicCacheRecordWindowBytes)
     const title = readEpicCacheField(buffer, 'title', recordStart, recordEnd)
     const catalogItemId =
       readEpicCacheField(buffer, 'catalogItemId', recordStart, recordEnd) ??
