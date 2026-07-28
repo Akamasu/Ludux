@@ -36,6 +36,12 @@ Le projet suit des versions de développement simples :
 - `v0.30.x` : associations de plateformes vérifiables et auto-update stabilisé.
 - `v0.31.x` : bibliothèque en livre et identité typographique fantastique.
 
+## v0.31.3 - 2026-07-28
+
+- Correction du décalage visuel des jaquettes dans la vue livre en plein écran.
+- Largeur des jaquettes plafonnée sur les écrans très larges pour préserver leur alignement avec les informations.
+- Conservation de leur taille responsive dans les fenêtres normales et compactes.
+
 ## v0.31.2 - 2026-07-28
 
 - Passage de quatre à huit jeux par double page dans la vue livre.

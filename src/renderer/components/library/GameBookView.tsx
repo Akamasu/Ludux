@@ -32,7 +32,7 @@ function BookGameEntry({
   return (
     <button
       type="button"
-      className="book-page-game group grid min-h-0 w-full grid-cols-[minmax(84px,34%)_minmax(0,1fr)] items-center gap-3 overflow-hidden border-b border-[#6F522B]/20 px-1 py-2 text-left last:border-b-0"
+      className="book-page-game group grid min-h-0 w-full items-center gap-3 overflow-hidden border-b border-[#6F522B]/20 px-1 py-2 text-left last:border-b-0"
       onClick={() => onOpenGame(game.id)}
       aria-label={`Ouvrir ${game.title}`}
     >

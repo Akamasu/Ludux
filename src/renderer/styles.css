@@ -318,6 +318,10 @@ button:disabled {
   outline-offset: 2px;
 }
 
+.book-page-game {
+  grid-template-columns: clamp(96px, 12cqi, 180px) minmax(0, 1fr);
+}
+
 .book-page-turn-sheet {
   position: absolute;
   top: 8.5%;
@@ -448,6 +452,10 @@ button:disabled {
       linear-gradient(90deg, rgba(91, 66, 36, 0.08), transparent 12%),
       #F1ECE3;
     box-shadow: 0 18px 30px -26px rgba(0, 0, 0, 0.9);
+  }
+
+  .book-page-game {
+    grid-template-columns: minmax(96px, 34%) minmax(0, 1fr);
   }
 
   .book-stage-index {
