@@ -1,4 +1,4 @@
-import { Grid3X3, List, Plus, Search } from 'lucide-react'
+import { BookOpen, Grid3X3, List, Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import {
   GAME_STATUS_LABELS,
@@ -9,6 +9,7 @@ import {
 } from '../../types/game'
 import { AddGameForm } from '../components/library/AddGameForm'
 import { EmptyLibrary } from '../components/library/EmptyLibrary'
+import { GameBookView } from '../components/library/GameBookView'
 import { GameCard } from '../components/library/GameCard'
 import { GameListRow } from '../components/library/GameListRow'
 import { Button } from '../components/ui/Button'
@@ -17,7 +18,7 @@ import { sortLibraryItemsByTitle } from '../utils/librarySort'
 
 type StatusFilter = 'ALL' | GameStatus
 type PlatformFilter = 'ALL' | string
-type ViewMode = 'grid' | 'list'
+type ViewMode = 'book' | 'grid' | 'list'
 
 interface LibraryPageProps {
   games: GameListItem[]
@@ -41,7 +42,7 @@ export function LibraryPage({
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('ALL')
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [viewMode, setViewMode] = useState<ViewMode>('book')
   const [isAddOpen, setIsAddOpen] = useState(false)
 
   const platforms = useMemo(() => {
@@ -170,7 +171,20 @@ export function LibraryPage({
               </select>
             </label>
 
-            <div className="grid h-11 min-w-28 grid-cols-2 rounded-lg border border-white/10 bg-[#0F1117] p-1 lg:justify-self-end 2xl:justify-self-stretch">
+            <div className="grid h-11 min-w-40 grid-cols-3 rounded-lg border border-white/10 bg-[#0F1117] p-1 lg:justify-self-end 2xl:justify-self-stretch">
+              <button
+                type="button"
+                aria-label="Vue pages"
+                aria-pressed={viewMode === 'book'}
+                title="Vue pages"
+                onClick={() => setViewMode('book')}
+                className={cn(
+                  'grid min-w-10 place-items-center rounded-md text-zinc-500 transition hover:text-white',
+                  viewMode === 'book' && 'bg-white/10 text-white',
+                )}
+              >
+                <BookOpen size={18} aria-hidden="true" />
+              </button>
               <button
                 type="button"
                 aria-label="Vue grille"
@@ -200,11 +214,13 @@ export function LibraryPage({
             </div>
           </section>
 
-          <div className="flex items-center justify-between text-sm text-zinc-500">
-            <p>
-              {filteredGames.length} sur {games.length} jeux
-            </p>
-          </div>
+          {viewMode !== 'book' ? (
+            <div className="flex items-center justify-between text-sm text-zinc-500">
+              <p>
+                {filteredGames.length} sur {games.length} jeux
+              </p>
+            </div>
+          ) : null}
 
           {filteredGames.length === 0 ? (
             <section className="rounded-lg border border-dashed border-white/15 bg-[#181B23] p-8">
@@ -219,6 +235,8 @@ export function LibraryPage({
                 <GameCard key={game.id} game={game} onOpen={onOpenGame} />
               ))}
             </section>
+          ) : viewMode === 'book' ? (
+            <GameBookView games={filteredGames} onOpenGame={onOpenGame} />
           ) : (
             <section className="space-y-3">
               {filteredGames.map((game) => (

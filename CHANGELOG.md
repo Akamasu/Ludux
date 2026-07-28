@@ -34,6 +34,17 @@ Le projet suit des versions de développement simples :
 - `v0.28.x` : import local EA App, Ubisoft Connect et Battle.net.
 - `v0.29.x` : succès Ubisoft Connect locaux et datés.
 - `v0.30.x` : associations de plateformes vérifiables et auto-update stabilisé.
+- `v0.31.x` : bibliothèque en livre et identité typographique fantastique.
+
+## v0.31.0 - 2026-07-28
+
+- Ajout d'une vue en livre ouvert présentant quatre jeux sur chaque double page.
+- Ouverture de la bibliothèque sur la vue livre par défaut, avec accès conservé aux vues grille et liste.
+- Animation de feuilletage dans les deux sens, synchronisée avec le changement de contenu.
+- Mise en page adaptée aux fenêtres étroites sous forme de pages empilées et lisibles.
+- Agrandissement des jaquettes, titres, plateformes, temps de jeu et notes dans le catalogue.
+- Nouvelle identité typographique avec Cinzel pour les titres et Lora pour les textes courants.
+- Polices et illustration du livre embarquées localement pour préserver la fluidité et le fonctionnement hors ligne.
 
 ## v0.30.1 - 2026-07-28
 
