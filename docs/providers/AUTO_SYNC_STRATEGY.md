@@ -79,6 +79,6 @@ Compte utilisateur
 
 1. Préparer Ludux Connect pour éviter les clés Steam utilisateur dans la v1 publique.
 2. Ajouter une file de synchronisation plus visible dans l'interface.
-3. Créer un écran de résolution des correspondances quand un jeu externe ressemble à un jeu local.
+3. Compléter la confirmation active des correspondances avec une recherche et une réaffectation manuelles.
 4. Étendre RAWG/IGDB avec screenshots, boutiques et attribution visible si nécessaire.
 5. Brancher Epic, GOG, Xbox, PlayStation ou Nintendo en mode compte lorsqu'un accès officiel exploitable est obtenu.

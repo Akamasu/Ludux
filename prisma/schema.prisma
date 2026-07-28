@@ -308,6 +308,7 @@ model ExternalGame {
   sourceCoverUrl      String?
   lastPlaytimeMinutes Int       @default(0)
   lastSyncedAt        DateTime?
+  matchConfirmedAt    DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 

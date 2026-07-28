@@ -7,6 +7,7 @@ import type {
   CreateDlcInput,
   CreatePlaySessionInput,
   CreateScreenshotInput,
+  ConfirmExternalGameLinkInput,
   DeleteAchievementInput,
   DeleteChronicleInput,
   DeleteDlcInput,
@@ -799,6 +800,45 @@ export function useGameDetail(
     }
   }, [])
 
+  const confirmExternalGameLink = useCallback(
+    async (input: ConfirmExternalGameLinkInput) => {
+      const api = window.ludux
+      setIsSaving(true)
+      setError(null)
+
+      try {
+        if (!api) {
+          setDetail((current) =>
+            current
+              ? {
+                  ...current,
+                  metadataSources: current.metadataSources.map((source) =>
+                    source.id === input.id
+                      ? {
+                          ...source,
+                          matchStatus: 'CONFIDENT',
+                          confirmedByUser: true,
+                          matchReason: null,
+                        }
+                      : source,
+                  ),
+                }
+              : current,
+          )
+          return
+        }
+
+        setDetail(await api.games.confirmExternalGameLink(input))
+        await onChanged()
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [onChanged],
+  )
+
   const deleteExternalGameLink = useCallback(
     async (input: DeleteExternalGameLinkInput) => {
       const api = window.ludux
@@ -1049,6 +1089,7 @@ export function useGameDetail(
     importScreenshotFile,
     updateScreenshot,
     deleteScreenshot,
+    confirmExternalGameLink,
     deleteExternalGameLink,
     restoreExternalGameLink,
     createChronicle,

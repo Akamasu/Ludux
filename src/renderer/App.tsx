@@ -254,6 +254,7 @@ function MainApplication({
         onDeleteAchievement={gameDetailState.deleteAchievement}
         onDeleteChronicle={gameDetailState.deleteChronicle}
         onDeleteDlc={gameDetailState.deleteDlc}
+        onConfirmExternalGameLink={gameDetailState.confirmExternalGameLink}
         onDeleteExternalGameLink={gameDetailState.deleteExternalGameLink}
         onDeletePlaySession={gameDetailState.deletePlaySession}
         onDeleteScreenshot={gameDetailState.deleteScreenshot}

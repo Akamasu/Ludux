@@ -3,6 +3,7 @@ import { gameService } from '../../services/game.service'
 import { libraryService } from '../../services/library.service'
 import {
   type AddAvailableDlcInput,
+  type ConfirmExternalGameLinkInput,
   EMOTION_VALUES,
   GAME_STATUS_VALUES,
   type CreateAchievementInput,
@@ -410,6 +411,19 @@ function parseDeleteExternalGameLinkInput(value: unknown): DeleteExternalGameLin
   }
 }
 
+function parseConfirmExternalGameLinkInput(
+  value: unknown,
+): ConfirmExternalGameLinkInput {
+  if (!isRecord(value)) {
+    throw new Error('Les données de la source sont invalides.')
+  }
+
+  return {
+    gameId: readRequiredString(value['gameId'], 'Identifiant de jeu invalide.'),
+    id: readRequiredString(value['id'], 'Identifiant de source invalide.'),
+  }
+}
+
 function parseRestoreExternalGameLinkInput(value: unknown): RestoreExternalGameLinkInput {
   if (!isRecord(value)) {
     throw new Error('Les données de la source masquée sont invalides.')
@@ -558,6 +572,17 @@ export function registerLibraryHandlers() {
     try {
       return await gameService.deleteExternalGameLink(
         parseDeleteExternalGameLinkInput(input),
+      )
+    } catch (error) {
+      logger.error('[LibraryIPC]', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('games:confirmExternalGameLink', async (_event, input: unknown) => {
+    try {
+      return await gameService.confirmExternalGameLink(
+        parseConfirmExternalGameLinkInput(input),
       )
     } catch (error) {
       logger.error('[LibraryIPC]', error)

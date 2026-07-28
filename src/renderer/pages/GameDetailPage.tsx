@@ -37,6 +37,7 @@ import {
   type CreateDlcInput,
   type CreatePlaySessionInput,
   type CreateScreenshotInput,
+  type ConfirmExternalGameLinkInput,
   type DeleteAchievementInput,
   type DeleteChronicleInput,
   type DeleteDlcInput,
@@ -90,6 +91,7 @@ interface GameDetailPageProps {
   onDeleteAchievement: (input: DeleteAchievementInput) => Promise<void>
   onDeleteChronicle: (input: DeleteChronicleInput) => Promise<void>
   onDeleteDlc: (input: DeleteDlcInput) => Promise<void>
+  onConfirmExternalGameLink: (input: ConfirmExternalGameLinkInput) => Promise<void>
   onDeleteExternalGameLink: (input: DeleteExternalGameLinkInput) => Promise<void>
   onDeletePlaySession: (input: DeletePlaySessionInput) => Promise<void>
   onDeleteScreenshot: (input: DeleteScreenshotInput) => Promise<void>
@@ -196,6 +198,10 @@ function GameDescription({ description }: { description: string | null }) {
 }
 
 function providerLinkStatusLabel(source: GameProviderLink) {
+  if (source.confirmedByUser) {
+    return 'Confirmée'
+  }
+
   if (source.matchStatus === 'REVIEW') {
     return 'À vérifier'
   }
@@ -240,6 +246,10 @@ function ignoredProviderLinksCountLabel(count: number) {
 }
 
 function providerLinkDetails(source: GameProviderLink) {
+  if (source.confirmedByUser) {
+    return 'Correspondance confirmée dans Ludux.'
+  }
+
   if (source.matchStatus === 'REVIEW') {
     return source.sourceTitle
       ? `Trouvé sous « ${source.sourceTitle} ».`
@@ -268,11 +278,13 @@ function ignoredProviderLinkReference(source: GameIgnoredProviderLink) {
 function ProviderLinksPanel({
   detail,
   isSaving,
+  onConfirmExternalGameLink,
   onDeleteExternalGameLink,
   onRestoreExternalGameLink,
 }: {
   detail: GameDetail
   isSaving: boolean
+  onConfirmExternalGameLink: (input: ConfirmExternalGameLinkInput) => Promise<void>
   onDeleteExternalGameLink: (input: DeleteExternalGameLinkInput) => Promise<void>
   onRestoreExternalGameLink: (input: RestoreExternalGameLinkInput) => Promise<void>
 }) {
@@ -285,6 +297,13 @@ function ProviderLinksPanel({
   const sourcesToReview = detail.metadataSources.filter(
     (source) => source.matchStatus !== 'CONFIDENT',
   )
+
+  async function handleConfirm(source: GameProviderLink) {
+    await onConfirmExternalGameLink({
+      gameId: detail.id,
+      id: source.id,
+    })
+  }
 
   async function handleDelete(source: GameProviderLink) {
     const confirmed = window.confirm(
@@ -407,6 +426,18 @@ function ProviderLinksPanel({
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                    {source.matchStatus !== 'CONFIDENT' ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => handleConfirm(source)}
+                        disabled={isSaving}
+                        className="h-8 border-[#7C5CFF]/25 bg-[#7C5CFF]/10 px-3 text-xs text-[#D8D0FF] hover:border-[#7C5CFF]/50 hover:bg-[#7C5CFF]/15 hover:text-white"
+                      >
+                        <CheckCircle2 size={13} aria-hidden="true" />
+                        Confirmer
+                      </Button>
+                    ) : null}
                     {source.url ? (
                       <a
                         href={source.url}
@@ -526,6 +557,7 @@ function GameArchiveHero({
   isSaving,
   onArchiveGame,
   onBack,
+  onConfirmExternalGameLink,
   onDeleteExternalGameLink,
   onRestoreExternalGameLink,
   onSyncGame,
@@ -534,6 +566,7 @@ function GameArchiveHero({
   isSaving: boolean
   onArchiveGame: () => void
   onBack: () => void
+  onConfirmExternalGameLink: (input: ConfirmExternalGameLinkInput) => Promise<void>
   onDeleteExternalGameLink: (input: DeleteExternalGameLinkInput) => Promise<void>
   onRestoreExternalGameLink: (input: RestoreExternalGameLinkInput) => Promise<void>
   onSyncGame: () => Promise<void>
@@ -618,6 +651,7 @@ function GameArchiveHero({
               <ProviderLinksPanel
                 detail={detail}
                 isSaving={isSaving}
+                onConfirmExternalGameLink={onConfirmExternalGameLink}
                 onDeleteExternalGameLink={onDeleteExternalGameLink}
                 onRestoreExternalGameLink={onRestoreExternalGameLink}
               />
@@ -705,6 +739,7 @@ export function GameDetailPage({
   onDeleteAchievement,
   onDeleteChronicle,
   onDeleteDlc,
+  onConfirmExternalGameLink,
   onDeleteExternalGameLink,
   onDeletePlaySession,
   onDeleteScreenshot,
@@ -762,6 +797,7 @@ export function GameDetailPage({
         isSaving={isSaving}
         onArchiveGame={handleArchiveGame}
         onBack={onBack}
+        onConfirmExternalGameLink={onConfirmExternalGameLink}
         onDeleteExternalGameLink={onDeleteExternalGameLink}
         onRestoreExternalGameLink={onRestoreExternalGameLink}
         onSyncGame={onSyncGame}

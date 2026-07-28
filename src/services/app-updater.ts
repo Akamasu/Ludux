@@ -1,6 +1,17 @@
 import { app, Notification } from 'electron'
-import { autoUpdater } from 'electron-updater'
+import { createRequire } from 'node:module'
+import type { AppUpdater } from 'electron-updater'
 import { logger } from '../utils/logger'
+
+const require = createRequire(import.meta.url)
+
+function loadAutoUpdater() {
+  return (
+    require('electron-updater') as {
+      autoUpdater: AppUpdater
+    }
+  ).autoUpdater
+}
 
 const initialUpdateCheckDelayMs = 20_000
 const updateCheckIntervalMs = 4 * 60 * 60_000
@@ -27,6 +38,7 @@ export function startAppUpdater() {
     return () => undefined
   }
 
+  const autoUpdater = loadAutoUpdater()
   let checkInProgress = false
 
   autoUpdater.autoDownload = true

@@ -3,6 +3,7 @@ import type {
   AddAvailableDlcInput,
   AvailableDlcListItem,
   ChronicleTimelineItem,
+  ConfirmExternalGameLinkInput,
   CreateAchievementInput,
   CreateChronicleInput,
   CreateDlcInput,
@@ -72,6 +73,8 @@ const api: LuduxApi = {
     delete: (id: string) => ipcRenderer.invoke('games:delete', id) as Promise<void>,
     deleteExternalGameLink: (input: DeleteExternalGameLinkInput) =>
       ipcRenderer.invoke('games:deleteExternalGameLink', input) as Promise<GameDetail>,
+    confirmExternalGameLink: (input: ConfirmExternalGameLinkInput) =>
+      ipcRenderer.invoke('games:confirmExternalGameLink', input) as Promise<GameDetail>,
     restoreExternalGameLink: (input: RestoreExternalGameLinkInput) =>
       ipcRenderer.invoke('games:restoreExternalGameLink', input) as Promise<GameDetail>,
     updateReview: (input: UpdateReviewInput) =>

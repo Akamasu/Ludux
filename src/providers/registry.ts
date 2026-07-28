@@ -46,8 +46,9 @@ export const EXTERNAL_PROVIDER_DEFINITIONS: ExternalProviderDefinition[] = [
   {
     provider: 'UBISOFT',
     label: 'Ubisoft Connect',
-    description: 'Jeux Ubisoft installés détectés automatiquement sur cet ordinateur.',
-    capabilities: ['Bibliothèque locale', 'Jeux installés'],
+    description:
+      'Jeux Ubisoft installés et succès locaux détectés automatiquement sur cet ordinateur.',
+    capabilities: ['Bibliothèque locale', 'Jeux installés', 'Succès'],
   },
   {
     provider: 'BATTLENET',

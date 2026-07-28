@@ -18,6 +18,7 @@ import {
 import type {
   AddAvailableDlcInput,
   AvailableDlcListItem,
+  ConfirmExternalGameLinkInput,
   CreateAchievementInput,
   CreateChronicleInput,
   CreateDlcInput,
@@ -154,6 +155,7 @@ async function fetchGameDetail(id: string) {
           sourceTitle: true,
           sourceCoverUrl: true,
           lastSyncedAt: true,
+          matchConfirmedAt: true,
         },
         orderBy: {
           provider: 'asc',
@@ -1125,6 +1127,26 @@ class GameService {
         },
       }),
     ])
+
+    return toGameDetail(await requireGameDetail(input.gameId))
+  }
+
+  async confirmExternalGameLink(
+    input: ConfirmExternalGameLinkInput,
+  ): Promise<GameDetail> {
+    const result = await prisma.externalGame.updateMany({
+      where: {
+        id: input.id,
+        gameId: input.gameId,
+      },
+      data: {
+        matchConfirmedAt: new Date(),
+      },
+    })
+
+    if (result.count === 0) {
+      throw new Error('Source introuvable.')
+    }
 
     return toGameDetail(await requireGameDetail(input.gameId))
   }

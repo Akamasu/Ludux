@@ -2,6 +2,7 @@ import type {
   AddAvailableDlcInput,
   AvailableDlcListItem,
   ChronicleTimelineItem,
+  ConfirmExternalGameLinkInput,
   CreateAchievementInput,
   CreateChronicleInput,
   CreateDlcInput,
@@ -60,6 +61,7 @@ export interface LuduxApi {
     restore: (id: string) => Promise<void>
     delete: (id: string) => Promise<void>
     deleteExternalGameLink: (input: DeleteExternalGameLinkInput) => Promise<GameDetail>
+    confirmExternalGameLink: (input: ConfirmExternalGameLinkInput) => Promise<GameDetail>
     restoreExternalGameLink: (input: RestoreExternalGameLinkInput) => Promise<GameDetail>
     updateReview: (input: UpdateReviewInput) => Promise<GameDetail>
     createDlc: (input: CreateDlcInput) => Promise<GameDetail>

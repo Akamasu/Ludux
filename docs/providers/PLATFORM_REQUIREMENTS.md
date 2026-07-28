@@ -73,7 +73,7 @@ Pour la v1 publique, Ludux devra éviter toute clé API commune dans le client d
 
 1. Stabiliser Steam avec une vraie clé utilisateur.
 2. Préparer une passerelle Ludux Connect pour les secrets de production.
-3. Ajouter un écran de correspondance manuelle lorsque plusieurs jeux ont le même titre.
+3. Compléter la confirmation active avec une recherche et une réaffectation manuelles lorsque plusieurs jeux ont le même titre.
 4. Étendre RAWG avec genres, screenshots et boutiques, puis comparer avec IGDB.
 5. Étudier Xbox, PlayStation, Nintendo, GOG et Epic seulement si un accès officiel ou acceptable est disponible.
 

@@ -11,6 +11,7 @@ interface ProviderLinkRecord {
   sourceTitle: string | null
   sourceCoverUrl: string | null
   lastSyncedAt: Date | null
+  matchConfirmedAt: Date | null
 }
 
 interface IgnoredProviderLinkRecord {
@@ -25,6 +26,9 @@ const providerLabels = new Map([
   ['STEAM', 'Steam'],
   ['EPIC', 'Epic Games'],
   ['GOG', 'GOG'],
+  ['EA_APP', 'EA App'],
+  ['UBISOFT', 'Ubisoft Connect'],
+  ['BATTLENET', 'Battle.net'],
   ['RAWG', 'RAWG'],
   ['IGDB', 'IGDB'],
   ['XBOX', 'Xbox'],
@@ -46,7 +50,12 @@ function normalizeComparableTitle(value: string) {
 export function resolveProviderLinkMatchStatus(
   gameTitle: string,
   sourceTitle: string | null,
+  matchConfirmedAt: Date | null = null,
 ): GameProviderLinkMatchStatus {
+  if (matchConfirmedAt) {
+    return 'CONFIDENT'
+  }
+
   if (!sourceTitle) {
     return 'UNKNOWN'
   }
@@ -90,6 +99,18 @@ function createProviderLinkUrl(provider: string, externalId: string) {
     return 'https://www.gog.com/'
   }
 
+  if (provider === 'EA_APP') {
+    return 'https://www.ea.com/games'
+  }
+
+  if (provider === 'UBISOFT') {
+    return 'https://store.ubisoft.com/'
+  }
+
+  if (provider === 'BATTLENET') {
+    return 'https://shop.battle.net/'
+  }
+
   return null
 }
 
@@ -97,7 +118,11 @@ export function buildGameProviderLink(
   gameTitle: string,
   record: ProviderLinkRecord,
 ): GameProviderLink {
-  const matchStatus = resolveProviderLinkMatchStatus(gameTitle, record.sourceTitle)
+  const matchStatus = resolveProviderLinkMatchStatus(
+    gameTitle,
+    record.sourceTitle,
+    record.matchConfirmedAt,
+  )
 
   return {
     id: record.id,
@@ -109,6 +134,7 @@ export function buildGameProviderLink(
     url: createProviderLinkUrl(record.provider, record.externalId),
     lastSyncedAt: record.lastSyncedAt?.toISOString() ?? null,
     matchStatus,
+    confirmedByUser: Boolean(record.matchConfirmedAt),
     matchReason:
       matchStatus === 'REVIEW'
         ? 'Le titre trouvé ne correspond pas exactement au titre dans Ludux.'

@@ -23,7 +23,7 @@ app
     await window.loadURL('data:text/html,<html><body>preload smoke</body></html>')
 
     const hasLuduxApi = await window.webContents.executeJavaScript(
-      'typeof window.ludux === "object" && typeof window.ludux.settings?.getOverview === "function"',
+      'typeof window.ludux === "object" && typeof window.ludux.settings?.getOverview === "function" && typeof window.ludux.games?.confirmExternalGameLink === "function"',
     )
 
     window.close()

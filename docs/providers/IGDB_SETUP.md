@@ -57,6 +57,7 @@ doublons lors des prochaines synchronisations.
 ## Limites
 
 - La recherche se fait automatiquement par titre.
-- Il n'y a pas encore d'écran de résolution manuelle des correspondances.
+- La fiche du jeu permet de confirmer ou de retirer une correspondance douteuse.
+- La recherche et la réaffectation manuelles vers une autre fiche ne sont pas encore disponibles.
 - Les requêtes IGDB sont limitées ; la synchronisation reste donc volontairement
   contrôlée depuis les paramètres.

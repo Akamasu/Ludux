@@ -65,6 +65,7 @@ avec un lien vers RAWG sur la fiche du jeu.
 ## Limites de la v0.23.0
 
 - La recherche se fait automatiquement par titre exact/près du titre.
-- Il n'y a pas encore d'écran de résolution manuelle des correspondances.
+- La fiche du jeu permet de confirmer ou de retirer une correspondance douteuse.
+- La recherche et la réaffectation manuelles vers une autre fiche ne sont pas encore disponibles.
 - La synchronisation est volontairement manuelle pour préserver le quota API.
 - Les genres, screenshots, boutiques et crédits détaillés seront branchés plus tard.

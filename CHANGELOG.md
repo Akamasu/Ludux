@@ -33,6 +33,19 @@ Le projet suit des versions de développement simples :
 - `v0.27.x` : enrichissement GOG, détection des lanceurs et mises à jour automatiques.
 - `v0.28.x` : import local EA App, Ubisoft Connect et Battle.net.
 - `v0.29.x` : succès Ubisoft Connect locaux et datés.
+- `v0.30.x` : associations de plateformes vérifiables et auto-update stabilisé.
+
+## v0.30.0 - 2026-07-28
+
+- Correction du démarrage Electron avec `electron-updater` dans le bundle ESM.
+- Chargement différé de l'auto-update, uniquement dans les versions installées.
+- Ajout d'un test Electron dédié pour empêcher le retour de l'import incompatible.
+- Ajout d'une action `Confirmer` pour valider une correspondance de plateforme incertaine depuis la fiche d'un jeu.
+- Conservation de cette confirmation en base pendant les synchronisations suivantes.
+- Ajout des libellés EA App, Ubisoft Connect et Battle.net dans les sources reliées aux jeux.
+- Présentation des succès locaux parmi les capacités détectées d'Ubisoft Connect.
+- Migration automatique protégée par la sauvegarde locale existante.
+- Extension de la suite à 102 tests unitaires validés.
 
 ## v0.29.0 - 2026-07-27
 

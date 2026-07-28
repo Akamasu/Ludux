@@ -19,6 +19,16 @@ describe('provider link diagnostics', () => {
     expect(resolveProviderLinkMatchStatus('Portal 2', 'Portal Maze 2')).toBe('REVIEW')
   })
 
+  it('accepts a distant source title once the user confirms it', () => {
+    expect(
+      resolveProviderLinkMatchStatus(
+        'Portal 2',
+        'Portal Maze 2',
+        new Date('2026-07-28T10:30:00.000Z'),
+      ),
+    ).toBe('CONFIDENT')
+  })
+
   it('builds a complete provider link item', () => {
     expect(
       buildGameProviderLink('Portal 2', {
@@ -28,12 +38,34 @@ describe('provider link diagnostics', () => {
         sourceTitle: 'Portal 2',
         sourceCoverUrl: 'https://example.test/portal.jpg',
         lastSyncedAt: new Date('2026-07-23T10:00:00.000Z'),
+        matchConfirmedAt: null,
       }),
     ).toMatchObject({
       id: 'link-1',
       label: 'Steam',
       url: 'https://store.steampowered.com/app/620/',
       matchStatus: 'CONFIDENT',
+      confirmedByUser: false,
+    })
+  })
+
+  it('exposes a persistent user-confirmed provider link', () => {
+    expect(
+      buildGameProviderLink('Portal 2', {
+        id: 'link-2',
+        provider: 'UBISOFT',
+        externalId: 'portal-maze-2',
+        sourceTitle: 'Portal Maze 2',
+        sourceCoverUrl: null,
+        lastSyncedAt: null,
+        matchConfirmedAt: new Date('2026-07-28T10:30:00.000Z'),
+      }),
+    ).toMatchObject({
+      label: 'Ubisoft Connect',
+      url: 'https://store.ubisoft.com/',
+      matchStatus: 'CONFIDENT',
+      confirmedByUser: true,
+      matchReason: null,
     })
   })
 

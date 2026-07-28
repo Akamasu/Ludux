@@ -143,6 +143,7 @@ export interface GameProviderLink {
   lastSyncedAt: string | null
   matchStatus: GameProviderLinkMatchStatus
   matchReason: string | null
+  confirmedByUser: boolean
 }
 
 export interface GameIgnoredProviderLink {
@@ -359,6 +360,11 @@ export interface DeleteScreenshotInput {
 }
 
 export interface DeleteExternalGameLinkInput {
+  gameId: string
+  id: string
+}
+
+export interface ConfirmExternalGameLinkInput {
   gameId: string
   id: string
 }
