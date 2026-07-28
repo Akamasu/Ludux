@@ -40,6 +40,7 @@ function BookGameEntry({
         <GameCover
           title={game.title}
           coverUrl={game.coverUrl}
+          loading="eager"
           className="transition duration-200 group-hover:scale-[1.03]"
           initialClassName="text-2xl text-[#7B6B57]"
         />
@@ -157,11 +158,6 @@ export function GameBookView({ games, onOpenGame }: GameBookViewProps) {
     const direction = nextIndex > safeSpreadIndex ? 'forward' : 'backward'
     setTurnDirection(direction)
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setSpreadIndex(nextIndex)
-      return
-    }
-
     clearTurnTimers()
     setIsTurning(true)
     setTurnSequence((current) => current + 1)
@@ -169,12 +165,12 @@ export function GameBookView({ games, onOpenGame }: GameBookViewProps) {
     turnMidpointTimer.current = setTimeout(() => {
       setSpreadIndex(nextIndex)
       turnMidpointTimer.current = null
-    }, 250)
+    }, 360)
 
     turnEndTimer.current = setTimeout(() => {
       setIsTurning(false)
       turnEndTimer.current = null
-    }, 540)
+    }, 760)
   }
 
   const firstGameNumber = safeSpreadIndex * gamesPerSpread + 1
@@ -207,7 +203,7 @@ export function GameBookView({ games, onOpenGame }: GameBookViewProps) {
 
       <div className="library-book-spread mx-auto">
         <img
-          src="/assets/open-book-pages.webp"
+          src="./assets/open-book-pages.webp"
           alt=""
           aria-hidden="true"
           draggable={false}

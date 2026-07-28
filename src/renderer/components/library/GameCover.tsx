@@ -6,12 +6,14 @@ interface GameCoverProps {
   coverUrl: string | null
   className?: string
   initialClassName?: string
+  loading?: 'eager' | 'lazy'
 }
 
 export function GameCover({
   className,
   coverUrl,
   initialClassName,
+  loading = 'lazy',
   title,
 }: GameCoverProps) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
@@ -25,7 +27,7 @@ export function GameCover({
         alt=""
         decoding="async"
         draggable={false}
-        loading="lazy"
+        loading={loading}
         onError={() => setFailedUrl(coverUrl)}
         className={cn('block h-full w-full object-cover object-center', className)}
       />

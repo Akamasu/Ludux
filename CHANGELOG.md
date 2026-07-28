@@ -36,6 +36,14 @@ Le projet suit des versions de développement simples :
 - `v0.30.x` : associations de plateformes vérifiables et auto-update stabilisé.
 - `v0.31.x` : bibliothèque en livre et identité typographique fantastique.
 
+## v0.31.1 - 2026-07-28
+
+- Agrandissement du livre pour occuper toute la largeur utile de la bibliothèque.
+- Correction du chargement de l'illustration dans l'application compilée et installée.
+- Feuilletage rendu visible indépendamment des réglages d'animation de Windows.
+- Animation allongée, courbure renforcée et changement de contenu synchronisé à mi-page.
+- Préchargement des quatre jaquettes affichées pour éviter un flash vide pendant le mouvement.
+
 ## v0.31.0 - 2026-07-28
 
 - Ajout d'une vue en livre ouvert présentant quatre jeux sur chaque double page.

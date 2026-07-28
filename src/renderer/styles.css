@@ -232,8 +232,8 @@ button:disabled {
 .library-book-spread {
   position: relative;
   container-type: inline-size;
-  width: min(100%, max(720px, calc((100vh - 18rem) * 1.502)));
-  max-width: 1320px;
+  width: 100%;
+  max-width: 2200px;
   aspect-ratio: 1537 / 1023;
   filter: drop-shadow(0 28px 34px rgba(0, 0, 0, 0.48));
   perspective: 4200px;
@@ -329,18 +329,30 @@ button:disabled {
   background:
     linear-gradient(
       90deg,
-      rgba(95, 72, 43, 0.2),
-      transparent 8%,
-      transparent 88%,
-      rgba(95, 72, 43, 0.12)
+      rgba(80, 55, 28, 0.28),
+      transparent 10%,
+      transparent 76%,
+      rgba(80, 55, 28, 0.2)
     ),
-    #F1ECE3;
+    linear-gradient(110deg, #E8DFD1 0%, #F8F4EC 46%, #EDE5D9 100%);
   box-shadow:
     0 0 1px rgba(76, 55, 31, 0.45),
-    12px 5px 28px rgba(34, 23, 13, 0.24);
+    18px 7px 38px rgba(34, 23, 13, 0.38);
   transform-style: preserve-3d;
   backface-visibility: visible;
   will-change: transform, opacity;
+}
+
+.book-page-turn-sheet::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.3),
+    transparent 28%,
+    rgba(91, 66, 36, 0.16)
+  );
 }
 
 @keyframes book-sheet-forward {
@@ -389,14 +401,12 @@ button:disabled {
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .book-page-turn-sheet[data-direction='forward'] {
-    animation: book-sheet-forward 520ms cubic-bezier(0.45, 0, 0.18, 1) both;
-  }
+.book-page-turn-sheet[data-direction='forward'] {
+  animation: book-sheet-forward 740ms cubic-bezier(0.45, 0, 0.18, 1) both;
+}
 
-  .book-page-turn-sheet[data-direction='backward'] {
-    animation: book-sheet-backward 520ms cubic-bezier(0.45, 0, 0.18, 1) both;
-  }
+.book-page-turn-sheet[data-direction='backward'] {
+  animation: book-sheet-backward 740ms cubic-bezier(0.45, 0, 0.18, 1) both;
 }
 
 @container (max-width: 760px) {
