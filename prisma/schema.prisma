@@ -14,6 +14,7 @@ enum GameStatus {
   COMPLETED_100
   DROPPED
   PAUSED
+  UTILITY
 }
 
 enum Emotion {

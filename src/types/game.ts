@@ -5,6 +5,7 @@ export const GAME_STATUS_VALUES = [
   'COMPLETED_100',
   'DROPPED',
   'PAUSED',
+  'UTILITY',
 ] as const
 
 export type GameStatus = (typeof GAME_STATUS_VALUES)[number]
@@ -28,6 +29,7 @@ export const GAME_STATUS_LABELS: Record<GameStatus, string> = {
   COMPLETED_100: 'Terminé à 100 %',
   DROPPED: 'Abandonné',
   PAUSED: 'En pause',
+  UTILITY: 'Outil / application',
 }
 
 export const EMOTION_LABELS: Record<Emotion, string> = {

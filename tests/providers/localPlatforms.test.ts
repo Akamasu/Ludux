@@ -233,6 +233,7 @@ describe('local platform detection', () => {
       parseEpicManifest(
         JSON.stringify({
           AppName: 'AlanWake2',
+          AppCategories: ['games'],
           CatalogItemId: 'catalog-alan-wake-2',
           DisplayName: 'Alan Wake 2',
           InstallLocation: 'D:\\Epic\\AlanWake2',
@@ -241,6 +242,7 @@ describe('local platform detection', () => {
       ),
     ).toEqual({
       acquiredAt: null,
+      categories: ['games'],
       coverUrl: null,
       externalId: 'catalog-alan-wake-2',
       installPath: 'D:\\Epic\\AlanWake2',
@@ -280,6 +282,7 @@ describe('local platform detection', () => {
       parseEpicManagedApp(
         JSON.stringify({
           AppName: 'StarWarsBattlefrontII',
+          AppCategories: ['applications'],
           CatalogID: 'catalog-star-wars-battlefront-2',
           Title: 'STAR WARS™ Battlefront™ II: Celebration Edition',
         }),
@@ -288,6 +291,7 @@ describe('local platform detection', () => {
     ).toEqual(
       expect.objectContaining({
         externalId: 'catalog-star-wars-battlefront-2',
+        categories: ['applications'],
         source: 'managed-app',
         title: 'STAR WARS™ Battlefront™ II: Celebration Edition',
       }),

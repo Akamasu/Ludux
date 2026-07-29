@@ -9,6 +9,7 @@ export interface SteamOwnedGame {
   title: string
   coverUrl: string
   iconUrl: string | null
+  applicationType?: string | null
   playtimeForeverMinutes: number
   lastPlayedAt: string | null
   categories?: string[]
@@ -40,6 +41,7 @@ export interface SteamAppDetails {
   appid: number
   title: string | null
   coverUrl: string | null
+  applicationType?: string | null
   description: string | null
   developer: string | null
   dlcAppIds: number[]
@@ -1199,6 +1201,7 @@ export function parseSteamAppDetails(payload: unknown): SteamAppDetails[] {
     }
 
     const coverUrl = readString(data['header_image']) ?? readString(data['capsule_image'])
+    const applicationType = readString(data['type'])
     const description = stripHtml(
       readString(data['short_description']) ??
         readString(data['about_the_game']) ??
@@ -1210,6 +1213,7 @@ export function parseSteamAppDetails(payload: unknown): SteamAppDetails[] {
         appid,
         title: readString(data['name']),
         coverUrl,
+        ...(applicationType ? { applicationType } : {}),
         description,
         developer: readStringList(data['developers']),
         dlcAppIds: readSteamDlcAppIds(data['dlc']),
@@ -1271,6 +1275,7 @@ export function mergeSteamAppDetails(
 
     return {
       ...game,
+      applicationType: detail.applicationType ?? game.applicationType,
       coverUrl: detail.coverUrl ?? game.coverUrl,
       description: detail.description ?? game.description,
       developer: detail.developer ?? game.developer,

@@ -35,6 +35,15 @@ Le projet suit des versions de développement simples :
 - `v0.29.x` : succès Ubisoft Connect locaux et datés.
 - `v0.30.x` : associations de plateformes vérifiables et auto-update stabilisé.
 - `v0.31.x` : bibliothèque en livre et identité typographique fantastique.
+- `v0.32.x` : distinction entre jeux, outils et applications.
+
+## v0.32.0 - 2026-07-29
+
+- Ajout du statut « Outil / application » dans les fiches, les formulaires et les filtres de la bibliothèque.
+- Détection automatique des logiciels via le type d'application Steam et les catégories explicites des fichiers Epic.
+- Prise en charge de la collection Steam « OUTILS & LOGICIEL » et de ses variantes françaises ou anglaises.
+- Reclassement prudent lors des synchronisations : les éléments ambigus conservent leur statut actuel.
+- Affichage du nombre d'outils ou applications détectés dans le résumé de synchronisation.
 
 ## v0.31.3 - 2026-07-28
 

@@ -79,6 +79,7 @@ import {
   shouldCacheRemoteAsset,
 } from './local-game-cache'
 import { getLuduxDataDirectory, getLuduxDataPath } from './app-data'
+import { detectCatalogItemKind } from '../utils/catalogItemKind'
 
 const userDataDirectory = getLuduxDataDirectory()
 const exportDirectory = getLuduxDataPath('exports')
@@ -119,6 +120,7 @@ interface SteamImportStats {
   syncedAchievements: number
   syncedAchievementGames: number
   syncedCollections: number
+  detectedUtilities: number
 }
 
 interface SteamSyncSources {
@@ -158,6 +160,7 @@ interface EpicImportStats {
   updatedGames: number
   ignoredLinks: number
   cachedCovers: number
+  detectedUtilities: number
 }
 
 interface GogImportStats {
@@ -544,6 +547,9 @@ function createSteamSyncMessage(stats: SteamImportStats, sources: SteamSyncSourc
     `${stats.updatedGames} déjà connus`,
     stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
     stats.cachedCovers > 0 ? `${stats.cachedCovers} jaquettes locales` : null,
+    stats.detectedUtilities > 0
+      ? `${stats.detectedUtilities} outil(s) ou application(s)`
+      : null,
     `${stats.syncedCollections} catégories Steam liées`,
     `${stats.syncedSessions} temps de jeu synchronisés`,
     `${stats.syncedDlc} DLC Steam détectés`,
@@ -603,6 +609,9 @@ function createEpicSyncMessage(stats: EpicImportStats) {
     `${stats.updatedGames} déjà connu(s)`,
     stats.ignoredLinks > 0 ? `${stats.ignoredLinks} lien(s) ignoré(s)` : null,
     stats.cachedCovers > 0 ? `${stats.cachedCovers} jaquettes locales` : null,
+    stats.detectedUtilities > 0
+      ? `${stats.detectedUtilities} outil(s) ou application(s)`
+      : null,
   ].join(' / ')
 }
 
@@ -2006,6 +2015,7 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
     syncedAchievements: 0,
     syncedAchievementGames: 0,
     syncedCollections: 0,
+    detectedUtilities: 0,
   }
   const ignoredLinks = await readIgnoredExternalGameLinkKeys(steamProvider)
   const steamPlatform = await ensureSteamPlatform()
@@ -2021,6 +2031,7 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
       releaseDate: true,
       developer: true,
       publisher: true,
+      status: true,
       website: true,
     },
   })
@@ -2051,6 +2062,7 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
             releaseDate: true,
             developer: true,
             publisher: true,
+            status: true,
             website: true,
           },
         })
@@ -2087,6 +2099,16 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
 
     const hasSteamPlayActivity =
       cachedSteamGame.playtimeForeverMinutes > 0 || cachedSteamGame.lastPlayedAt !== null
+    const detectedAsUtility =
+      detectCatalogItemKind({
+        applicationType: cachedSteamGame.applicationType,
+        categories: cachedSteamGame.categories,
+      }) === 'UTILITY'
+
+    if (detectedAsUtility) {
+      stats.detectedUtilities += 1
+    }
+
     const localGame =
       matchedGame ??
       (await prisma.game.create({
@@ -2097,7 +2119,11 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
           releaseDate: parseSteamReleaseDate(cachedSteamGame.releaseDate ?? null),
           developer: cachedSteamGame.developer,
           publisher: cachedSteamGame.publisher,
-          status: hasSteamPlayActivity ? 'PLAYING' : 'BACKLOG',
+          status: detectedAsUtility
+            ? 'UTILITY'
+            : hasSteamPlayActivity
+              ? 'PLAYING'
+              : 'BACKLOG',
           website: cachedSteamGame.website,
           platforms: {
             create: {
@@ -2119,6 +2145,7 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
           releaseDate: true,
           developer: true,
           publisher: true,
+          status: true,
           website: true,
         },
       }))
@@ -2137,6 +2164,17 @@ async function importSteamOwnedGames(games: SteamOwnedGame[]): Promise<SteamImpo
     }
 
     stats.syncedCollections += await syncSteamGameCollections(localGame.id, cachedSteamGame)
+
+    if (detectedAsUtility && localGame.status !== 'UTILITY') {
+      await prisma.game.update({
+        where: {
+          id: localGame.id,
+        },
+        data: {
+          status: 'UTILITY',
+        },
+      })
+    }
 
     if (
       shouldUpdateSteamCover(
@@ -2219,6 +2257,7 @@ async function importEpicInstalledGames(
     updatedGames: 0,
     ignoredLinks: 0,
     cachedCovers: 0,
+    detectedUtilities: 0,
   }
   const ignoredLinks = await readIgnoredExternalGameLinkKeys(epicProvider)
   const epicPlatform = await ensureEpicPlatform()
@@ -2229,6 +2268,7 @@ async function importEpicInstalledGames(
     select: {
       coverUrl: true,
       id: true,
+      status: true,
       title: true,
     },
   })
@@ -2257,6 +2297,7 @@ async function importEpicInstalledGames(
           select: {
             coverUrl: true,
             id: true,
+            status: true,
             title: true,
           },
         })
@@ -2291,13 +2332,22 @@ async function importEpicInstalledGames(
       stats.cachedCovers += 1
     }
 
+    const detectedAsUtility =
+      detectCatalogItemKind({
+        categories: cachedEpicGame.categories,
+      }) === 'UTILITY'
+
+    if (detectedAsUtility) {
+      stats.detectedUtilities += 1
+    }
+
     const localGame =
       matchedGame ??
       (await prisma.game.create({
         data: {
           coverUrl: cachedEpicGame.coverUrl,
           title: cachedEpicGame.title,
-          status: 'BACKLOG',
+          status: detectedAsUtility ? 'UTILITY' : 'BACKLOG',
           platforms: {
             create: {
               platform: {
@@ -2313,6 +2363,7 @@ async function importEpicInstalledGames(
         select: {
           coverUrl: true,
           id: true,
+          status: true,
           title: true,
         },
       }))
@@ -2328,6 +2379,17 @@ async function importEpicInstalledGames(
 
     if (matchedGame) {
       await ensureEpicPlatformForGame(localGame.id, epicPlatform.id)
+    }
+
+    if (detectedAsUtility && localGame.status !== 'UTILITY') {
+      await prisma.game.update({
+        where: {
+          id: localGame.id,
+        },
+        data: {
+          status: 'UTILITY',
+        },
+      })
     }
 
     if (

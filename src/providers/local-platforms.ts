@@ -24,6 +24,7 @@ export interface EpicInstalledGame {
   coverUrl: string | null
   source: EpicLocalGameSource
   acquiredAt: string | null
+  categories?: string[]
 }
 
 export interface EpicLocalLibraryResult {
@@ -262,6 +263,25 @@ function readOptionalText(value: unknown) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
 }
 
+function readOptionalTextList(value: unknown) {
+  const values = Array.isArray(value) ? value : [value]
+
+  return Array.from(
+    new Set(
+      values.flatMap((item) => {
+        const text = readOptionalText(item)
+
+        return text
+          ? text
+              .split(',')
+              .map((entry) => entry.trim())
+              .filter(Boolean)
+          : []
+      }),
+    ),
+  )
+}
+
 function normalizeLocalGameTitle(value: string) {
   return value
     .normalize('NFKD')
@@ -333,6 +353,7 @@ async function readLocalTextFile(path: string) {
 
 function createEpicInstalledGame({
   acquiredAt = null,
+  categories = [],
   coverUrl = null,
   externalId,
   installPath = null,
@@ -341,6 +362,7 @@ function createEpicInstalledGame({
   title,
 }: {
   acquiredAt?: string | null
+  categories?: string[]
   coverUrl?: string | null
   externalId: string | null
   installPath?: string | null
@@ -360,6 +382,7 @@ function createEpicInstalledGame({
     coverUrl,
     source,
     acquiredAt,
+    ...(categories.length > 0 ? { categories } : {}),
   }
 }
 
@@ -484,6 +507,9 @@ export function parseEpicManifest(
   }
 
   return createEpicInstalledGame({
+    categories: readOptionalTextList(
+      payload['AppCategories'] ?? payload['Categories'],
+    ),
     externalId,
     title,
     installPath: readOptionalText(payload['InstallLocation']),
@@ -519,6 +545,9 @@ export function parseEpicLauncherInstalledDatabase(
         title
 
       return createEpicInstalledGame({
+        categories: readOptionalTextList(
+          installation['AppCategories'] ?? installation['Categories'],
+        ),
         externalId,
         title,
         installPath: readOptionalText(installation['InstallLocation']),
@@ -551,6 +580,9 @@ export function parseEpicManagedApp(
     title
 
   return createEpicInstalledGame({
+    categories: readOptionalTextList(
+      payload['AppCategories'] ?? payload['Categories'],
+    ),
     externalId,
     title,
     manifestPath,
@@ -942,6 +974,10 @@ function dedupeEpicInstalledGames(games: EpicInstalledGame[]) {
       continue
     }
 
+    const categories = uniqueTextValues([
+      ...(game.categories ?? []),
+      ...(currentGame.categories ?? []),
+    ])
     const shouldReplace =
       epicLocalGameSourcePriority[game.source] >
       epicLocalGameSourcePriority[currentGame.source]
@@ -950,16 +986,27 @@ function dedupeEpicInstalledGames(games: EpicInstalledGame[]) {
       gamesByExternalId.set(game.externalId, {
         ...game,
         acquiredAt: game.acquiredAt ?? currentGame.acquiredAt,
+        ...(categories.length > 0 ? { categories } : {}),
         coverUrl: game.coverUrl ?? currentGame.coverUrl,
         installPath: game.installPath ?? currentGame.installPath,
       })
       continue
     }
 
-    if (!currentGame.coverUrl || !currentGame.installPath || !currentGame.acquiredAt) {
+    const hasNewCategories = categories.some(
+      (category) => !currentGame.categories?.includes(category),
+    )
+
+    if (
+      !currentGame.coverUrl ||
+      !currentGame.installPath ||
+      !currentGame.acquiredAt ||
+      hasNewCategories
+    ) {
       gamesByExternalId.set(game.externalId, {
         ...currentGame,
         acquiredAt: currentGame.acquiredAt ?? game.acquiredAt,
+        ...(categories.length > 0 ? { categories } : {}),
         coverUrl: currentGame.coverUrl ?? game.coverUrl,
         installPath: currentGame.installPath ?? game.installPath,
       })

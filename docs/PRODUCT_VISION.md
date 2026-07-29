@@ -85,7 +85,8 @@ Statuts :
 - Terminé ;
 - Terminé à 100 % ;
 - Abandonné ;
-- En pause.
+- En pause ;
+- Outil / application.
 
 ### Historique Personnel
 

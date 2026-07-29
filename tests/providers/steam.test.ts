@@ -142,6 +142,7 @@ HKEY_CURRENT_USER\\Software\\Valve\\Steam
           success: true,
           data: {
             name: 'Portal 2',
+            type: 'game',
             header_image: 'https://shared.akamai.steamstatic.com/header.jpg',
             short_description: 'Un jeu de puzzle en cooperation.',
             developers: ['Valve Software'],
@@ -161,6 +162,7 @@ HKEY_CURRENT_USER\\Software\\Valve\\Steam
       {
         appid: 620,
         title: 'Portal 2',
+        applicationType: 'game',
         coverUrl: 'https://shared.akamai.steamstatic.com/header.jpg',
         description: 'Un jeu de puzzle en cooperation.',
         developer: 'Valve Software',
