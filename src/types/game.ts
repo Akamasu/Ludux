@@ -201,6 +201,7 @@ interface RecentChronicle {
 
 export interface LibraryOverview {
   gamesOwned: number
+  utilitiesOwned: number
   gamesCompleted: number
   totalMinutes: number
   topPlatform: string | null
@@ -234,6 +235,7 @@ export interface MonthlyPlayStat {
 
 export interface LibraryStatistics {
   gamesOwned: number
+  utilitiesOwned: number
   gamesCompleted: number
   completionRate: number
   totalMinutes: number

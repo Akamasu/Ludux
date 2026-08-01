@@ -5,6 +5,7 @@ import {
   Clock3,
   Gamepad2,
   Trophy,
+  Wrench,
 } from 'lucide-react'
 import {
   EMOTION_LABELS,
@@ -59,7 +60,7 @@ function StatusDistribution({ stats }: { stats: StatusStat[] }) {
     <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-white">Repartition</h2>
+          <h2 className="text-lg font-semibold text-white">Répartition</h2>
           <p className="mt-1 text-sm text-zinc-500">Par statut de progression</p>
         </div>
         <BarChart3 className="text-[#A797FF]" size={20} aria-hidden="true" />
@@ -73,7 +74,16 @@ function StatusDistribution({ stats }: { stats: StatusStat[] }) {
                 {GAME_STATUS_LABELS[stat.status]}
               </span>
               <span className="text-zinc-500">
-                {stat.count} jeux · {formatHours(stat.totalMinutes)}
+                {stat.count}{' '}
+                {stat.status === 'UTILITY'
+                  ? stat.count === 1
+                    ? 'outil'
+                    : 'outils'
+                  : stat.count === 1
+                    ? 'jeu'
+                    : 'jeux'}{' '}
+                ·{' '}
+                {formatHours(stat.totalMinutes)}
               </span>
             </div>
             <div className="h-2 rounded-lg bg-white/7">
@@ -136,15 +146,15 @@ function EmotionPulse({ stats }: { stats: EmotionStat[] }) {
     <section className="rounded-lg border border-white/10 bg-[#181B23] p-5">
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-white">Emotions</h2>
-          <p className="mt-1 text-sm text-zinc-500">Tonalite des chroniques</p>
+          <h2 className="text-lg font-semibold text-white">Émotions</h2>
+          <p className="mt-1 text-sm text-zinc-500">Tonalité des chroniques</p>
         </div>
         <Activity className="text-[#C46A91]" size={20} aria-hidden="true" />
       </div>
 
       {visibleStats.length === 0 ? (
         <p className="text-sm leading-6 text-zinc-500">
-          Les emotions apparaitront avec les prochaines chroniques.
+          Les émotions apparaîtront avec les prochaines chroniques.
         </p>
       ) : (
         <div className="flex flex-wrap gap-2">
@@ -170,14 +180,14 @@ function MonthlyActivity({ stats }: { stats: MonthlyPlayStat[] }) {
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Activité mensuelle</h2>
-          <p className="mt-1 text-sm text-zinc-500">Sessions sur les douze derniers mois joues</p>
+          <p className="mt-1 text-sm text-zinc-500">Sessions sur les douze derniers mois joués</p>
         </div>
         <Clock3 className="text-[#DBC46E]" size={20} aria-hidden="true" />
       </div>
 
       {stats.length === 0 ? (
         <p className="text-sm leading-6 text-zinc-500">
-          Les sessions alimentees depuis les fiches de jeux composeront cette courbe.
+          Les sessions alimentées depuis les fiches de jeux composeront cette courbe.
         </p>
       ) : (
         <div className="flex h-48 items-end gap-3">
@@ -220,7 +230,7 @@ export function StatisticsPage({ error, isLoading, statistics }: StatisticsPageP
           <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">Tableau de bord</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
             Une lecture claire de votre bibliothèque, de votre temps de jeu et des
-            souvenirs consignes.
+            souvenirs consignés.
           </p>
         </div>
         <div className="w-full rounded-lg border border-[#C9A646]/15 bg-[#181B23] px-4 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:w-auto sm:text-right">
@@ -237,7 +247,7 @@ export function StatisticsPage({ error, isLoading, statistics }: StatisticsPageP
         </div>
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <StatTile
           label="Jeux"
           value={String(statistics.gamesOwned)}
@@ -245,7 +255,13 @@ export function StatisticsPage({ error, isLoading, statistics }: StatisticsPageP
           tone="violet"
         />
         <StatTile
-          label="Temps joue"
+          label="Outils"
+          value={String(statistics.utilitiesOwned)}
+          icon={Wrench}
+          tone="magenta"
+        />
+        <StatTile
+          label="Temps joué"
           value={formatHours(statistics.totalMinutes)}
           icon={Clock3}
           tone="blue"

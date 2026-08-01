@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { CreateGameInput, GameListItem, LibraryOverview } from '../../types/game'
+import {
+  countLibraryItemKinds,
+  isUtilityStatus,
+} from '../../utils/libraryItemKind'
 
 const EMPTY_OVERVIEW: LibraryOverview = {
   gamesOwned: 0,
+  utilitiesOwned: 0,
   gamesCompleted: 0,
   totalMinutes: 0,
   topPlatform: null,
@@ -28,21 +33,26 @@ function createBrowserOnlyGame(input: CreateGameInput): GameListItem {
 
 function buildOverviewFromGames(games: GameListItem[]): LibraryOverview {
   const platformCounts = new Map<string, number>()
+  const playableGames = games.filter((game) => !isUtilityStatus(game.status))
+  const itemCounts = countLibraryItemKinds(games)
 
-  for (const game of games) {
+  for (const game of playableGames) {
     for (const platform of game.platforms) {
       platformCounts.set(platform, (platformCounts.get(platform) ?? 0) + 1)
     }
   }
 
   return {
-    gamesOwned: games.length,
-    gamesCompleted: games.filter((game) =>
+    ...itemCounts,
+    gamesCompleted: playableGames.filter((game) =>
       game.status === 'COMPLETED' || game.status === 'COMPLETED_100',
     ).length,
-    totalMinutes: games.reduce((total, game) => total + game.totalMinutes, 0),
+    totalMinutes: playableGames.reduce(
+      (total, game) => total + game.totalMinutes,
+      0,
+    ),
     topPlatform: [...platformCounts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0] ?? null,
-    lastAdventure: games[0] ?? null,
+    lastAdventure: playableGames[0] ?? null,
     recentChronicle: null,
   }
 }

@@ -37,6 +37,14 @@ Le projet suit des versions de développement simples :
 - `v0.31.x` : bibliothèque en livre et identité typographique fantastique.
 - `v0.32.x` : distinction entre jeux, outils et applications.
 
+## v0.32.1 - 2026-08-01
+
+- Séparation des outils et applications dans les compteurs de l'accueil et des statistiques.
+- Exclusion des logiciels du taux de complétion, du temps moyen, des sessions et de l'activité mensuelle de jeu.
+- Ajout d'une tuile « Outils » responsive sur l'accueil et le tableau de bord.
+- Conservation d'une ligne dédiée aux outils dans la répartition par statut.
+- Correction des derniers accents et pluriels visibles dans les statistiques.
+
 ## v0.32.0 - 2026-07-29
 
 - Ajout du statut « Outil / application » dans les fiches, les formulaires et les filtres de la bibliothèque.

@@ -1,4 +1,11 @@
-import { BookOpen, Clock3, Gamepad2, Library, Trophy } from 'lucide-react'
+import {
+  BookOpen,
+  Clock3,
+  Gamepad2,
+  Library,
+  Trophy,
+  Wrench,
+} from 'lucide-react'
 import { GAME_STATUS_LABELS, type CreateGameInput, type GameListItem, type LibraryOverview } from '../../types/game'
 import { EmptyLibrary } from '../components/library/EmptyLibrary'
 import { StatTile } from '../components/library/StatTile'
@@ -26,6 +33,9 @@ export function HomePage({
   onOpenGame,
   overview,
 }: HomePageProps) {
+  const gameLabel = overview.gamesOwned === 1 ? 'jeu' : 'jeux'
+  const utilityLabel = overview.utilitiesOwned === 1 ? 'outil' : 'outils'
+
   return (
     <div className="flex flex-1 flex-col gap-7">
       <header className="flex flex-col items-start justify-between gap-5 border-b border-white/10 pb-7 xl:flex-row">
@@ -44,9 +54,11 @@ export function HomePage({
           </div>
         </div>
         <div className="w-full rounded-lg border border-[#C9A646]/15 bg-[#181B23] px-4 py-3 text-left sm:w-auto sm:text-right">
-          <p className="text-xs text-zinc-500">Etat</p>
+          <p className="text-xs text-zinc-500">État</p>
           <p className="mt-1 text-sm font-medium text-zinc-100">
-            {isLoading ? 'Chargement' : `${overview.gamesOwned} jeux`}
+            {isLoading
+              ? 'Chargement'
+              : `${overview.gamesOwned} ${gameLabel} · ${overview.utilitiesOwned} ${utilityLabel}`}
           </p>
         </div>
       </header>
@@ -57,8 +69,9 @@ export function HomePage({
         </div>
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
         <StatTile label="Jeux" value={String(overview.gamesOwned)} icon={Gamepad2} tone="violet" />
+        <StatTile label="Outils" value={String(overview.utilitiesOwned)} icon={Wrench} tone="magenta" />
         <StatTile label="Heures" value={formatHours(overview.totalMinutes)} icon={Clock3} tone="blue" />
         <StatTile label="Terminés" value={String(overview.gamesCompleted)} icon={Trophy} tone="gold" />
         <StatTile label="Plateforme" value={overview.topPlatform ?? '-'} icon={BookOpen} tone="magenta" />

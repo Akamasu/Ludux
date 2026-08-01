@@ -11,6 +11,10 @@ import {
   type LifeBookEvent,
 } from '../types/game'
 import { gameService } from './game.service'
+import {
+  countLibraryItemKinds,
+  isUtilityStatus,
+} from '../utils/libraryItemKind'
 
 const steamTotalSessionNote = 'Temps total Steam synchronisé.'
 
@@ -95,6 +99,9 @@ class LibraryService {
         where: {
           game: {
             archived: false,
+            status: {
+              not: 'UTILITY',
+            },
           },
         },
         select: {
@@ -106,14 +113,19 @@ class LibraryService {
       }),
     ])
     const gamesById = new Map(games.map((game) => [game.id, game]))
+    const playableGames = games.filter((game) => !isUtilityStatus(game.status))
+    const itemCounts = countLibraryItemKinds(games)
 
     return {
-      gamesOwned: games.length,
-      gamesCompleted: games.filter((game) =>
+      ...itemCounts,
+      gamesCompleted: playableGames.filter((game) =>
         game.status === 'COMPLETED' || game.status === 'COMPLETED_100',
       ).length,
-      totalMinutes: games.reduce((total, game) => total + game.totalMinutes, 0),
-      topPlatform: findTopPlatform(games),
+      totalMinutes: playableGames.reduce(
+        (total, game) => total + game.totalMinutes,
+        0,
+      ),
+      topPlatform: findTopPlatform(playableGames),
       lastAdventure: lastPlaySession ? (gamesById.get(lastPlaySession.gameId) ?? null) : null,
       recentChronicle: recentChronicle
         ? {
@@ -174,6 +186,10 @@ class LibraryService {
         statusStat.totalMinutes += gameMinutes
       }
 
+      if (isUtilityStatus(status)) {
+        continue
+      }
+
       for (const gamePlatform of game.platforms) {
         const platformName = gamePlatform.platform.name
         const accumulator =
@@ -225,13 +241,21 @@ class LibraryService {
       }
     }
 
-    const gamesCompleted = games.filter((game) =>
+    const playableGames = games.filter(
+      (game) => !isUtilityStatus(game.status as GameStatus),
+    )
+    const gamesCompleted = playableGames.filter((game) =>
       isCompletedStatus(game.status as GameStatus),
     ).length
-    const gamesOwned = games.length
+    const { gamesOwned, utilitiesOwned } = countLibraryItemKinds(
+      games.map((game) => ({
+        status: game.status as GameStatus,
+      })),
+    )
 
     return {
       gamesOwned,
+      utilitiesOwned,
       gamesCompleted,
       completionRate:
         gamesOwned === 0 ? 0 : Math.round((gamesCompleted / gamesOwned) * 100),

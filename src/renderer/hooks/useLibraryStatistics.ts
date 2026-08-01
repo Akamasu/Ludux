@@ -7,10 +7,15 @@ import {
   type PlatformStat,
   type StatusStat,
 } from '../../types/game'
+import {
+  countLibraryItemKinds,
+  isUtilityStatus,
+} from '../../utils/libraryItemKind'
 
 function createEmptyStatistics(): LibraryStatistics {
   return {
     gamesOwned: 0,
+    utilitiesOwned: 0,
     gamesCompleted: 0,
     completionRate: 0,
     totalMinutes: 0,
@@ -40,17 +45,21 @@ function buildStatisticsFromGames(games: GameListItem[]): LibraryStatistics {
   let gamesCompleted = 0
 
   for (const game of games) {
-    totalMinutes += game.totalMinutes
-
-    if (game.status === 'COMPLETED' || game.status === 'COMPLETED_100') {
-      gamesCompleted += 1
-    }
-
     const statusStat = statusStats.get(game.status)
 
     if (statusStat) {
       statusStat.count += 1
       statusStat.totalMinutes += game.totalMinutes
+    }
+
+    if (isUtilityStatus(game.status)) {
+      continue
+    }
+
+    totalMinutes += game.totalMinutes
+
+    if (game.status === 'COMPLETED' || game.status === 'COMPLETED_100') {
+      gamesCompleted += 1
     }
 
     for (const platform of game.platforms) {
@@ -68,12 +77,15 @@ function buildStatisticsFromGames(games: GameListItem[]): LibraryStatistics {
     }
   }
 
+  const { gamesOwned, utilitiesOwned } = countLibraryItemKinds(games)
+
   return {
     ...createEmptyStatistics(),
-    gamesOwned: games.length,
+    gamesOwned,
+    utilitiesOwned,
     gamesCompleted,
     completionRate:
-      games.length === 0 ? 0 : Math.round((gamesCompleted / games.length) * 100),
+      gamesOwned === 0 ? 0 : Math.round((gamesCompleted / gamesOwned) * 100),
     totalMinutes,
     statusStats: [...statusStats.values()],
     platformStats: [...platformStats.values()].sort((left, right) => {
