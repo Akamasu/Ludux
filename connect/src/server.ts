@@ -316,6 +316,16 @@ export function createLuduxConnectServer(input: LuduxConnectConfig) {
         throw new HttpError(429, 'RATE_LIMITED', 'Trop de requêtes. Réessayez plus tard.')
       }
 
+      if (method === 'GET' && requestUrl.pathname === '/') {
+        sendHtml(
+          response,
+          200,
+          'Ludux Connect',
+          '<strong>Le service est opérationnel.</strong> Vous pouvez fermer cette page et revenir dans Ludux.',
+        )
+        return
+      }
+
       if (method === 'GET' && requestUrl.pathname === '/health') {
         sendJson(response, 200, { service: 'ludux-connect', status: 'ok' })
         return

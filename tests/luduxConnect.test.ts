@@ -143,6 +143,36 @@ describe('Ludux Connect auth sessions', () => {
 })
 
 describe('Ludux Connect HTTP service', () => {
+  it('serves public landing and health routes without authentication', async () => {
+    const server = createLuduxConnectServer({
+      publicUrl: 'http://127.0.0.1:8787',
+      steamApiKey: 'server-only-key',
+      tokenSecret,
+    })
+
+    server.listen(0, '127.0.0.1')
+    await once(server, 'listening')
+    const port = (server.address() as AddressInfo).port
+
+    try {
+      const [landingResponse, healthResponse] = await Promise.all([
+        fetch(`http://127.0.0.1:${port}/`),
+        fetch(`http://127.0.0.1:${port}/health`),
+      ])
+
+      expect(landingResponse.status).toBe(200)
+      expect(await landingResponse.text()).toContain('Le service est opérationnel.')
+      expect(healthResponse.status).toBe(200)
+      expect(await healthResponse.json()).toEqual({
+        service: 'ludux-connect',
+        status: 'ok',
+      })
+    } finally {
+      server.close()
+      await once(server, 'close')
+    }
+  })
+
   it('uses the authenticated SteamID for library requests', async () => {
     const upstreamFetch = vi.fn(async (input: URL | RequestInfo) => {
       const url = new URL(String(input))
