@@ -9,7 +9,7 @@ RUN npm run build
 FROM node:24-alpine
 ENV NODE_ENV=production
 WORKDIR /app
-COPY --from=build /app/connect/dist ./dist
+COPY --from=build /app/dist ./dist
 COPY connect/package.json ./package.json
 USER node
 EXPOSE 8787
