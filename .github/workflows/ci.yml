@@ -29,3 +29,14 @@ jobs:
 
       - name: Vérifier l'application et Ludux Connect
         run: npm run check
+
+  connect-container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Construire l'image Ludux Connect
+        run: docker build -f connect/Dockerfile -t ludux-connect:test .
