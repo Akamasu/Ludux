@@ -1,8 +1,10 @@
 FROM node:24-alpine AS build
 WORKDIR /app
-COPY package.json package-lock.json tsconfig.json ./
-COPY connect ./connect
-RUN npm ci && npm run connect:build
+COPY connect/package.json connect/package-lock.json ./
+RUN npm ci
+COPY connect/tsconfig.json ./tsconfig.json
+COPY connect/src ./src
+RUN npm run build
 
 FROM node:24-alpine
 ENV NODE_ENV=production
