@@ -62,3 +62,6 @@ Le tag `v0.1.0` correspond au bootstrap initial de Ludux : socle Electron/React,
 - `v0.28.0` : import local EA App, Ubisoft Connect et Battle.net.
 - `v0.29.0` : succès Ubisoft Connect locaux, français et datés.
 - `v0.30.0` : associations de plateformes confirmables et auto-update stabilisé.
+- `v0.31.0` : bibliothèque immersive en livre et jaquettes stabilisées.
+- `v0.32.0` : détection séparée des jeux, outils et applications.
+- `v0.33.0` : socle sécurisé Ludux Connect et connexion Steam par navigateur.

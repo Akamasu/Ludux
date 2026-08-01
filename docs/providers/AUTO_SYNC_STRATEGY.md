@@ -77,7 +77,7 @@ Compte utilisateur
 
 ## Prochaines Étapes
 
-1. Préparer Ludux Connect pour éviter les clés Steam utilisateur dans la v1 publique.
+1. Déployer Ludux Connect derrière HTTPS et configurer son URL dans l'installateur.
 2. Ajouter une file de synchronisation plus visible dans l'interface.
 3. Compléter la confirmation active des correspondances avec une recherche et une réaffectation manuelles.
 4. Étendre RAWG/IGDB avec screenshots, boutiques et attribution visible si nécessaire.

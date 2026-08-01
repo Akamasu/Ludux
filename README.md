@@ -29,6 +29,10 @@ Les nouvelles versions sont téléchargées automatiquement en arrière-plan pui
 
 ## Synchronisation
 
+Ludux Connect permet de relier Steam depuis le navigateur sans saisir de clé API dans
+l'application. La clé Steam reste sur le serveur et Ludux conserve seulement un jeton
+chiffré et limité dans le temps. Une configuration locale avancée reste disponible.
+
 Steam synchronise actuellement :
 
 - bibliothèque PC ;
@@ -63,6 +67,9 @@ npm run dev
 ```
 
 Créez un fichier `.env` depuis `.env.example` pour activer les synchronisations pendant le développement local.
+
+Le service de connexion Steam se trouve dans `connect/`. Consultez
+`docs/providers/LUDUX_CONNECT.md` pour son fonctionnement et son déploiement.
 
 ## Vérification
 

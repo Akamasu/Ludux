@@ -6,6 +6,9 @@ import { resolve } from 'node:path'
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
+    define: {
+      __LUDUX_CONNECT_URL__: JSON.stringify(process.env['LUDUX_CONNECT_URL'] ?? ''),
+    },
     build: {
       rollupOptions: {
         input: {

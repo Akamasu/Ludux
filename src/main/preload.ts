@@ -129,6 +129,8 @@ const api: LuduxApi = {
       ipcRenderer.invoke('settings:clearGameCache') as Promise<SettingsActionResult>,
     openDataFolder: () =>
       ipcRenderer.invoke('settings:openDataFolder') as Promise<boolean>,
+    connectSteam: () =>
+      ipcRenderer.invoke('settings:connectSteam') as Promise<SettingsOverview>,
     upsertProviderConnection: (input: UpsertProviderConnectionInput) =>
       ipcRenderer.invoke('settings:upsertProviderConnection', input) as Promise<SettingsOverview>,
     deleteProviderConnection: (input: DeleteProviderConnectionInput) =>

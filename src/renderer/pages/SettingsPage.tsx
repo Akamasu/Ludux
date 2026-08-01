@@ -10,7 +10,9 @@ import {
   Download,
   FolderOpen,
   HardDrive,
+  KeyRound,
   Link2,
+  LogIn,
   RefreshCw,
   RotateCcw,
   SlidersHorizontal,
@@ -43,6 +45,7 @@ interface SettingsPageProps {
   launchView: AppView
   onChangeLaunchView: (view: AppView) => void
   onClearGameCache: () => Promise<void>
+  onConnectSteam: () => Promise<void>
   onCreateBackup: () => Promise<void>
   onDeleteGame: (gameId: string) => Promise<void>
   onDeleteProviderConnection: (input: DeleteProviderConnectionInput) => Promise<void>
@@ -648,6 +651,7 @@ function SyncActivityPanel({ overview }: { overview: SettingsOverview }) {
 function ProvidersPanel({
   isBusy,
   overview,
+  onConnectSteam,
   onDeleteProviderConnection,
   onSyncAllProviders,
   onSyncProvider,
@@ -655,6 +659,7 @@ function ProvidersPanel({
 }: {
   isBusy: boolean
   overview: SettingsOverview
+  onConnectSteam: () => Promise<void>
   onDeleteProviderConnection: (input: DeleteProviderConnectionInput) => Promise<void>
   onSyncAllProviders: () => Promise<void>
   onSyncProvider: (input: SyncProviderInput) => Promise<void>
@@ -676,6 +681,7 @@ function ProvidersPanel({
   const [username, setUsername] = useState('')
   const [tokenHint, setTokenHint] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+  const [showSteamAdvanced, setShowSteamAdvanced] = useState(false)
   const trimmedExternalId = externalId.trim()
   const isSteamProvider = selectedProvider?.provider === 'STEAM'
   const isRawgProvider = selectedProvider?.provider === 'RAWG'
@@ -692,7 +698,11 @@ function ProvidersPanel({
     setUsername(selectedProvider?.account?.username ?? '')
     setTokenHint('')
     setFormError(null)
-  }, [selectedProvider])
+    setShowSteamAdvanced(
+      selectedProvider?.account?.connectionMode === 'PERSONAL_API_KEY' ||
+        !overview.luduxConnect.available,
+    )
+  }, [overview.luduxConnect.available, selectedProvider])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -882,7 +892,53 @@ function ProvidersPanel({
               <ShieldCheck className="text-[#A797FF]" size={20} aria-hidden="true" />
             </div>
 
-            <div className="mt-5 grid gap-3">
+            {isSteamProvider ? (
+              <div className="mt-5 border-l-2 border-[#7C5CFF]/60 bg-[#121620] px-4 py-4">
+                <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                  <div>
+                    <p className="font-medium text-white">
+                      {selectedProvider.account?.connectionMode === 'LUDUX_CONNECT'
+                        ? 'Compte Steam connecté'
+                        : 'Connexion Steam simplifiée'}
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-zinc-400">
+                      {overview.luduxConnect.available
+                        ? 'Steam s’ouvre dans votre navigateur. Aucun mot de passe ni clé API n’est demandé par Ludux.'
+                        : 'La connexion simplifiée sera disponible dès que le service Ludux Connect sera activé.'}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={onConnectSteam}
+                    disabled={isBusy || !overview.luduxConnect.available}
+                    className="shrink-0"
+                  >
+                    <LogIn size={17} aria-hidden="true" />
+                    {isBusy
+                      ? 'Connexion...'
+                      : selectedProvider.account?.connectionMode === 'LUDUX_CONNECT'
+                        ? 'Reconnecter'
+                        : 'Se connecter'}
+                  </Button>
+                </div>
+
+                {overview.luduxConnect.available ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowSteamAdvanced((current) => !current)}
+                    className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-zinc-500 transition hover:text-zinc-300"
+                  >
+                    <KeyRound size={14} aria-hidden="true" />
+                    {showSteamAdvanced
+                      ? 'Masquer la configuration avancée'
+                      : 'Utiliser une clé personnelle'}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
+            {!isSteamProvider || showSteamAdvanced ? (
+              <div className="mt-5 grid gap-3">
               {!isRawgProvider ? (
                 <label>
                   <span className="mb-2 block text-xs font-medium text-zinc-500">
@@ -946,19 +1002,22 @@ function ProvidersPanel({
                   ) : null}
                 </label>
               </div>
-            </div>
+              </div>
+            ) : null}
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
-              <Button
-                type="submit"
-                disabled={
-                  isBusy ||
-                  (!isRawgProvider && trimmedExternalId.length === 0)
-                }
-              >
-                <Link2 size={17} aria-hidden="true" />
-                {isBusy ? 'Enregistrement...' : 'Enregistrer'}
-              </Button>
+              {!isSteamProvider || showSteamAdvanced ? (
+                <Button
+                  type="submit"
+                  disabled={
+                    isBusy ||
+                    (!isRawgProvider && trimmedExternalId.length === 0)
+                  }
+                >
+                  <Link2 size={17} aria-hidden="true" />
+                  {isBusy ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
+              ) : null}
               {isSyncableProvider(selectedProvider) ? (
                 <Button
                   type="button"
@@ -1106,6 +1165,7 @@ export function SettingsPage({
   launchView,
   onChangeLaunchView,
   onClearGameCache,
+  onConnectSteam,
   onCreateBackup,
   onDeleteGame,
   onDeleteProviderConnection,
@@ -1163,6 +1223,7 @@ export function SettingsPage({
       <ProvidersPanel
         overview={overview}
         isBusy={isBusy}
+        onConnectSteam={onConnectSteam}
         onDeleteProviderConnection={onDeleteProviderConnection}
         onSyncAllProviders={onSyncAllProviders}
         onSyncProvider={onSyncProvider}

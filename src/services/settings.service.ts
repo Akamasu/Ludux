@@ -80,6 +80,15 @@ import {
 } from './local-game-cache'
 import { getLuduxDataDirectory, getLuduxDataPath } from './app-data'
 import { detectCatalogItemKind } from '../utils/catalogItemKind'
+import {
+  connectSteamThroughLuduxConnect,
+  fetchSteamAchievementsThroughLuduxConnect,
+  fetchSteamOwnedGamesThroughLuduxConnect,
+  isSerializedLuduxConnectCredential,
+  parseLuduxConnectCredential,
+  readConfiguredLuduxConnectUrl,
+  serializeLuduxConnectCredential,
+} from './ludux-connect'
 
 const userDataDirectory = getLuduxDataDirectory()
 const exportDirectory = getLuduxDataPath('exports')
@@ -121,6 +130,11 @@ interface SteamImportStats {
   syncedAchievementGames: number
   syncedCollections: number
   detectedUtilities: number
+}
+
+interface SteamRemoteClient {
+  fetchAchievements: (appid: number) => Promise<SteamAchievement[]>
+  fetchOwnedGames: () => Promise<{ games: SteamOwnedGame[]; totalCount: number }>
 }
 
 interface SteamSyncSources {
@@ -424,6 +438,56 @@ function decryptSecret(value: string | null | undefined) {
   }
 
   return storedValue
+}
+
+function createSteamRemoteClient(
+  tokenHint: string | null | undefined,
+  steamId: string,
+): SteamRemoteClient | null {
+  const storedSecret = decryptSecret(tokenHint)
+  const connectCredential = parseLuduxConnectCredential(storedSecret)
+
+  if (connectCredential) {
+    return {
+      fetchAchievements: (appid) =>
+        fetchSteamAchievementsThroughLuduxConnect({
+          appid,
+          credential: connectCredential,
+        }),
+      fetchOwnedGames: () =>
+        fetchSteamOwnedGamesThroughLuduxConnect({ credential: connectCredential }),
+    }
+  }
+
+  if (isSerializedLuduxConnectCredential(storedSecret)) {
+    return null
+  }
+
+  const apiKey = storedSecret ?? readEnvValue('STEAM_WEB_API_KEY')
+
+  if (!apiKey) {
+    return null
+  }
+
+  return {
+    fetchAchievements: (appid) =>
+      fetchSteamAchievements({ apiKey, appid, steamId }),
+    fetchOwnedGames: () => fetchSteamOwnedGames({ apiKey, steamId }),
+  }
+}
+
+function getSteamConnectionMode(tokenHint: string | null) {
+  const storedSecret = decryptSecret(tokenHint)
+
+  if (parseLuduxConnectCredential(storedSecret)) {
+    return 'LUDUX_CONNECT' as const
+  }
+
+  if (storedSecret || readEnvValue('STEAM_WEB_API_KEY')) {
+    return 'PERSONAL_API_KEY' as const
+  }
+
+  return 'LOCAL_FILES' as const
 }
 
 function hasProviderToken(provider: ExternalProvider, tokenHint: string | null) {
@@ -860,6 +924,10 @@ async function buildProviderOverview(): Promise<ProviderOverview> {
             externalId: account.externalId,
             username: account.username,
             hasToken: hasProviderToken(account.provider as ExternalProvider, account.tokenHint),
+            connectionMode:
+              account.provider === steamProvider
+                ? getSteamConnectionMode(account.tokenHint)
+                : null,
             createdAt: account.createdAt.toISOString(),
             updatedAt: account.updatedAt.toISOString(),
           }
@@ -1949,13 +2017,11 @@ function sortSteamAchievementCandidates(left: SteamOwnedGame, right: SteamOwnedG
 }
 
 async function syncSteamAchievements({
-  apiKey,
+  fetchAchievements,
   games,
-  steamId,
 }: {
-  apiKey: string
+  fetchAchievements: SteamRemoteClient['fetchAchievements']
   games: SteamOwnedGame[]
-  steamId: string
 }) {
   const gameIdsBySteamAppId = await findSteamLinkedGames(games)
   const candidates = games
@@ -1973,11 +2039,7 @@ async function syncSteamAchievements({
     }
 
     try {
-      const achievements = await fetchSteamAchievements({
-        apiKey,
-        appid: game.appid,
-        steamId,
-      })
+      const achievements = await fetchAchievements(game.appid)
 
       if (achievements.length === 0) {
         continue
@@ -3157,14 +3219,14 @@ function createFallbackSteamGame({
 }
 
 async function syncSingleSteamGame({
-  apiKey,
   game,
+  remoteClient,
   sourceCoverUrl,
   steamAppId,
   steamId,
 }: {
-  apiKey: string | undefined
   game: LocalGameMetadata
+  remoteClient: SteamRemoteClient | null
   sourceCoverUrl: string | null
   steamAppId: number
   steamId: string
@@ -3181,12 +3243,9 @@ async function syncSingleSteamGame({
   )
   let remoteGames: SteamOwnedGame[] = []
 
-  if (apiKey) {
+  if (remoteClient) {
     try {
-      const ownedGames = await fetchSteamOwnedGames({
-        apiKey,
-        steamId,
-      })
+      const ownedGames = await remoteClient.fetchOwnedGames()
       remoteGames = ownedGames.games.filter(
         (steamGame) => steamGame.appid === steamAppId,
       )
@@ -3242,11 +3301,10 @@ async function syncSingleSteamGame({
     }
   }
 
-  if (apiKey) {
+  if (remoteClient) {
     const achievementStats = await syncSteamAchievements({
-      apiKey,
+      fetchAchievements: remoteClient.fetchAchievements,
       games: gamesToImport,
-      steamId,
     })
     stats.syncedAchievements = achievementStats.syncedAchievements
     stats.syncedAchievementGames = achievementStats.syncedAchievementGames
@@ -3490,9 +3548,51 @@ class SettingsService {
       exportDirectory,
       backupDirectory,
       lastBackupAt: await readLastBackupAt(),
+      luduxConnect: {
+        available: readConfiguredLuduxConnectUrl() !== null,
+        baseUrl: readConfiguredLuduxConnectUrl(),
+      },
       providerOverview: await buildProviderOverview(),
       localPlatformOverview: await buildLocalPlatformOverview(),
     }
+  }
+
+  async connectSteam(): Promise<SettingsOverview> {
+    const result = await connectSteamThroughLuduxConnect({
+      openExternal: (url) => shell.openExternal(url),
+    })
+    const tokenHint = encryptSecret(
+      serializeLuduxConnectCredential(result.credential),
+    )
+
+    if (!tokenHint) {
+      throw new Error('Le jeton Ludux Connect ne peut pas être enregistré.')
+    }
+
+    await prisma.$transaction([
+      prisma.externalAccount.deleteMany({
+        where: {
+          provider: steamProvider,
+        },
+      }),
+      prisma.externalAccount.create({
+        data: {
+          provider: steamProvider,
+          externalId: normalizeSteamId(result.steamId),
+          username: trimOptional(result.personaName ?? undefined),
+          tokenHint,
+        },
+      }),
+      prisma.syncData.create({
+        data: {
+          provider: steamProvider,
+          status: 'READY',
+          message: 'Compte Steam connecté avec Ludux Connect.',
+        },
+      }),
+    ])
+
+    return this.getOverview()
   }
 
   async upsertProviderConnection(
@@ -3588,8 +3688,7 @@ class SettingsService {
       throw new Error('Connexion Steam introuvable.')
     }
 
-    const apiKey =
-      decryptSecret(account.tokenHint) ?? readEnvValue('STEAM_WEB_API_KEY')
+    const remoteClient = createSteamRemoteClient(account.tokenHint, account.externalId)
 
     await recordProviderSync(
       steamProvider,
@@ -3605,12 +3704,9 @@ class SettingsService {
       let remoteTotalCount = 0
       let apiWarning: string | null = null
 
-      if (apiKey) {
+      if (remoteClient) {
         try {
-          const ownedGames = await fetchSteamOwnedGames({
-            apiKey,
-            steamId: account.externalId,
-          })
+          const ownedGames = await remoteClient.fetchOwnedGames()
 
           remoteGames = ownedGames.games
           remoteTotalCount = ownedGames.totalCount
@@ -3660,11 +3756,10 @@ class SettingsService {
         }
       }
 
-      if (apiKey) {
+      if (remoteClient) {
         const achievementStats = await syncSteamAchievements({
-          apiKey,
+          fetchAchievements: remoteClient.fetchAchievements,
           games: gamesToImport,
-          steamId: account.externalId,
         })
 
         stats.syncedAchievements = achievementStats.syncedAchievements
@@ -4011,11 +4106,13 @@ class SettingsService {
         summary.errors.push('lien Steam invalide')
       } else {
         try {
-          const apiKey =
-            decryptSecret(account.tokenHint) ?? readEnvValue('STEAM_WEB_API_KEY')
+          const remoteClient = createSteamRemoteClient(
+            account.tokenHint,
+            account.externalId,
+          )
           await syncSingleSteamGame({
-            apiKey,
             game,
+            remoteClient,
             sourceCoverUrl: steamLink.sourceCoverUrl,
             steamAppId,
             steamId: account.externalId,

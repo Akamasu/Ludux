@@ -146,6 +146,7 @@ export default function App() {
         isBusy={setupSettingsState.isBusy}
         error={setupSettingsState.error}
         onContinue={() => completeSetupAssistant(launchView)}
+        onConnectSteam={setupSettingsState.connectSteam}
         onOpenConnections={() => completeSetupAssistant('settings')}
         onRefresh={setupSettingsState.refresh}
       />
@@ -327,6 +328,7 @@ function MainApplication({
         launchView={launchView}
         onChangeLaunchView={onChangeLaunchView}
         onClearGameCache={settingsState.clearGameCache}
+        onConnectSteam={settingsState.connectSteam}
         onCreateBackup={settingsState.createBackup}
         onDeleteProviderConnection={settingsState.deleteProviderConnection}
         onDeleteGame={libraryState.deleteGame}

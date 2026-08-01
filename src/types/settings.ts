@@ -14,6 +14,11 @@ export const EXTERNAL_PROVIDER_VALUES = [
 
 export type ExternalProvider = (typeof EXTERNAL_PROVIDER_VALUES)[number]
 
+export type SteamConnectionMode =
+  | 'LUDUX_CONNECT'
+  | 'PERSONAL_API_KEY'
+  | 'LOCAL_FILES'
+
 export interface ExternalProviderDefinition {
   provider: ExternalProvider
   label: string
@@ -27,8 +32,14 @@ interface ExternalAccountItem {
   externalId: string
   username: string | null
   hasToken: boolean
+  connectionMode: SteamConnectionMode | null
   createdAt: string
   updatedAt: string
+}
+
+export interface LuduxConnectOverview {
+  available: boolean
+  baseUrl: string | null
 }
 
 interface ProviderSyncState {
@@ -96,6 +107,7 @@ export interface SettingsOverview {
   exportDirectory: string
   backupDirectory: string
   lastBackupAt: string | null
+  luduxConnect: LuduxConnectOverview
   providerOverview: ProviderOverview
   localPlatformOverview: LocalPlatformOverview
 }

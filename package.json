@@ -5,13 +5,16 @@
   "author": "Akamasu",
   "license": "UNLICENSED",
   "private": true,
-  "version": "0.32.1",
+  "version": "0.33.0",
   "type": "module",
   "main": "./out/main/main.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "tsc -b && electron-vite build",
-    "check": "npm run typecheck && npm run lint && npm test && npm run smoke:electron-sqlite && npm run smoke:electron-preload && npm run smoke:electron-updater && npm run smoke:electron-migrations && npm run smoke:electron-gog && npm run smoke:electron-platforms && npx prisma validate",
+    "check": "npm run typecheck && npm run connect:build && npm run lint && npm test && npm run smoke:electron-sqlite && npm run smoke:electron-preload && npm run smoke:electron-updater && npm run smoke:electron-migrations && npm run smoke:electron-gog && npm run smoke:electron-platforms && npx prisma validate",
+    "connect:build": "tsc -p connect/tsconfig.json",
+    "connect:dev": "npm run connect:build && node --env-file-if-exists=connect/.env connect/dist/server.js",
+    "connect:start": "node --env-file-if-exists=connect/.env connect/dist/server.js",
     "lint": "oxlint .",
     "postinstall": "prisma generate && electron-builder install-app-deps",
     "package:dir": "npm run build && electron-builder --dir",
@@ -84,8 +87,8 @@
     }
   },
   "dependencies": {
-    "@prisma/adapter-better-sqlite3": "^7.9.0",
-    "@prisma/client": "^7.9.0",
+    "@prisma/adapter-better-sqlite3": "^7.9.1",
+    "@prisma/client": "^7.9.1",
     "better-sqlite3": "^12.11.1",
     "electron-updater": "^6.8.9",
     "fflate": "^0.8.3"
@@ -108,7 +111,7 @@
     "electron-vite": "^5.0.0",
     "lucide-react": "^1.24.0",
     "oxlint": "^1.71.0",
-    "prisma": "^7.9.0",
+    "prisma": "^7.9.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tailwind-merge": "^3.6.0",

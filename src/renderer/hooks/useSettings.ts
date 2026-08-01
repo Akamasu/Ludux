@@ -35,6 +35,10 @@ const BROWSER_OVERVIEW: SettingsOverview = {
   exportDirectory: 'Electron requis',
   backupDirectory: 'Electron requis',
   lastBackupAt: null,
+  luduxConnect: {
+    available: false,
+    baseUrl: null,
+  },
   providerOverview: BROWSER_PROVIDER_OVERVIEW,
   localPlatformOverview: {
     platforms: [],
@@ -169,6 +173,36 @@ export function useSettings(enabled = true) {
     }
   }, [])
 
+  const connectSteam = useCallback(async () => {
+    const api = window.ludux
+
+    if (!api) {
+      setActionResult({
+        canceled: true,
+        path: null,
+        message: ELECTRON_ONLY_ACTION_MESSAGE,
+      })
+      return
+    }
+
+    setIsBusy(true)
+    setError(null)
+    setActionResult(null)
+
+    try {
+      setOverview(await api.settings.connectSteam())
+      setActionResult({
+        canceled: false,
+        path: null,
+        message: 'Compte Steam connecté avec Ludux Connect.',
+      })
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+    } finally {
+      setIsBusy(false)
+    }
+  }, [])
+
   const upsertProviderConnection = useCallback(
     async (input: UpsertProviderConnectionInput) => {
       const api = window.ludux
@@ -285,6 +319,7 @@ export function useSettings(enabled = true) {
     createBackup,
     clearGameCache,
     openDataFolder,
+    connectSteam,
     upsertProviderConnection,
     deleteProviderConnection,
     syncAllProviders,

@@ -22,6 +22,7 @@ interface FirstRunPageProps {
   isBusy: boolean
   error: string | null
   onContinue: () => void
+  onConnectSteam: () => Promise<void>
   onOpenConnections: () => void
   onRefresh: () => Promise<void>
 }
@@ -145,6 +146,7 @@ export function FirstRunPage({
   isBusy,
   isLoading,
   onContinue,
+  onConnectSteam,
   onOpenConnections,
   onRefresh,
   overview,
@@ -248,6 +250,18 @@ export function FirstRunPage({
                   />
                 ))}
               </div>
+
+              {overview.luduxConnect.available ? (
+                <Button
+                  type="button"
+                  onClick={onConnectSteam}
+                  disabled={isBusy || isLoading}
+                  className="mt-4 w-full"
+                >
+                  <ShieldCheck size={17} aria-hidden="true" />
+                  {isBusy ? 'Connexion en cours...' : 'Se connecter avec Steam'}
+                </Button>
+              ) : null}
 
               <div className="mt-4 flex items-start gap-3 border-l-2 border-[#C9A646]/60 px-4 py-2 text-sm leading-6 text-zinc-400">
                 <HardDrive className="mt-1 shrink-0 text-[#B9A66B]" size={16} aria-hidden="true" />

@@ -89,6 +89,7 @@ export interface LuduxApi {
     createBackup: () => Promise<SettingsActionResult>
     clearGameCache: () => Promise<SettingsActionResult>
     openDataFolder: () => Promise<boolean>
+    connectSteam: () => Promise<SettingsOverview>
     upsertProviderConnection: (
       input: UpsertProviderConnectionInput,
     ) => Promise<SettingsOverview>

@@ -130,6 +130,15 @@ export function registerSettingsHandlers() {
     }
   })
 
+  ipcMain.handle('settings:connectSteam', async () => {
+    try {
+      return await settingsService.connectSteam()
+    } catch (error) {
+      logger.error('[SettingsIPC]', error)
+      throw error
+    }
+  })
+
   ipcMain.handle('settings:upsertProviderConnection', async (_event, input: unknown) => {
     try {
       return await settingsService.upsertProviderConnection(

@@ -1,0 +1,7 @@
+connect/dist
+node_modules
+out
+release
+userdata
+.env
+connect/.env
