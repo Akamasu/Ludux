@@ -15,6 +15,7 @@
     "connect:build": "tsc -p connect/tsconfig.json",
     "connect:dev": "npm run connect:build && node --env-file-if-exists=connect/.env connect/dist/server.js",
     "connect:start": "node --env-file-if-exists=connect/.env connect/dist/server.js",
+    "connect:verify-url": "node scripts/verify-ludux-connect-url.mjs",
     "lint": "oxlint .",
     "postinstall": "prisma generate && electron-builder install-app-deps",
     "package:dir": "npm run build && electron-builder --dir",

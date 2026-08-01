@@ -33,10 +33,15 @@ jobs:
   connect-container:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      LUDUX_CONNECT_URL: ${{ vars.LUDUX_CONNECT_URL }}
 
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v4
+
+      - name: Vérifier l'adresse publique de Ludux Connect
+        run: npm run connect:verify-url
 
       - name: Construire l'image Ludux Connect
         run: docker build -f connect/Dockerfile -t ludux-connect:test .
