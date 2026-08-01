@@ -87,6 +87,7 @@ export interface LuduxApi {
     getOverview: () => Promise<SettingsOverview>
     exportLibrary: () => Promise<SettingsActionResult>
     createBackup: () => Promise<SettingsActionResult>
+    restoreBackup: () => Promise<SettingsActionResult>
     clearGameCache: () => Promise<SettingsActionResult>
     openDataFolder: () => Promise<boolean>
     connectSteam: () => Promise<SettingsOverview>

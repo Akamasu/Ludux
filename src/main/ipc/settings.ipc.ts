@@ -112,6 +112,15 @@ export function registerSettingsHandlers() {
     }
   })
 
+  ipcMain.handle('settings:restoreBackup', async () => {
+    try {
+      return await settingsService.restoreBackup()
+    } catch (error) {
+      logger.error('[SettingsIPC]', error)
+      throw error
+    }
+  })
+
   ipcMain.handle('settings:clearGameCache', async () => {
     try {
       return await settingsService.clearGameCache()

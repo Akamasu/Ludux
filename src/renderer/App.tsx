@@ -330,6 +330,7 @@ function MainApplication({
         onClearGameCache={settingsState.clearGameCache}
         onConnectSteam={settingsState.connectSteam}
         onCreateBackup={settingsState.createBackup}
+        onRestoreBackup={settingsState.restoreBackup}
         onDeleteProviderConnection={settingsState.deleteProviderConnection}
         onDeleteGame={libraryState.deleteGame}
         onExportLibrary={settingsState.exportLibrary}

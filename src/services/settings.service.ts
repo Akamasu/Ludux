@@ -3,6 +3,10 @@ import { copyFile, mkdir, readdir, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { getDatabaseFilePath, prisma } from '../database/client'
 import {
+  inspectLuduxDatabaseBackup,
+  restoreLuduxDatabaseBackup,
+} from '../database/backups'
+import {
   fetchSteamAppDetails,
   fetchSteamAchievements,
   fetchSteamOwnedGames,
@@ -4300,6 +4304,92 @@ class SettingsService {
       message: 'Sauvegarde creee.',
       bytes: await readFileSize(backupPath),
       createdAt: new Date().toISOString(),
+    }
+  }
+
+  async restoreBackup(): Promise<SettingsActionResult> {
+    if (this.isAutoSyncRunning) {
+      return {
+        canceled: true,
+        path: null,
+        message: 'Attendez la fin de la synchronisation avant de restaurer une sauvegarde.',
+      }
+    }
+
+    const databasePath = getDatabaseFilePath()
+
+    if (!databasePath) {
+      throw new Error('La base en mémoire ne peut pas être restaurée.')
+    }
+
+    await mkdir(backupDirectory, { recursive: true })
+    const selection = await dialog.showOpenDialog({
+      title: 'Restaurer une sauvegarde Ludux',
+      defaultPath: backupDirectory,
+      properties: ['openFile'],
+      filters: [
+        {
+          name: 'Sauvegardes Ludux',
+          extensions: ['db', 'sqlite', 'sqlite3'],
+        },
+      ],
+    })
+
+    if (selection.canceled || selection.filePaths.length === 0) {
+      return {
+        canceled: true,
+        path: null,
+        message: 'Restauration annulée.',
+      }
+    }
+
+    const backupPath = selection.filePaths[0]
+    const inspection = await inspectLuduxDatabaseBackup(backupPath)
+    const backupSizeMb = Math.max(0.01, inspection.sizeBytes / 1024 / 1024).toFixed(2)
+    const confirmation = await dialog.showMessageBox({
+      type: 'warning',
+      title: 'Restaurer cette sauvegarde ?',
+      message: `Cette sauvegarde contient ${inspection.gameCount} jeu${inspection.gameCount > 1 ? 'x' : ''}.`,
+      detail: `Fichier du ${new Date(inspection.modifiedAt).toLocaleString('fr-FR')} (${backupSizeMb} Mo). Ludux protégera d’abord la bibliothèque actuelle, puis redémarrera.`,
+      buttons: ['Restaurer', 'Annuler'],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true,
+    })
+
+    if (confirmation.response !== 0) {
+      return {
+        canceled: true,
+        path: null,
+        message: 'Restauration annulée.',
+      }
+    }
+
+    await prisma.$executeRawUnsafe('PRAGMA wal_checkpoint(FULL)')
+    this.stopAutoSync()
+    await prisma.$disconnect()
+
+    try {
+      const restored = await restoreLuduxDatabaseBackup({
+        backupDirectory,
+        backupPath,
+        databasePath,
+      })
+
+      app.relaunch()
+      setTimeout(() => app.exit(0), 500)
+
+      return {
+        canceled: false,
+        path: restored.path,
+        message: 'Sauvegarde restaurée. Ludux redémarre.',
+        bytes: restored.sizeBytes,
+        createdAt: restored.modifiedAt,
+      }
+    } catch (error) {
+      app.relaunch()
+      setTimeout(() => app.exit(1), 800)
+      throw error
     }
   }
 

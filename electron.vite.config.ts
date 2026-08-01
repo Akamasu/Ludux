@@ -12,6 +12,7 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: {
+          'database-backups': resolve(__dirname, 'src/database/backups.ts'),
           'database-migrations': resolve(__dirname, 'src/database/migrations.ts'),
           'local-platforms': resolve(__dirname, 'src/providers/local-platforms.ts'),
           main: resolve(__dirname, 'src/main/main.ts'),

@@ -128,6 +128,31 @@ export function useSettings(enabled = true) {
     await runAction(api.settings.createBackup)
   }, [runAction])
 
+  const restoreBackup = useCallback(async () => {
+    const api = window.ludux
+
+    if (!api) {
+      setActionResult({
+        canceled: true,
+        path: null,
+        message: ELECTRON_ONLY_ACTION_MESSAGE,
+      })
+      return
+    }
+
+    setIsBusy(true)
+    setError(null)
+    setActionResult(null)
+
+    try {
+      setActionResult(await api.settings.restoreBackup())
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Erreur inconnue')
+    } finally {
+      setIsBusy(false)
+    }
+  }, [])
+
   const clearGameCache = useCallback(async () => {
     const api = window.ludux
 
@@ -317,6 +342,7 @@ export function useSettings(enabled = true) {
     refresh,
     exportLibrary,
     createBackup,
+    restoreBackup,
     clearGameCache,
     openDataFolder,
     connectSteam,

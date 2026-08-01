@@ -47,6 +47,7 @@ interface SettingsPageProps {
   onClearGameCache: () => Promise<void>
   onConnectSteam: () => Promise<void>
   onCreateBackup: () => Promise<void>
+  onRestoreBackup: () => Promise<void>
   onDeleteGame: (gameId: string) => Promise<void>
   onDeleteProviderConnection: (input: DeleteProviderConnectionInput) => Promise<void>
   onExportLibrary: () => Promise<void>
@@ -1167,6 +1168,7 @@ export function SettingsPage({
   onClearGameCache,
   onConnectSteam,
   onCreateBackup,
+  onRestoreBackup,
   onDeleteGame,
   onDeleteProviderConnection,
   onExportLibrary,
@@ -1286,15 +1288,30 @@ export function SettingsPage({
               {overview.lastBackupAt ? formatDate(overview.lastBackupAt) : 'aucune'}
             </span>
           </p>
-          <Button
-            type="button"
-            onClick={onCreateBackup}
-            disabled={isBusy}
-            className="w-full"
-          >
-            <Archive size={17} aria-hidden="true" />
-            Créer une sauvegarde
-          </Button>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button
+              type="button"
+              onClick={onCreateBackup}
+              disabled={isBusy}
+              className="w-full"
+            >
+              <Archive size={17} aria-hidden="true" />
+              Créer une sauvegarde
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onRestoreBackup}
+              disabled={isBusy}
+              className="w-full"
+            >
+              <RotateCcw size={17} aria-hidden="true" />
+              Restaurer
+            </Button>
+          </div>
+          <p className="mt-3 text-xs leading-5 text-zinc-500">
+            Avant une restauration, Ludux conserve automatiquement la bibliothèque actuelle.
+          </p>
         </article>
       </section>
 

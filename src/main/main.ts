@@ -21,12 +21,18 @@ import { logger } from '../utils/logger'
 import { registerWindowHandlers } from './ipc/window.ipc'
 
 const localGameCacheProtocol = 'ludux-cache'
+const isElectronE2E = process.env['LUDUX_E2E'] === '1'
+const startupStartedAt = performance.now()
 let stopAutoSync: (() => void) | null = null
 let stopAppUpdater: (() => void) | null = null
 let disconnectDatabase: (() => Promise<void>) | null = null
 let runtimeReady = false
 
 app.setName('Ludux')
+
+if (isElectronE2E && process.env['LUDUX_E2E_USER_DATA_DIR']) {
+  app.setPath('userData', resolve(process.env['LUDUX_E2E_USER_DATA_DIR']))
+}
 
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.akamasu.ludux')
@@ -101,7 +107,9 @@ async function createWindow() {
   })
 
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show()
+    if (!isElectronE2E) {
+      mainWindow.show()
+    }
   })
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -121,10 +129,9 @@ async function createWindow() {
 
 async function initializeApplication() {
   const targetDataDirectory = join(app.getPath('userData'), 'data')
-  const legacyDirectories = [
-    join(app.getAppPath(), 'userdata'),
-    resolve('userdata'),
-  ]
+  const legacyDirectories = isElectronE2E
+    ? []
+    : [join(app.getAppPath(), 'userdata'), resolve('userdata')]
   const storageMigration = await migrateLegacyLuduxData({
     legacyDirectories,
     targetDirectory: targetDataDirectory,
@@ -183,9 +190,17 @@ async function initializeApplication() {
 
   Menu.setApplicationMenu(null)
   await createWindow()
-  settingsService.startAutoSync()
-  stopAppUpdater = startAppUpdater()
+
+  if (!isElectronE2E) {
+    settingsService.startAutoSync()
+    stopAppUpdater = startAppUpdater()
+  }
+
   runtimeReady = true
+  logger.info(
+    '[Performance]',
+    `Ludux prêt en ${Math.round(performance.now() - startupStartedAt)} ms.`,
+  )
 }
 
 app.whenReady().then(initializeApplication).catch((error: unknown) => {
