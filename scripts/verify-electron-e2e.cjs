@@ -75,7 +75,79 @@ async function run() {
     await window.locator('nav[aria-label="Navigation principale"]').waitFor()
     await window.getByRole('heading', { name: 'Bienvenue dans Ludux', exact: true }).waitFor()
 
+    await window.evaluate(async () => {
+      for (let index = 1; index <= 8; index += 1) {
+        await window.ludux.games.create({
+          title: `Jeu de test ${index}`,
+          platformName: 'Ludux',
+          status: index % 2 === 0 ? 'PLAYING' : 'BACKLOG',
+        })
+      }
+    })
+    await window.reload()
+    await window.locator('nav[aria-label="Navigation principale"]').waitFor()
+
     const libraryMs = await openView(window, 'Bibliothèque', 'Vos jeux')
+
+    await window.waitForFunction(() => {
+      const artwork = document.querySelector('.book-spread-art')
+      return (
+        artwork instanceof HTMLImageElement &&
+        artwork.complete &&
+        artwork.naturalWidth > 0
+      )
+    })
+
+    const bookLayout = await window.evaluate(() => {
+      const artwork = document.querySelector('.book-spread-art')
+      const spread = document.querySelector('.library-book-spread')
+      const pages = document.querySelector('.book-spread-pages')
+
+      if (
+        !(artwork instanceof HTMLImageElement) ||
+        !(spread instanceof HTMLElement) ||
+        !(pages instanceof HTMLElement)
+      ) {
+        return null
+      }
+
+      const artworkBounds = artwork.getBoundingClientRect()
+      const spreadBounds = spread.getBoundingClientRect()
+      const pagesBounds = pages.getBoundingClientRect()
+
+      return {
+        artworkHeight: artworkBounds.height,
+        artworkWidth: artworkBounds.width,
+        naturalHeight: artwork.naturalHeight,
+        naturalWidth: artwork.naturalWidth,
+        spreadHeight: spreadBounds.height,
+        spreadWidth: spreadBounds.width,
+        pagesInsideSpread:
+          pagesBounds.left >= spreadBounds.left &&
+          pagesBounds.right <= spreadBounds.right &&
+          pagesBounds.top >= spreadBounds.top &&
+          pagesBounds.bottom <= spreadBounds.bottom,
+      }
+    })
+
+    if (
+      !bookLayout ||
+      bookLayout.naturalWidth !== 1536 ||
+      bookLayout.naturalHeight !== 1024 ||
+      Math.abs(bookLayout.artworkWidth - bookLayout.spreadWidth) > 1 ||
+      Math.abs(bookLayout.artworkHeight - bookLayout.spreadHeight) > 1 ||
+      !bookLayout.pagesInsideSpread
+    ) {
+      throw new Error(`The book layout is invalid: ${JSON.stringify(bookLayout)}.`)
+    }
+
+    if (process.env.LUDUX_E2E_SCREENSHOT_PATH) {
+      await window.screenshot({
+        path: process.env.LUDUX_E2E_SCREENSHOT_PATH,
+        fullPage: true,
+      })
+    }
+
     const settingsMs = await openView(window, 'Paramètres', 'Paramètres')
 
     await electronApp.evaluate(({ BrowserWindow }) => {

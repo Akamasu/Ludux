@@ -8,6 +8,13 @@
   <strong>Toute votre vie de joueur, au même endroit.</strong>
 </p>
 
+<p align="center">
+  <a href="LICENSE">Licence GNU GPL v3</a> ·
+  <a href="PRIVACY.md">Confidentialité</a> ·
+  <a href="CODE_SIGNING_POLICY.md">Signature des versions</a> ·
+  <a href="ASSETS.md">Actifs et marques</a>
+</p>
+
 Ludux est une application desktop qui rassemble votre bibliothèque de jeux, votre temps de jeu, vos succès, vos DLC, vos souvenirs et vos notes personnelles.
 
 Version courante : `v0.33.0`
@@ -58,6 +65,8 @@ Ludux est pensé local-first : les données restent sur votre machine dans une b
 
 Les jaquettes et métadonnées utiles à l'affichage peuvent être gardées dans un cache local léger et limité en taille. Ludux ne copie jamais les dossiers de jeux.
 
+Ludux ne contient ni télémétrie, ni publicité. Les connexions nécessaires à Steam, RAWG, IGDB et aux mises à jour sont détaillées dans la [politique de confidentialité](PRIVACY.md).
+
 ## Développement
 
 ```bash
@@ -83,4 +92,10 @@ Electron, React, TypeScript, Vite, Tailwind CSS, SQLite, Prisma et Vitest.
 
 ## Licence
 
-Licence non définie pour le moment.
+Copyright © 2026 Akamasu.
+
+Ludux est un logiciel libre distribué sous la licence **GNU General Public License version 3 uniquement** (`GPL-3.0-only`). Consultez le fichier [LICENSE](LICENSE) pour le texte complet.
+
+Les actifs inclus et les marques tierces sont documentés dans [ASSETS.md](ASSETS.md).
+
+La signature gratuite des futures releases est préparée avec SignPath. Consultez la [politique de signature de code](CODE_SIGNING_POLICY.md).

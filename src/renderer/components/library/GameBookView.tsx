@@ -203,7 +203,7 @@ export function GameBookView({ games, onOpenGame }: GameBookViewProps) {
 
       <div className="library-book-spread mx-auto">
         <img
-          src="./assets/open-book-pages.webp"
+          src="./assets/open-book-pages-ludux.webp"
           alt=""
           aria-hidden="true"
           draggable={false}

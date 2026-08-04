@@ -35,14 +35,9 @@ jobs:
         run: npm run check
 
       - name: Construire l'installeur Windows
-        env:
-          CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE }}
-          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         run: npm run package:win
 
       - name: Vérifier l'installeur Windows
-        env:
-          LUDUX_REQUIRE_SIGNED_RELEASE: ${{ secrets.WINDOWS_CERTIFICATE != '' && '1' || '0' }}
         run: npm run verify:release:win
 
       - name: Tester l'application empaquetée
