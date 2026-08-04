@@ -87,6 +87,13 @@ async function run() {
     await window.reload()
     await window.locator('nav[aria-label="Navigation principale"]').waitFor()
 
+    if (process.env.LUDUX_E2E_COMPACT === '1') {
+      await electronApp.evaluate(({ BrowserWindow }) => {
+        BrowserWindow.getAllWindows()[0]?.setSize(800, 900)
+      })
+      await window.waitForTimeout(250)
+    }
+
     const libraryMs = await openView(window, 'Bibliothèque', 'Vos jeux')
 
     await window.waitForFunction(() => {
@@ -120,6 +127,8 @@ async function run() {
         artworkWidth: artworkBounds.width,
         naturalHeight: artwork.naturalHeight,
         naturalWidth: artwork.naturalWidth,
+        pagesHeight: pagesBounds.height,
+        pagesWidth: pagesBounds.width,
         spreadHeight: spreadBounds.height,
         spreadWidth: spreadBounds.width,
         pagesInsideSpread:
@@ -130,12 +139,25 @@ async function run() {
       }
     })
 
+    const invalidDesktopBook =
+      bookLayout &&
+      bookLayout.spreadWidth > 760 &&
+      (Math.abs(bookLayout.artworkWidth - bookLayout.spreadWidth) > 1 ||
+        Math.abs(bookLayout.artworkHeight - bookLayout.spreadHeight) > 1)
+    const invalidCompactBook =
+      bookLayout &&
+      bookLayout.spreadWidth <= 760 &&
+      (bookLayout.artworkWidth !== 0 ||
+        bookLayout.artworkHeight !== 0 ||
+        bookLayout.pagesWidth > bookLayout.spreadWidth + 1 ||
+        bookLayout.pagesHeight <= 0)
+
     if (
       !bookLayout ||
       bookLayout.naturalWidth !== 1536 ||
       bookLayout.naturalHeight !== 1024 ||
-      Math.abs(bookLayout.artworkWidth - bookLayout.spreadWidth) > 1 ||
-      Math.abs(bookLayout.artworkHeight - bookLayout.spreadHeight) > 1 ||
+      invalidDesktopBook ||
+      invalidCompactBook ||
       !bookLayout.pagesInsideSpread
     ) {
       throw new Error(`The book layout is invalid: ${JSON.stringify(bookLayout)}.`)
